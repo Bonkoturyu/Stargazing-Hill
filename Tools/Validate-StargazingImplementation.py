@@ -38,7 +38,10 @@ EXPECTED_ROLLOFF = [
 
 
 def validate_catalog() -> None:
-    digest = hashlib.sha256(CATALOG.read_bytes()).hexdigest()
+    # Git may check text files out as CRLF on Windows. Hash the canonical LF form
+    # recorded by the source notice so validation is independent of checkout policy.
+    catalog_bytes = CATALOG.read_bytes().replace(b"\r\n", b"\n")
+    digest = hashlib.sha256(catalog_bytes).hexdigest()
     assert digest == EXPECTED_CATALOG_SHA256, f"catalog SHA-256 changed: {digest}"
 
     count = 0
