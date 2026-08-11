@@ -31,4 +31,6 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ステータス
 
-初期仕様策定段階。実装用アセット、動画プレイヤー具体候補、QvPen導入方法、第三者素材のライセンス確認は着手時に確定する。
+草原・小丘・一本木、HYG v4.1の全天球星空、東京の現在時刻による天球回転、YamaPlayer 2.0.0-beta.7と距離減衰まで実装済み。月、流星群、QvPen、各対象プラットフォームでの実機検証は未実装・未実施。
+
+Unityライセンスが有効なEditorでプロジェクトを開き、メニュー `Stargazing Hill/Build Complete World` を実行すると、Mesh・Materialと `Assets/StargazingHill/Scenes/StargazingHill.unity` を生成する。生成後はConsoleとUdon変換結果を確認する。
