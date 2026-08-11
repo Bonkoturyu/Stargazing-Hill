@@ -83,5 +83,16 @@ crashlytics-build.properties
 /Assets/UdonSharp/UtilityScripts/
 /Assets/UdonSharp/UtilityScripts.meta
 
+# Local/vendor content restored by SDKs or purchased separately.
+/Assets/AVProVideo/
+/Assets/AVProVideo.meta
+/Assets/Rasta/
+/Assets/Rasta.meta
+
+# ClientSim persistence and temporary model comparison imports.
+/ClientSimStorage/
+/Assets/TreeSelectionTemp/
+/Assets/TreeSelectionTemp.meta
+
 # AudioLink render-pipeline detection cache; rewritten when Unity opens.
 /.audiolink_pipeline

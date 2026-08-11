@@ -6,7 +6,9 @@
 |---|---|---|
 | Confirmed | HYG星表と派生Meshの配布条件 | v4.1、原本commit/hash、CC BY-SA 4.0、加工工程と表示を記録済み |
 | Provisional | YamaPlayer 2.0.0-beta.7 | 採用・依存固定・距離減衰実装済み。PC/Android/iOS実機検証はOpen |
-| Open | QvPenの版と導入方法 | 公式配布元、対応SDK、ライセンス、再配布条件を確認 |
+| Provisional | QvPen 3.3.15 | 公式VPM依存として導入済み。上流packageに明示ライセンスファイルがないため、package本体は追跡せず公式配布から復元する |
+| Provisional | UnyStylus v1.3 | 購入済みVN3素材としてローカル導入。本体は再配布せず、clone後の購入済みpackage再導入手順と実機動作を確認する |
+| Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |
 | Open | iOSで利用可能なShaderと動画経路 | 対象Unity/SDK版でBuild & Test |
 | Open | 天文計算の許容誤差 | 基準値と見た目上の合格基準を定義 |
 | Open | 流星群データの一次出典 | URL、確認日、年次変化の扱いを記録 |

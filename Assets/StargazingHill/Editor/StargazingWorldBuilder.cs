@@ -27,31 +27,44 @@ namespace StargazingHill.Editor
         private const string CatalogPath = Root + "/Editor/Data/hyg_bright_v41.csv";
         private const string SkyControllerScriptPath = Root + "/Scripts/RealSkyController.cs";
         private const string SkyControllerProgramPath = Root + "/Scripts/RealSkyController.asset";
+        private const string PlayerSettingsScriptPath = Root + "/Scripts/WorldPlayerSettings.cs";
+        private const string PlayerSettingsProgramPath = Root + "/Scripts/WorldPlayerSettings.asset";
+        private const string GrassDiffusePath =
+            Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg";
+        private const string GrassNormalPath =
+            Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg";
+        private const string TreeModelPath =
+            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_3.fbx";
+        private const string TreeBarkPath =
+            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_Bark.jpg";
+        private const string TreeLeavesPath =
+            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_Leaves.png";
         private const string YamaPrefabPath = "Packages/net.kwxxw.yama-stream/YamaPlayer.prefab";
         private const string YamaModulePath =
             "Packages/net.kwxxw.yama-stream/Modules/VideoInfoDownloader/VideoInfoDownloader.prefab";
+        private const string QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab";
+        private const string UnyStylusPrefabPath = "Assets/Rasta/UnyStylus/UnyStylus.prefab";
 
         private const float StarRadius = 220f;
         private const float StarMagnitudeLimit = 6.8f;
         private const float HillHeight = 2.3f;
+        private const float HillRadius = 10f;
+        private const float HillTopRadius = 2.25f;
         private static readonly Vector3 HillPosition = new Vector3(9f, 0f, 8f);
-
-        private static readonly Vector3[] BranchEnds =
-        {
-            new Vector3( 2.4f, 6.2f,  0.7f),
-            new Vector3(-2.0f, 6.6f,  0.9f),
-            new Vector3( 1.7f, 7.2f, -1.6f),
-            new Vector3(-1.5f, 7.5f, -1.5f),
-            new Vector3( 0.8f, 8.2f,  0.5f),
-            new Vector3(-0.4f, 8.5f,  0.2f),
-        };
 
         [MenuItem("Stargazing Hill/Build Complete World", false, 10)]
         public static void BuildCompleteWorld()
         {
             EnsureFolders();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            EnsureSkyControllerProgramAsset();
+            ConfigureThirdPartyImportSettings();
+            EnsureProgramAsset(typeof(RealSkyController), SkyControllerScriptPath, SkyControllerProgramPath);
+            EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
+
+            Texture2D grassDiffuse = LoadRequiredAsset<Texture2D>(GrassDiffusePath);
+            Texture2D grassNormal = LoadRequiredAsset<Texture2D>(GrassNormalPath);
+            Texture2D treeBark = LoadRequiredAsset<Texture2D>(TreeBarkPath);
+            Texture2D treeLeaves = LoadRequiredAsset<Texture2D>(TreeLeavesPath);
 
             Material groundMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/GrassGround.mat", "StargazingHill/Environment",
@@ -67,7 +80,11 @@ namespace StargazingHill.Editor
                 new Color(0.28f, 0.16f, 0.09f), 0.48f);
             Material leafMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/TreeLeaves.mat", "StargazingHill/Environment",
-                new Color(0.16f, 0.30f, 0.12f), 0.55f);
+                new Color(0.60f, 0.76f, 0.53f), 0.52f);
+            ConfigureTexturedMaterial(groundMaterial, grassDiffuse, grassNormal, new Vector2(40f, 40f), false, true);
+            ConfigureTexturedMaterial(hillMaterial, grassDiffuse, grassNormal, new Vector2(10f, 10f), false, true);
+            ConfigureTexturedMaterial(barkMaterial, treeBark, null, Vector2.one, false, false);
+            ConfigureTexturedMaterial(leafMaterial, treeLeaves, null, Vector2.one, true, false);
             Material starMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/Starfield.mat", "StargazingHill/Starfield", Color.white, 0f);
             starMaterial.SetFloat("_Intensity", 1.35f);
@@ -78,8 +95,6 @@ namespace StargazingHill.Editor
             Mesh groundMesh = SaveMesh(MeshRoot + "/GrassGround.asset", BuildGroundMesh());
             Mesh hillMesh = SaveMesh(MeshRoot + "/Hill.asset", BuildHillMesh());
             Mesh grassMesh = SaveMesh(MeshRoot + "/GrassClusters.asset", BuildGrassMesh());
-            Mesh trunkMesh = SaveMesh(MeshRoot + "/LandmarkTreeTrunk.asset", BuildTrunkMesh());
-            Mesh leafMesh = SaveMesh(MeshRoot + "/LandmarkTreeLeaves.asset", BuildLeafMesh());
             Mesh starMesh = SaveMesh(MeshRoot + "/Starfield_Celestial.asset", BuildStarMesh());
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -87,12 +102,13 @@ namespace StargazingHill.Editor
 
             GameObject world = new GameObject("World");
             GameObject environment = CreateChild(world.transform, "Environment");
-            CreateEnvironment(environment.transform, groundMesh, hillMesh, grassMesh, trunkMesh, leafMesh,
+            CreateEnvironment(environment.transform, groundMesh, hillMesh, grassMesh,
                 groundMaterial, hillMaterial, bladeMaterial, barkMaterial, leafMaterial);
             CreateLighting(environment.transform);
             CreateWorldSettings(world.transform);
             CreateRealSky(world.transform, starMesh, starMaterial);
             CreateYamaPlayer(world.transform);
+            CreateDrawingSystems(world.transform);
 
             ValidateScene(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -100,8 +116,8 @@ namespace StargazingHill.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("[Stargazing Hill] Build complete: 1 star mesh, low-poly grass field/hill/tree, " +
-                      "Tokyo real-time sky rotation, and YamaPlayer with the reference distance rolloff.");
+            Debug.Log("[Stargazing Hill] Build complete: textured walkable grassland and hill, CC0 landmark tree, " +
+                      "Tokyo real-time sky, YamaPlayer, QvPen, and locally licensed UnyStylus.");
         }
 
         public static void BuildForBatchMode()
@@ -154,23 +170,62 @@ namespace StargazingHill.Editor
             if (!AssetDatabase.IsValidFolder(path)) AssetDatabase.CreateFolder(parent, child);
         }
 
-        private static void EnsureSkyControllerProgramAsset()
+        private static void ConfigureThirdPartyImportSettings()
+        {
+            ConfigureTextureImporter(GrassDiffusePath, false, false);
+            ConfigureTextureImporter(GrassNormalPath, true, false);
+            ConfigureTextureImporter(TreeBarkPath, false, false);
+            ConfigureTextureImporter(TreeLeavesPath, false, true);
+
+            var modelImporter = AssetImporter.GetAtPath(TreeModelPath) as ModelImporter;
+            if (modelImporter != null &&
+                (modelImporter.importAnimation || modelImporter.importBlendShapes ||
+                 modelImporter.meshCompression != ModelImporterMeshCompression.Medium ||
+                 !Mathf.Approximately(modelImporter.globalScale, 100f)))
+            {
+                modelImporter.importAnimation = false;
+                modelImporter.importBlendShapes = false;
+                modelImporter.meshCompression = ModelImporterMeshCompression.Medium;
+                // The CC0 FBX stores metre-sized coordinates but declares centimetre units.
+                // Compensate once at import so scene scale and the trunk collider remain conventional.
+                modelImporter.globalScale = 100f;
+                modelImporter.SaveAndReimport();
+            }
+        }
+
+        private static void ConfigureTextureImporter(string path, bool normalMap, bool alphaTransparency)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return;
+            TextureImporterType type = normalMap ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            bool dirty = importer.textureType != type || importer.maxTextureSize != 1024 ||
+                         importer.alphaIsTransparency != alphaTransparency || !importer.mipmapEnabled;
+            if (!dirty) return;
+            importer.textureType = type;
+            importer.maxTextureSize = 1024;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.alphaIsTransparency = alphaTransparency;
+            importer.mipmapEnabled = true;
+            importer.SaveAndReimport();
+        }
+
+        private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
         {
             UdonSharpProgramAsset programAsset =
-                UdonSharpEditorUtility.GetUdonSharpProgramAsset(typeof(RealSkyController));
+                UdonSharpEditorUtility.GetUdonSharpProgramAsset(behaviourType);
             if (programAsset == null)
-                programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(SkyControllerProgramPath);
+                programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(programPath);
             if (programAsset == null)
             {
-                MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(SkyControllerScriptPath);
+                MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(scriptPath);
                 if (script == null)
-                    throw new InvalidOperationException("RealSkyController MonoScript is missing.");
+                    throw new InvalidOperationException(behaviourType.Name + " MonoScript is missing.");
 
                 programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
                 programAsset.sourceCsScript = script;
-                AssetDatabase.CreateAsset(programAsset, SkyControllerProgramPath);
+                AssetDatabase.CreateAsset(programAsset, programPath);
                 AssetDatabase.SaveAssets();
-                Debug.Log("[Stargazing Hill] Created U# program asset for RealSkyController.");
+                Debug.Log("[Stargazing Hill] Created U# program asset for " + behaviourType.Name + ".");
             }
 
             if (programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion)
@@ -186,11 +241,18 @@ namespace StargazingHill.Editor
                 AssetDatabase.SaveAssets();
             }
 
-            programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(typeof(RealSkyController));
+            programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(behaviourType);
             if (programAsset == null ||
                 programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion ||
                 programAsset.CompiledVersion < UdonSharpProgramVersion.CurrentVersion)
-                throw new InvalidOperationException("RealSkyController U# program asset did not compile.");
+                throw new InvalidOperationException(behaviourType.Name + " U# program asset did not compile.");
+        }
+
+        private static T LoadRequiredAsset<T>(string path) where T : Object
+        {
+            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset == null) throw new InvalidOperationException("Required asset is missing: " + path);
+            return asset;
         }
 
         private static Material CreateOrUpdateMaterial(
@@ -212,8 +274,25 @@ namespace StargazingHill.Editor
 
             if (material.HasProperty("_Color")) material.SetColor("_Color", color);
             if (material.HasProperty("_Ambient")) material.SetFloat("_Ambient", ambient);
+            if (material.HasProperty("_UseVertexColor")) material.SetFloat("_UseVertexColor", 1f);
             EditorUtility.SetDirty(material);
             return material;
+        }
+
+        private static void ConfigureTexturedMaterial(
+            Material material, Texture2D albedo, Texture2D normal, Vector2 tiling, bool alphaClip,
+            bool useVertexColor)
+        {
+            material.SetTexture("_MainTex", albedo);
+            material.SetTextureScale("_MainTex", tiling);
+            material.SetTexture("_BumpMap", normal);
+            material.SetFloat("_UseTexture", albedo == null ? 0f : 1f);
+            material.SetFloat("_UseNormal", normal == null ? 0f : 1f);
+            material.SetFloat("_UseVertexColor", useVertexColor ? 1f : 0f);
+            material.SetFloat("_Cutoff", alphaClip ? 0.36f : 0f);
+            if (alphaClip) material.EnableKeyword("_ALPHATEST_ON");
+            else material.DisableKeyword("_ALPHATEST_ON");
+            EditorUtility.SetDirty(material);
         }
 
         private static Mesh SaveMesh(string path, Mesh generated)
@@ -233,13 +312,39 @@ namespace StargazingHill.Editor
             return mesh;
         }
 
+        private static float EvaluateBaseHeight(float x, float z)
+        {
+            return Mathf.Sin(x * 0.21f) * Mathf.Cos(z * 0.17f) * 0.055f;
+        }
+
+        private static float EvaluateHillHeight(float x, float z)
+        {
+            float distance = Vector2.Distance(new Vector2(x, z), new Vector2(HillPosition.x, HillPosition.z));
+            if (distance >= HillRadius) return 0f;
+            if (distance <= HillTopRadius)
+            {
+                float topT = distance / HillTopRadius;
+                return HillHeight - 0.06f * topT * topT;
+            }
+
+            float t = Mathf.InverseLerp(HillTopRadius, HillRadius, distance);
+            float smooth = t * t * (3f - 2f * t);
+            return Mathf.Lerp(HillHeight - 0.06f, 0f, smooth);
+        }
+
+        private static float EvaluateTerrainHeight(float x, float z)
+        {
+            return EvaluateBaseHeight(x, z) + EvaluateHillHeight(x, z);
+        }
+
         private static Mesh BuildGroundMesh()
         {
-            const int cells = 40;
+            const int cells = 80;
             const float size = 80f;
             int side = cells + 1;
             var vertices = new Vector3[side * side];
             var colors = new Color[vertices.Length];
+            var uvs = new Vector2[vertices.Length];
             var triangles = new int[cells * cells * 6];
 
             for (int z = 0; z < side; z++)
@@ -248,9 +353,10 @@ namespace StargazingHill.Editor
                 {
                     float px = (x / (float)cells - 0.5f) * size;
                     float pz = (z / (float)cells - 0.5f) * size;
-                    float y = Mathf.Sin(px * 0.21f) * Mathf.Cos(pz * 0.17f) * 0.055f;
+                    float y = EvaluateTerrainHeight(px, pz);
                     int index = z * side + x;
                     vertices[index] = new Vector3(px, y, pz);
+                    uvs[index] = new Vector2(x / (float)cells, z / (float)cells);
                     float variation = 0.86f + Mathf.PerlinNoise(px * 0.08f + 31f, pz * 0.08f + 17f) * 0.22f;
                     colors[index] = new Color(variation, variation, variation, 1f);
                 }
@@ -274,34 +380,42 @@ namespace StargazingHill.Editor
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
             mesh.vertices = vertices;
             mesh.colors = colors;
+            mesh.uv = uvs;
             mesh.triangles = triangles;
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             return mesh;
         }
 
         private static Mesh BuildHillMesh()
         {
-            const int rings = 12;
-            const int segments = 40;
-            const float radius = 10f;
+            const int rings = 16;
+            const int segments = 64;
             var vertices = new List<Vector3>(1 + rings * segments);
             var colors = new List<Color>(1 + rings * segments);
+            var uvs = new List<Vector2>(1 + rings * segments);
             var triangles = new List<int>(segments * (1 + (rings - 1) * 2) * 3);
-            vertices.Add(new Vector3(0f, HillHeight, 0f));
+            vertices.Add(new Vector3(0f, EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.018f, 0f));
             colors.Add(Color.white);
+            uvs.Add(new Vector2(0.5f, 0.5f));
 
             for (int ring = 1; ring <= rings; ring++)
             {
                 float t = ring / (float)rings;
-                float ringRadius = radius * t;
-                float height = HillHeight * Mathf.Pow(1f - t * t, 1.35f) + 0.02f;
+                float ringRadius = HillRadius * t;
                 for (int segment = 0; segment < segments; segment++)
                 {
                     float angle = segment * Mathf.PI * 2f / segments;
-                    vertices.Add(new Vector3(Mathf.Cos(angle) * ringRadius, height, Mathf.Sin(angle) * ringRadius));
+                    float localX = Mathf.Cos(angle) * ringRadius;
+                    float localZ = Mathf.Sin(angle) * ringRadius;
+                    float worldX = HillPosition.x + localX;
+                    float worldZ = HillPosition.z + localZ;
+                    float height = EvaluateTerrainHeight(worldX, worldZ) + 0.018f;
+                    vertices.Add(new Vector3(localX, height, localZ));
                     float shade = 0.90f + 0.10f * Mathf.Sin(angle * 3f + ring);
                     colors.Add(new Color(shade, shade, shade, 1f));
+                    uvs.Add(new Vector2(0.5f + localX / (HillRadius * 2f), 0.5f + localZ / (HillRadius * 2f)));
                 }
             }
 
@@ -331,47 +445,48 @@ namespace StargazingHill.Editor
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(vertices);
             mesh.SetColors(colors);
+            mesh.SetUVs(0, uvs);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             return mesh;
         }
 
         private static Mesh BuildGrassMesh()
         {
-            const int tuftCount = 520;
+            const int tuftCount = 9000;
             var random = new System.Random(20260811);
-            var vertices = new List<Vector3>(tuftCount * 9);
-            var colors = new List<Color>(tuftCount * 9);
-            var triangles = new List<int>(tuftCount * 9);
+            var vertices = new List<Vector3>(tuftCount * 12);
+            var colors = new List<Color>(tuftCount * 12);
+            var triangles = new List<int>(tuftCount * 12);
 
             for (int tuft = 0; tuft < tuftCount; tuft++)
             {
-                float x = (float)(random.NextDouble() * 70.0 - 35.0);
-                float z = (float)(random.NextDouble() * 70.0 - 35.0);
-                if (new Vector2(x, z + 14f).sqrMagnitude < 20f ||
-                    new Vector2(x - HillPosition.x, z - HillPosition.z).sqrMagnitude < 82f ||
-                    new Vector2(x + 15f, z - 5f).sqrMagnitude < 36f)
+                float x = (float)(random.NextDouble() * 76.0 - 38.0);
+                float z = (float)(random.NextDouble() * 76.0 - 38.0);
+                if (IsGrassExclusion(x, z))
                 {
                     tuft--;
                     continue;
                 }
 
-                float baseY = Mathf.Sin(x * 0.21f) * Mathf.Cos(z * 0.17f) * 0.055f + 0.015f;
-                float height = 0.04f + (float)random.NextDouble() * 0.06f;
-                float width = 0.010f + (float)random.NextDouble() * 0.008f;
+                float baseY = EvaluateTerrainHeight(x, z) + 0.012f;
+                float height = 0.035f + (float)random.NextDouble() * 0.060f;
+                float width = 0.010f + (float)random.NextDouble() * 0.010f;
                 float phase = (float)random.NextDouble() * Mathf.PI * 2f;
-                float shade = 0.75f + (float)random.NextDouble() * 0.28f;
+                float shade = 0.78f + (float)random.NextDouble() * 0.25f;
                 Color color = new Color(shade, shade, shade, 1f);
 
-                for (int blade = 0; blade < 3; blade++)
+                for (int blade = 0; blade < 4; blade++)
                 {
-                    float angle = phase + blade * Mathf.PI / 3f;
+                    float angle = phase + blade * Mathf.PI * 0.5f;
                     Vector3 side = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * width;
+                    Vector3 bend = new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)) * height * 0.13f;
                     int first = vertices.Count;
                     vertices.Add(new Vector3(x, baseY, z) - side);
                     vertices.Add(new Vector3(x, baseY, z) + side);
-                    vertices.Add(new Vector3(x, baseY + height, z));
+                    vertices.Add(new Vector3(x, baseY + height, z) + bend);
                     colors.Add(color);
                     colors.Add(color);
                     colors.Add(color * 1.08f);
@@ -390,106 +505,12 @@ namespace StargazingHill.Editor
             return mesh;
         }
 
-        private static Mesh BuildTrunkMesh()
+        private static bool IsGrassExclusion(float x, float z)
         {
-            var vertices = new List<Vector3>();
-            var triangles = new List<int>();
-            var colors = new List<Color>();
-            AddCylinder(vertices, triangles, colors, new Vector3(0f, 0f, 0f), new Vector3(0f, 6.6f, 0f),
-                0.52f, 0.27f, 9);
-
-            for (int i = 0; i < BranchEnds.Length; i++)
-            {
-                float startY = 3.7f + i * 0.42f;
-                Vector3 start = new Vector3(0f, startY, 0f);
-                AddCylinder(vertices, triangles, colors, start, BranchEnds[i], 0.23f, 0.08f, 7);
-            }
-
-            var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
-            mesh.SetVertices(vertices);
-            mesh.SetColors(colors);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
-        private static void AddCylinder(List<Vector3> vertices, List<int> triangles, List<Color> colors,
-            Vector3 start, Vector3 end, float startRadius, float endRadius, int sides)
-        {
-            Vector3 axis = (end - start).normalized;
-            Vector3 tangent = Vector3.Cross(axis, Mathf.Abs(axis.y) > 0.9f ? Vector3.right : Vector3.up).normalized;
-            Vector3 bitangent = Vector3.Cross(axis, tangent).normalized;
-            int first = vertices.Count;
-            for (int ring = 0; ring < 2; ring++)
-            {
-                Vector3 center = ring == 0 ? start : end;
-                float radius = ring == 0 ? startRadius : endRadius;
-                for (int side = 0; side < sides; side++)
-                {
-                    float angle = side * Mathf.PI * 2f / sides;
-                    vertices.Add(center + (tangent * Mathf.Cos(angle) + bitangent * Mathf.Sin(angle)) * radius);
-                    float shade = 0.82f + 0.16f * (side / (float)sides);
-                    colors.Add(new Color(shade, shade, shade, 1f));
-                }
-            }
-
-            for (int side = 0; side < sides; side++)
-            {
-                int next = (side + 1) % sides;
-                triangles.Add(first + side);
-                triangles.Add(first + sides + side);
-                triangles.Add(first + next);
-                triangles.Add(first + next);
-                triangles.Add(first + sides + side);
-                triangles.Add(first + sides + next);
-            }
-        }
-
-        private static Mesh BuildLeafMesh()
-        {
-            var vertices = new List<Vector3>();
-            var triangles = new List<int>();
-            var colors = new List<Color>();
-            for (int i = 0; i < BranchEnds.Length; i++)
-            {
-                Vector3 end = BranchEnds[i];
-                AddLeafCluster(vertices, triangles, colors, end, new Vector3(1.45f, 0.95f, 1.20f), i);
-                AddLeafCluster(vertices, triangles, colors,
-                    Vector3.Lerp(new Vector3(0f, 4.3f + i * 0.25f, 0f), end, 0.70f),
-                    new Vector3(1.05f, 0.72f, 0.92f), i + 7);
-            }
-            AddLeafCluster(vertices, triangles, colors, new Vector3(0f, 8.55f, 0f),
-                new Vector3(1.30f, 1.05f, 1.15f), 20);
-
-            var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
-            mesh.SetVertices(vertices);
-            mesh.SetColors(colors);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
-        private static void AddLeafCluster(List<Vector3> vertices, List<int> triangles, List<Color> colors,
-            Vector3 center, Vector3 size, int seed)
-        {
-            int first = vertices.Count;
-            vertices.Add(center + Vector3.up * size.y);
-            vertices.Add(center - Vector3.up * size.y);
-            vertices.Add(center + Vector3.right * size.x);
-            vertices.Add(center - Vector3.right * size.x);
-            vertices.Add(center + Vector3.forward * size.z);
-            vertices.Add(center - Vector3.forward * size.z);
-            float shade = 0.82f + (seed % 4) * 0.045f;
-            for (int i = 0; i < 6; i++) colors.Add(new Color(shade, shade, shade, 1f));
-
-            int[] local =
-            {
-                0, 2, 4, 0, 4, 3, 0, 3, 5, 0, 5, 2,
-                1, 4, 2, 1, 3, 4, 1, 5, 3, 1, 2, 5
-            };
-            for (int i = 0; i < local.Length; i++) triangles.Add(first + local[i]);
+            return new Vector2(x, z + 14f).sqrMagnitude < 5f ||
+                   new Vector2(x + 15f, z - 5f).sqrMagnitude < 28f ||
+                   new Vector2(x - 17f, z + 12f).sqrMagnitude < 42f ||
+                   new Vector2(x - HillPosition.x, z - HillPosition.z).sqrMagnitude < 1.6f;
         }
 
         private static Mesh BuildStarMesh()
@@ -586,27 +607,78 @@ namespace StargazingHill.Editor
         }
 
         private static void CreateEnvironment(Transform parent, Mesh groundMesh, Mesh hillMesh, Mesh grassMesh,
-            Mesh trunkMesh, Mesh leafMesh, Material groundMaterial, Material hillMaterial, Material bladeMaterial,
-            Material barkMaterial, Material leafMaterial)
+            Material groundMaterial, Material hillMaterial, Material bladeMaterial, Material barkMaterial,
+            Material leafMaterial)
         {
             GameObject ground = CreateMeshObject(parent, "GrassGround", groundMesh, groundMaterial, Vector3.zero);
             var groundCollider = ground.AddComponent<MeshCollider>();
             groundCollider.sharedMesh = groundMesh;
 
-            GameObject hill = CreateMeshObject(parent, "Hill", hillMesh, hillMaterial, HillPosition);
-            var hillCollider = hill.AddComponent<MeshCollider>();
-            hillCollider.sharedMesh = hillMesh;
+            // The hill is a visual overlay only. Its shape is already part of the single ground collider,
+            // preventing the VRChat player capsule from becoming wedged between overlapping mesh colliders.
+            CreateMeshObject(parent, "Hill", hillMesh, hillMaterial, HillPosition);
 
             CreateMeshObject(parent, "GrassClusters", grassMesh, bladeMaterial, Vector3.zero);
 
-            GameObject tree = CreateChild(parent, "LandmarkTree");
-            tree.transform.position = HillPosition + Vector3.up * HillHeight;
-            CreateMeshObject(tree.transform, "TrunkAndBranches", trunkMesh, barkMaterial, Vector3.zero);
-            CreateMeshObject(tree.transform, "SparseLeaves", leafMesh, leafMaterial, Vector3.zero);
-            var trunkCollider = tree.AddComponent<CapsuleCollider>();
-            trunkCollider.center = new Vector3(0f, 2.9f, 0f);
-            trunkCollider.height = 5.8f;
-            trunkCollider.radius = 0.56f;
+            GameObject treeSource = LoadRequiredAsset<GameObject>(TreeModelPath);
+            GameObject tree = (GameObject)PrefabUtility.InstantiatePrefab(treeSource);
+            tree.name = "LandmarkTree";
+            tree.transform.SetParent(parent, false);
+            tree.transform.localPosition = new Vector3(
+                HillPosition.x, EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f, HillPosition.z);
+            // This FBX's up axis arrives inverted in Unity; rotate it upright, then add yaw variation.
+            tree.transform.localRotation = Quaternion.Euler(180f, 22f, 0f);
+            tree.transform.localScale = Vector3.one * 1.45f;
+            AssignTreeMaterials(tree, barkMaterial, leafMaterial);
+
+            // Centre and ground the visible mesh from its imported bounds instead of trusting the FBX pivot.
+            // Quaternius' source file has an off-centre pivot after FBX unit conversion.
+            Bounds importedBounds = CalculateRendererBounds(tree);
+            float treeSurfaceY = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
+            tree.transform.position += new Vector3(
+                HillPosition.x - importedBounds.center.x,
+                treeSurfaceY - importedBounds.min.y,
+                HillPosition.z - importedBounds.center.z);
+
+            GameObject colliderObject = CreateChild(parent, "LandmarkTreeCollider");
+            colliderObject.transform.position = new Vector3(HillPosition.x, treeSurfaceY + 2.25f, HillPosition.z);
+            var trunkCollider = colliderObject.AddComponent<CapsuleCollider>();
+            trunkCollider.height = 4.50f;
+            trunkCollider.radius = 0.52f;
+        }
+
+        private static void AssignTreeMaterials(GameObject tree, Material barkMaterial, Material leafMaterial)
+        {
+            Renderer[] renderers = tree.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) throw new InvalidOperationException("CC0 landmark tree has no renderer.");
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Renderer renderer = renderers[rendererIndex];
+                Material[] materials = renderer.sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                {
+                    string sourceName = materials[materialIndex] == null ? string.Empty : materials[materialIndex].name;
+                    materials[materialIndex] = sourceName.IndexOf("leav", StringComparison.OrdinalIgnoreCase) >= 0
+                        ? leafMaterial
+                        : barkMaterial;
+                }
+
+                renderer.sharedMaterials = materials;
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.lightProbeUsage = LightProbeUsage.Off;
+                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            }
+        }
+
+        private static Bounds CalculateRendererBounds(GameObject root)
+        {
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) throw new InvalidOperationException(root.name + " has no renderer.");
+            Bounds bounds = renderers[0].bounds;
+            for (int rendererIndex = 1; rendererIndex < renderers.Length; rendererIndex++)
+                bounds.Encapsulate(renderers[rendererIndex].bounds);
+            return bounds;
         }
 
         private static void CreateLighting(Transform parent)
@@ -624,13 +696,14 @@ namespace StargazingHill.Editor
         {
             GameObject settings = CreateChild(parent, "WorldSettings");
             GameObject spawn = CreateChild(settings.transform, "Spawn");
-            spawn.transform.position = new Vector3(0f, 0.25f, -14f);
+            float spawnSurfaceY = EvaluateTerrainHeight(0f, -14f);
+            spawn.transform.position = new Vector3(0f, spawnSurfaceY + 0.40f, -14f);
             spawn.transform.rotation = Quaternion.LookRotation((HillPosition - spawn.transform.position).normalized, Vector3.up);
 
             GameObject cameraObject = CreateChild(settings.transform, "ReferenceCamera");
-            cameraObject.transform.position = new Vector3(0f, 1.6f, -14f);
+            cameraObject.transform.position = new Vector3(0f, spawnSurfaceY + 1.65f, -14f);
             cameraObject.transform.rotation = Quaternion.LookRotation(
-                (HillPosition + Vector3.up * 2.5f - cameraObject.transform.position).normalized,
+                (HillPosition + Vector3.up * 4.2f - cameraObject.transform.position).normalized,
                 Vector3.up);
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -644,6 +717,16 @@ namespace StargazingHill.Editor
             descriptor.spawns = new[] { spawn.transform };
             descriptor.ReferenceCamera = cameraObject;
             descriptor.RespawnHeightY = -15f;
+
+            GameObject playerSettingsObject = CreateChild(settings.transform, "PlayerMovementSettings");
+            WorldPlayerSettings playerSettings = UdonSharpUndo.AddComponent<WorldPlayerSettings>(playerSettingsObject);
+            playerSettings.walkSpeed = 2f;
+            playerSettings.runSpeed = 4f;
+            playerSettings.strafeSpeed = 2f;
+            playerSettings.jumpImpulse = 3.2f;
+            playerSettings.gravityStrength = 1f;
+            UdonSharpEditorUtility.CopyProxyToUdon(playerSettings);
+            EditorUtility.SetDirty(playerSettings);
         }
 
         private static void CreateRealSky(Transform world, Mesh starMesh, Material starMaterial)
@@ -684,7 +767,42 @@ namespace StargazingHill.Editor
             player.transform.localScale = Vector3.one * 2.20f;
 
             EnsureVideoInfoDownloader(player);
+            RemoveEmptyPlaylistManagers(player);
             ApplyYamaDistanceRolloff(player);
+        }
+
+        private static void RemoveEmptyPlaylistManagers(GameObject player)
+        {
+            PlaylistManager[] managers = player.GetComponentsInChildren<PlaylistManager>(true);
+            for (int i = 0; i < managers.Length; i++)
+            {
+                if (managers[i].GetPlaylists().Count == 0) Object.DestroyImmediate(managers[i]);
+            }
+        }
+
+        private static void CreateDrawingSystems(Transform world)
+        {
+            GameObject drawingSystem = CreateChild(world, "DrawingSystem");
+            InstantiateDrawingPrefab(drawingSystem.transform, QvPenPrefabPath, "QvPen",
+                new Vector3(15f, EvaluateTerrainHeight(15f, -12f) + 0.80f, -12f),
+                Quaternion.Euler(0f, 180f, 0f));
+            InstantiateDrawingPrefab(drawingSystem.transform, UnyStylusPrefabPath, "UnyStylus",
+                new Vector3(19f, EvaluateTerrainHeight(19f, -12f) + 0.80f, -12f),
+                Quaternion.Euler(0f, 180f, 0f));
+        }
+
+        private static void InstantiateDrawingPrefab(
+            Transform parent, string path, string name, Vector3 position, Quaternion rotation)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null)
+                throw new InvalidOperationException(name + " is not installed at " + path + ".");
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            instance.name = name;
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = position;
+            instance.transform.localRotation = rotation;
+            instance.transform.localScale = Vector3.one;
         }
 
         private static void EnsureVideoInfoDownloader(GameObject player)
@@ -810,16 +928,44 @@ namespace StargazingHill.Editor
         {
             if (!scene.IsValid()) throw new InvalidOperationException("Generated scene is invalid.");
             RealSkyController[] skyControllers = Object.FindObjectsOfType<RealSkyController>(true);
+            WorldPlayerSettings[] playerSettings = Object.FindObjectsOfType<WorldPlayerSettings>(true);
             VRCSceneDescriptor[] descriptors = Object.FindObjectsOfType<VRCSceneDescriptor>(true);
             ModuleManager[] yamaManagers = Object.FindObjectsOfType<ModuleManager>(true);
             if (skyControllers.Length != 1 || skyControllers[0].celestialSphere == null)
                 throw new InvalidOperationException("RealSkyController validation failed.");
             if (descriptors.Length != 1 || descriptors[0].spawns == null || descriptors[0].spawns.Length != 1)
                 throw new InvalidOperationException("VRCSceneDescriptor validation failed.");
+            if (playerSettings.Length != 1 || !Mathf.Approximately(playerSettings[0].jumpImpulse, 3.2f) ||
+                !Mathf.Approximately(playerSettings[0].walkSpeed, 2f) ||
+                !Mathf.Approximately(playerSettings[0].runSpeed, 4f))
+                throw new InvalidOperationException("Player locomotion validation failed.");
             if (yamaManagers.Length != 1)
                 throw new InvalidOperationException("YamaPlayer validation failed.");
-            if (GameObject.Find("World/Environment/LandmarkTree") == null)
+            GameObject tree = GameObject.Find("World/Environment/LandmarkTree");
+            GameObject treeColliderObject = GameObject.Find("World/Environment/LandmarkTreeCollider");
+            if (tree == null || tree.GetComponentsInChildren<MeshRenderer>(true).Length == 0 ||
+                treeColliderObject == null || treeColliderObject.GetComponent<CapsuleCollider>() == null)
                 throw new InvalidOperationException("Landmark tree validation failed.");
+            Bounds treeBounds = CalculateRendererBounds(tree);
+            float expectedTreeBase = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
+            if (treeBounds.size.y < 7f || treeBounds.size.y > 9f ||
+                Mathf.Abs(treeBounds.min.y - expectedTreeBase) > 0.05f ||
+                Vector2.Distance(new Vector2(treeBounds.center.x, treeBounds.center.z),
+                    new Vector2(HillPosition.x, HillPosition.z)) > 0.05f)
+                throw new InvalidOperationException("Landmark tree import scale validation failed: " + treeBounds);
+            if (GameObject.Find("World/DrawingSystem/QvPen") == null ||
+                GameObject.Find("World/DrawingSystem/UnyStylus") == null)
+                throw new InvalidOperationException("Drawing-system validation failed.");
+
+            GameObject ground = GameObject.Find("World/Environment/GrassGround");
+            GameObject hill = GameObject.Find("World/Environment/Hill");
+            MeshCollider groundCollider = ground == null ? null : ground.GetComponent<MeshCollider>();
+            if (groundCollider == null || hill == null || hill.GetComponent<Collider>() != null)
+                throw new InvalidOperationException("Walkable terrain must use one non-overlapping collider.");
+            MeshFilter grassFilter = GameObject.Find("World/Environment/GrassClusters")?.GetComponent<MeshFilter>();
+            if (grassFilter == null || grassFilter.sharedMesh == null || grassFilter.sharedMesh.vertexCount < 100000)
+                throw new InvalidOperationException("Volumetric grass density validation failed.");
+            ValidateWalkableSurface(descriptors[0].spawns[0]);
 
             GameObject starfield = GameObject.Find("World/RealSkySystem/Starfield_Celestial");
             MeshFilter starFilter = starfield == null ? null : starfield.GetComponent<MeshFilter>();
@@ -877,6 +1023,22 @@ namespace StargazingHill.Editor
                     }
                 }
             }
+        }
+
+        private static void ValidateWalkableSurface(Transform spawn)
+        {
+            Physics.SyncTransforms();
+            Vector3 topSample = new Vector3(HillPosition.x + 1.5f, 8f, HillPosition.z);
+            Vector3 slopeSample = new Vector3(HillPosition.x + 6f, 8f, HillPosition.z);
+            if (!Physics.Raycast(topSample, Vector3.down, out RaycastHit topHit, 12f) ||
+                !Physics.Raycast(slopeSample, Vector3.down, out RaycastHit slopeHit, 12f))
+                throw new InvalidOperationException("Hill collider raycast validation failed.");
+            if (topHit.point.y < 2.15f || Vector3.Angle(slopeHit.normal, Vector3.up) > 28f)
+                throw new InvalidOperationException("Hill height/slope is not normally walkable.");
+
+            float expectedSpawnSurface = EvaluateTerrainHeight(spawn.position.x, spawn.position.z);
+            if (spawn.position.y < expectedSpawnSurface + 0.30f)
+                throw new InvalidOperationException("Spawn is embedded in the terrain.");
         }
     }
 }

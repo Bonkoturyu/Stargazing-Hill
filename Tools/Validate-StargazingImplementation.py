@@ -13,9 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "Assets/StargazingHill/Editor/Data/hyg_bright_v41.csv"
 BUILDER = ROOT / "Assets/StargazingHill/Editor/StargazingWorldBuilder.cs"
 SKY_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/RealSkyController.cs"
+PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
+GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
+GRASS_NORMAL = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg"
+TREE_MODEL = ROOT / "Assets/StargazingHill/ThirdParty/Quaternius/TexturedTrees/Tree_3.fbx"
 EXPECTED_CATALOG_SHA256 = "976abeb38d0d6f7b12fb069943140b59c31a299a72dc04350014e9ca1a4a0e4a"
 EXPECTED_STAR_COUNT = 12_495
+EXPECTED_CC0_HASHES = {
+    GRASS_DIFFUSE: "cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a",
+    GRASS_NORMAL: "832328216adc0a7e1f70a31d5ee48c9ab7f2152d83816122736cf42ac4b2ebd6",
+    TREE_MODEL: "8a8d46bf5b41cc1aaf63b79a8992910a79371a508dc25fb3c64670428356cc52",
+}
 EXPECTED_ROLLOFF = [
     (0.0, 1.0),
     (7.0, 0.8),
@@ -72,6 +81,34 @@ def validate_yama_dependency_and_rolloff() -> None:
     assert 'SetSerializedFloat(spatial, "Far", 45f);' in builder
 
 
+def validate_environment_and_drawing() -> None:
+    for path, expected_hash in EXPECTED_CC0_HASHES.items():
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert digest == expected_hash, f"third-party asset SHA-256 changed: {path}: {digest}"
+
+    manifest = json.loads(VPM_MANIFEST.read_text(encoding="utf-8"))
+    assert manifest["dependencies"]["net.ureishi.qvpen"]["version"] == "3.3.15"
+    assert manifest["locked"]["net.ureishi.qvpen"]["dependencies"]["com.vrchat.worlds"] == "^3.5.0"
+
+    builder = BUILDER.read_text(encoding="utf-8")
+    assert "const int tuftCount = 9000;" in builder
+    assert "private const float HillHeight = 2.3f;" in builder
+    assert "private const float HillRadius = 10f;" in builder
+    assert 'QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab"' in builder
+    assert 'UnyStylusPrefabPath = "Assets/Rasta/UnyStylus/UnyStylus.prefab"' in builder
+    assert "modelImporter.globalScale = 100f;" in builder
+
+    player_settings = PLAYER_SETTINGS.read_text(encoding="utf-8")
+    for expected_call in (
+        "SetWalkSpeed(walkSpeed)",
+        "SetRunSpeed(runSpeed)",
+        "SetStrafeSpeed(strafeSpeed)",
+        "SetJumpImpulse(jumpImpulse)",
+        "SetGravityStrength(gravityStrength)",
+    ):
+        assert expected_call in player_settings
+
+
 def validate_sky_reference() -> None:
     # J2000.0 is JD 2451545.0; the controller's GMST polynomial starts at
     # 280.46061837 degrees there. Tokyo longitude gives the expected LST below.
@@ -103,8 +140,12 @@ def validate_sky_reference() -> None:
 def main() -> None:
     validate_catalog()
     validate_yama_dependency_and_rolloff()
+    validate_environment_and_drawing()
     validate_sky_reference()
-    print(f"OK: {EXPECTED_STAR_COUNT} HYG stars, Tokyo sky basis, and YamaPlayer rolloff validated")
+    print(
+        f"OK: {EXPECTED_STAR_COUNT} HYG stars, Tokyo sky, YamaPlayer, CC0 environment, "
+        "locomotion, QvPen, and UnyStylus references validated"
+    )
 
 
 if __name__ == "__main__":
