@@ -29,3 +29,23 @@
 ## 結果記録
 
 テストごとに日付、commit、Unity/SDK版、端末、手順、期待値、結果、証拠、残課題を記録する。未実施は成功とせず `Open` とする。
+
+## 2026-08-11 実装時結果
+
+- 対象ブランチ: `agent/build-stargazing-world`（未コミット作業ツリー）
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、YamaPlayer 2.0.0-beta.7
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| HYG派生データ再生成 | Pass | 原本から12,495件を再生成し、追跡CSVとSHA-256が一致 |
+| 星表の件数・赤経・赤緯・等級・色指数 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| J2000東京恒星時と天球回転基底 | Pass | 同上。東京LST 60.22061837°、正規直交基底を確認 |
+| YamaPlayer依存版と8点距離減衰 | Pass | 同上。0m〜45mの基準点とSpatial Audio設定を静的確認 |
+| UdonSharpランタイムC# | Pass | Unity Bee生成の `Assembly-CSharp.rsp` でRoslynコンパイル |
+| EditorワールドビルダーC# | Pass | Unity Bee生成の `Assembly-CSharp-Editor.rsp` でRoslynコンパイル |
+| Unityシーン生成・Udon変換 | Pass | `StargazingWorldBuilder.BuildForBatchMode`、UdonSharp 50 scripts compile、終了コード0 |
+| 保存済みSceneの参照・YamaPlayer設定 | Pass | Scene再読込後、星Mesh、Udon、VRCSceneDescriptor、VideoInfoDownloader、全AudioSource/VRCSpatialAudioSourceを検証 |
+| Direct3Dカメラ描画 | Pass | 1280x720 previewを生成し、星空、草原、小丘、一本木、固定照明を目視確認 |
+| ClientSim / PC / Quest / iOS | Open | シーン生成後に実施 |
+
+残課題としてClientSimおよび実機でYamaPlayer再生・同期と、距離0/7/14/19/21/28/29.5/45mの聴感を確認する。

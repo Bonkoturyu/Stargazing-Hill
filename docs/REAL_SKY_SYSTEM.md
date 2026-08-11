@@ -2,6 +2,15 @@
 
 作成日: 2026-08-11
 
+## 実装状況（2026-08-11）
+
+- HYG Stellar Database v4.1から `mag <= 6.8` の12,495星を抽出し、赤経・赤緯・等級・色指数だけを追跡する。
+- `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。
+- `Starfield.shader` がAdditive Unlit描画と地平線フェードを担当する。
+- `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、東京の緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
+- 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
+- データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、Direct3DプレビューはPass。実機での天文位置確認はOpen。
+
 ## 1. 目的
 
 `星見の丘 / Stargazing Hill` の星空・月・流星群を、現実の東京の現在日時と連動させる。

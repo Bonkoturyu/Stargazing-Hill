@@ -5,3 +5,4 @@
 | ADR | 状態 | 内容 |
 |---|---|---|
 | [0001](0001-documentation-and-ai-workflow.md) | Accepted | 文書正本、状態ラベル、AI協業方式 |
+| [0002](0002-yamaplayer-and-open-field-audio.md) | Accepted | YamaPlayer採用、参照距離減衰、開放草原での音声方針 |
