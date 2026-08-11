@@ -10,6 +10,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using VRC.Core;
 using VRC.SDK3.Components;
 using Yamadev.YamaStream;
 using Object = UnityEngine.Object;
@@ -51,6 +52,8 @@ namespace StargazingHill.Editor
         private const float HillRadius = 10f;
         private const float HillTopRadius = 2.25f;
         private static readonly Vector3 HillPosition = new Vector3(9f, 0f, 8f);
+        private static readonly Vector3 SpawnGroundPosition = new Vector3(0f, 0f, -14f);
+        private static readonly Vector3 AmenityCenter = new Vector3(-4f, 0f, -22f);
 
         [MenuItem("Stargazing Hill/Build Complete World", false, 10)]
         public static void BuildCompleteWorld()
@@ -138,6 +141,35 @@ namespace StargazingHill.Editor
             ValidateScene(scene);
             GameObject cameraObject = GameObject.Find("World/WorldSettings/ReferenceCamera");
             Camera camera = cameraObject.GetComponent<Camera>();
+            RenderCameraToPng(camera, "stargazing-hill-preview.png");
+        }
+
+        public static void RenderInspectionPreviewsForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
+            float treeBaseY = EvaluateTerrainHeight(HillPosition.x, HillPosition.z);
+
+            camera.transform.position = HillPosition + new Vector3(-13f, 5.3f, -13f);
+            camera.transform.LookAt(HillPosition + Vector3.up * (treeBaseY + 4.2f));
+            RenderCameraToPng(camera, "stargazing-hill-tree-front.png");
+
+            camera.transform.position = HillPosition + new Vector3(13f, 5.3f, -13f);
+            camera.transform.LookAt(HillPosition + Vector3.up * (treeBaseY + 4.2f));
+            RenderCameraToPng(camera, "stargazing-hill-tree-side.png");
+
+            float spawnSurfaceY = EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z);
+            camera.transform.position = new Vector3(
+                SpawnGroundPosition.x, spawnSurfaceY + 1.65f, SpawnGroundPosition.z);
+            camera.transform.LookAt(new Vector3(
+                AmenityCenter.x, EvaluateTerrainHeight(AmenityCenter.x, AmenityCenter.z) + 2.4f,
+                AmenityCenter.z));
+            RenderCameraToPng(camera, "stargazing-hill-amenities.png");
+        }
+
+        private static void RenderCameraToPng(Camera camera, string fileName)
+        {
             var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
             var image = new Texture2D(1280, 720, TextureFormat.RGB24, false);
             camera.targetTexture = target;
@@ -146,7 +178,7 @@ namespace StargazingHill.Editor
             RenderTexture.active = target;
             image.ReadPixels(new Rect(0f, 0f, 1280f, 720f), 0, 0);
             image.Apply();
-            string previewPath = Path.Combine(Path.GetTempPath(), "stargazing-hill-preview.png");
+            string previewPath = Path.Combine(Path.GetTempPath(), fileName);
             File.WriteAllBytes(previewPath, image.EncodeToPNG());
             RenderTexture.active = previous;
             camera.targetTexture = null;
@@ -181,14 +213,14 @@ namespace StargazingHill.Editor
             if (modelImporter != null &&
                 (modelImporter.importAnimation || modelImporter.importBlendShapes ||
                  modelImporter.meshCompression != ModelImporterMeshCompression.Medium ||
-                 !Mathf.Approximately(modelImporter.globalScale, 100f)))
+                 !Mathf.Approximately(modelImporter.globalScale, 1f)))
             {
                 modelImporter.importAnimation = false;
                 modelImporter.importBlendShapes = false;
                 modelImporter.meshCompression = ModelImporterMeshCompression.Medium;
-                // The CC0 FBX stores metre-sized coordinates but declares centimetre units.
-                // Compensate once at import so scene scale and the trunk collider remain conventional.
-                modelImporter.globalScale = 100f;
+                // Preserve the imported FBX root axis conversion and scale. Overriding either on the
+                // model instance makes this local Z-up mesh lie sideways.
+                modelImporter.globalScale = 1f;
                 modelImporter.SaveAndReimport();
             }
         }
@@ -621,15 +653,15 @@ namespace StargazingHill.Editor
             CreateMeshObject(parent, "GrassClusters", grassMesh, bladeMaterial, Vector3.zero);
 
             GameObject treeSource = LoadRequiredAsset<GameObject>(TreeModelPath);
-            GameObject tree = (GameObject)PrefabUtility.InstantiatePrefab(treeSource);
-            tree.name = "LandmarkTree";
-            tree.transform.SetParent(parent, false);
-            tree.transform.localPosition = new Vector3(
-                HillPosition.x, EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f, HillPosition.z);
-            // This FBX's up axis arrives inverted in Unity; rotate it upright, then add yaw variation.
-            tree.transform.localRotation = Quaternion.Euler(180f, 22f, 0f);
+            GameObject tree = CreateChild(parent, "LandmarkTree");
+            tree.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
             tree.transform.localScale = Vector3.one * 1.45f;
-            AssignTreeMaterials(tree, barkMaterial, leafMaterial);
+            GameObject treeModel = (GameObject)PrefabUtility.InstantiatePrefab(treeSource);
+            treeModel.name = "Model";
+            treeModel.transform.SetParent(tree.transform, false);
+            // Preserve the FBX root's imported X=270 degree axis conversion and scale=100.
+            // The source mesh is local Z-up; replacing this Transform is what made it lie sideways.
+            AssignTreeMaterials(treeModel, barkMaterial, leafMaterial);
 
             // Centre and ground the visible mesh from its imported bounds instead of trusting the FBX pivot.
             // Quaternius' source file has an off-centre pivot after FBX unit conversion.
@@ -696,12 +728,14 @@ namespace StargazingHill.Editor
         {
             GameObject settings = CreateChild(parent, "WorldSettings");
             GameObject spawn = CreateChild(settings.transform, "Spawn");
-            float spawnSurfaceY = EvaluateTerrainHeight(0f, -14f);
-            spawn.transform.position = new Vector3(0f, spawnSurfaceY + 0.40f, -14f);
+            float spawnSurfaceY = EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z);
+            spawn.transform.position = new Vector3(
+                SpawnGroundPosition.x, spawnSurfaceY + 0.40f, SpawnGroundPosition.z);
             spawn.transform.rotation = Quaternion.LookRotation((HillPosition - spawn.transform.position).normalized, Vector3.up);
 
             GameObject cameraObject = CreateChild(settings.transform, "ReferenceCamera");
-            cameraObject.transform.position = new Vector3(0f, spawnSurfaceY + 1.65f, -14f);
+            cameraObject.transform.position = new Vector3(
+                SpawnGroundPosition.x, spawnSurfaceY + 1.65f, SpawnGroundPosition.z);
             cameraObject.transform.rotation = Quaternion.LookRotation(
                 (HillPosition + Vector3.up * 4.2f - cameraObject.transform.position).normalized,
                 Vector3.up);
@@ -714,6 +748,7 @@ namespace StargazingHill.Editor
 
             GameObject descriptorObject = CreateChild(settings.transform, "VRCWorld");
             VRCSceneDescriptor descriptor = descriptorObject.AddComponent<VRCSceneDescriptor>();
+            descriptorObject.AddComponent<PipelineManager>();
             descriptor.spawns = new[] { spawn.transform };
             descriptor.ReferenceCamera = cameraObject;
             descriptor.RespawnHeightY = -15f;
@@ -762,8 +797,12 @@ namespace StargazingHill.Editor
             GameObject player = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             player.name = "YamaPlayer";
             player.transform.SetParent(videoSystem.transform, false);
-            player.transform.localPosition = new Vector3(-15f, 2.7f, 5f);
-            player.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            Vector3 playerPosition = new Vector3(
+                AmenityCenter.x,
+                EvaluateTerrainHeight(AmenityCenter.x, AmenityCenter.z - 2f) + 2.7f,
+                AmenityCenter.z - 2f);
+            player.transform.localPosition = playerPosition;
+            player.transform.localRotation = FaceSpawn(playerPosition);
             player.transform.localScale = Vector3.one * 2.20f;
 
             EnsureVideoInfoDownloader(player);
@@ -783,12 +822,25 @@ namespace StargazingHill.Editor
         private static void CreateDrawingSystems(Transform world)
         {
             GameObject drawingSystem = CreateChild(world, "DrawingSystem");
+            Vector3 qvPenPosition = new Vector3(
+                AmenityCenter.x - 5.5f,
+                EvaluateTerrainHeight(AmenityCenter.x - 5.5f, AmenityCenter.z + 2f) + 0.80f,
+                AmenityCenter.z + 2f);
             InstantiateDrawingPrefab(drawingSystem.transform, QvPenPrefabPath, "QvPen",
-                new Vector3(15f, EvaluateTerrainHeight(15f, -12f) + 0.80f, -12f),
-                Quaternion.Euler(0f, 180f, 0f));
+                qvPenPosition, FaceSpawn(qvPenPosition));
+            Vector3 unyStylusPosition = new Vector3(
+                AmenityCenter.x + 5.5f,
+                EvaluateTerrainHeight(AmenityCenter.x + 5.5f, AmenityCenter.z + 2f) + 0.80f,
+                AmenityCenter.z + 2f);
             InstantiateDrawingPrefab(drawingSystem.transform, UnyStylusPrefabPath, "UnyStylus",
-                new Vector3(19f, EvaluateTerrainHeight(19f, -12f) + 0.80f, -12f),
-                Quaternion.Euler(0f, 180f, 0f));
+                unyStylusPosition, FaceSpawn(unyStylusPosition));
+        }
+
+        private static Quaternion FaceSpawn(Vector3 position)
+        {
+            Vector3 direction = SpawnGroundPosition - position;
+            direction.y = 0f;
+            return Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
 
         private static void InstantiateDrawingPrefab(
@@ -930,11 +982,14 @@ namespace StargazingHill.Editor
             RealSkyController[] skyControllers = Object.FindObjectsOfType<RealSkyController>(true);
             WorldPlayerSettings[] playerSettings = Object.FindObjectsOfType<WorldPlayerSettings>(true);
             VRCSceneDescriptor[] descriptors = Object.FindObjectsOfType<VRCSceneDescriptor>(true);
+            PipelineManager[] pipelineManagers = Object.FindObjectsOfType<PipelineManager>(true);
             ModuleManager[] yamaManagers = Object.FindObjectsOfType<ModuleManager>(true);
             if (skyControllers.Length != 1 || skyControllers[0].celestialSphere == null)
                 throw new InvalidOperationException("RealSkyController validation failed.");
             if (descriptors.Length != 1 || descriptors[0].spawns == null || descriptors[0].spawns.Length != 1)
                 throw new InvalidOperationException("VRCSceneDescriptor validation failed.");
+            if (pipelineManagers.Length != 1 || pipelineManagers[0].gameObject != descriptors[0].gameObject)
+                throw new InvalidOperationException("VRC PipelineManager validation failed.");
             if (playerSettings.Length != 1 || !Mathf.Approximately(playerSettings[0].jumpImpulse, 3.2f) ||
                 !Mathf.Approximately(playerSettings[0].walkSpeed, 2f) ||
                 !Mathf.Approximately(playerSettings[0].runSpeed, 4f))
@@ -947,14 +1002,18 @@ namespace StargazingHill.Editor
                 treeColliderObject == null || treeColliderObject.GetComponent<CapsuleCollider>() == null)
                 throw new InvalidOperationException("Landmark tree validation failed.");
             Bounds treeBounds = CalculateRendererBounds(tree);
+            Transform treeModel = tree.transform.Find("Model");
             float expectedTreeBase = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
-            if (treeBounds.size.y < 7f || treeBounds.size.y > 9f ||
+            if (treeModel == null ||
+                Vector3.Angle(treeModel.TransformDirection(Vector3.forward), Vector3.up) > 1f ||
+                treeBounds.size.y < 7f || treeBounds.size.y > 9f ||
                 Mathf.Abs(treeBounds.min.y - expectedTreeBase) > 0.05f ||
                 Vector2.Distance(new Vector2(treeBounds.center.x, treeBounds.center.z),
                     new Vector2(HillPosition.x, HillPosition.z)) > 0.05f)
                 throw new InvalidOperationException("Landmark tree import scale validation failed: " + treeBounds);
-            if (GameObject.Find("World/DrawingSystem/QvPen") == null ||
-                GameObject.Find("World/DrawingSystem/UnyStylus") == null)
+            GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
+            GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
+            if (qvPen == null || unyStylus == null)
                 throw new InvalidOperationException("Drawing-system validation failed.");
 
             GameObject ground = GameObject.Find("World/Environment/GrassGround");
@@ -984,11 +1043,12 @@ namespace StargazingHill.Editor
             {
                 if (definitions[definitionIndex].gameObject.name == "VideoInfoDownloader") downloaderCount++;
             }
-            if (yamaPlayer == null || yamaPlayer.transform.localPosition != new Vector3(-15f, 2.7f, 5f) ||
-                yamaPlayer.transform.localScale != Vector3.one * 2.20f || downloaderCount != 1)
+            if (yamaPlayer == null || yamaPlayer.transform.localScale != Vector3.one * 2.20f ||
+                downloaderCount != 1)
             {
                 throw new InvalidOperationException("YamaPlayer placement/module validation failed.");
             }
+            ValidateAmenityPlacement(descriptors[0].spawns[0], yamaPlayer, qvPen, unyStylus);
 
             Keyframe[] expectedKeys = CreateYamaRolloffCurve().keys;
             if (sources.Length == 0) throw new InvalidOperationException("YamaPlayer audio validation failed.");
@@ -1039,6 +1099,26 @@ namespace StargazingHill.Editor
             float expectedSpawnSurface = EvaluateTerrainHeight(spawn.position.x, spawn.position.z);
             if (spawn.position.y < expectedSpawnSurface + 0.30f)
                 throw new InvalidOperationException("Spawn is embedded in the terrain.");
+        }
+
+        private static void ValidateAmenityPlacement(
+            Transform spawn, GameObject yamaPlayer, GameObject qvPen, GameObject unyStylus)
+        {
+            Vector3 viewForward = HillPosition - spawn.position;
+            viewForward.y = 0f;
+            viewForward.Normalize();
+            GameObject[] amenities = { yamaPlayer, qvPen, unyStylus };
+            for (int index = 0; index < amenities.Length; index++)
+            {
+                Vector3 fromSpawn = amenities[index].transform.position - spawn.position;
+                fromSpawn.y = 0f;
+                if (Vector3.Dot(fromSpawn, viewForward) > -3f)
+                    throw new InvalidOperationException(amenities[index].name + " is not behind the spawn view.");
+                if (Vector2.Distance(
+                        new Vector2(amenities[index].transform.position.x, amenities[index].transform.position.z),
+                        new Vector2(AmenityCenter.x, AmenityCenter.z)) > 7f)
+                    throw new InvalidOperationException(amenities[index].name + " is outside the amenity cluster.");
+            }
         }
     }
 }
