@@ -58,7 +58,7 @@
 
 | 確認 | 結果 | 証拠・残課題 |
 |---|---|---|
-| CC0素材の同一性 | Pass | Poly Haven grass 2点とQuaternius Tree_3のSHA-256を `Tools/Validate-StargazingImplementation.py` で確認 |
+| CC0素材の同一性 | Pass | Poly Haven grass 2点、Jacaranda派生Mesh、Jacaranda texture 7点のSHA-256を `Tools/Validate-StargazingImplementation.py` で確認。Unity YAML MeshはLF/CRLFを正規化してWindows checkoutでも一致 |
 | 草原表現 | Pass | 1K diffuse / normal地表と、3.5〜9.5cm・9,000株・108,000 verticesの単一立体草Meshを生成 |
 | 丘の歩行面 | Pass | 草原と丘を1つのMeshColliderへ統合。頂上高2.15m以上、斜面28°以下、重複ColliderなしをRaycast検証 |
 | スポーンと移動設定 | Pass | 地表+0.4mのスポーン、歩行2、走行4、横移動2、ジャンプ3.2、重力1.0をScene再読込後に検証 |

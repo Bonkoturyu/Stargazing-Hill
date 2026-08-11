@@ -105,7 +105,12 @@ def validate_yama_dependency_and_rolloff() -> None:
 
 def validate_environment_and_drawing() -> None:
     for path, expected_hash in EXPECTED_CC0_HASHES.items():
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        asset_bytes = path.read_bytes()
+        if path == TREE_MESH:
+            # The baked mesh is Unity YAML. Keep its recorded hash portable when
+            # a Windows checkout predating the eol=lf rule still contains CRLF.
+            asset_bytes = asset_bytes.replace(b"\r\n", b"\n")
+        digest = hashlib.sha256(asset_bytes).hexdigest()
         assert digest == expected_hash, f"third-party asset SHA-256 changed: {path}: {digest}"
 
     manifest = json.loads(VPM_MANIFEST.read_text(encoding="utf-8"))

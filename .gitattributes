@@ -1,5 +1,5 @@
 # Unity's YAML serializer emits trailing spaces for empty scalar values.
-*.asset -whitespace
-*.mat -whitespace
-*.meta -whitespace
-*.unity -whitespace
+*.asset text eol=lf -whitespace
+*.mat text eol=lf -whitespace
+*.meta text eol=lf -whitespace
+*.unity text eol=lf -whitespace
