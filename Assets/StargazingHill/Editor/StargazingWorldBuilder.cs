@@ -30,16 +30,28 @@ namespace StargazingHill.Editor
         private const string SkyControllerProgramPath = Root + "/Scripts/RealSkyController.asset";
         private const string PlayerSettingsScriptPath = Root + "/Scripts/WorldPlayerSettings.cs";
         private const string PlayerSettingsProgramPath = Root + "/Scripts/WorldPlayerSettings.asset";
+        private const string MeteorControllerScriptPath = Root + "/Scripts/MeteorController.cs";
+        private const string MeteorControllerProgramPath = Root + "/Scripts/MeteorController.asset";
         private const string GrassDiffusePath =
             Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg";
         private const string GrassNormalPath =
             Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg";
-        private const string TreeModelPath =
-            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_3.fbx";
-        private const string TreeBarkPath =
-            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_Bark.jpg";
-        private const string TreeLeavesPath =
-            Root + "/ThirdParty/Quaternius/TexturedTrees/Tree_Leaves.png";
+        private const string TreeMeshPath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_LOD0.asset";
+        private const string TreeBranchesDiffusePath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_branches_diff_1k.jpg";
+        private const string TreeBranchesNormalPath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_branches_nor_gl_1k.jpg";
+        private const string TreeTrunkDiffusePath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_trunk_diff_1k.jpg";
+        private const string TreeTrunkNormalPath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_trunk_nor_gl_1k.jpg";
+        private const string TreeLeavesDiffusePath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_leaves_diff_1k.jpg";
+        private const string TreeLeavesNormalPath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_leaves_nor_gl_1k.jpg";
+        private const string TreeLeavesAlphaPath =
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_leaves_alpha_1k.jpg";
         private const string YamaPrefabPath = "Packages/net.kwxxw.yama-stream/YamaPlayer.prefab";
         private const string YamaModulePath =
             "Packages/net.kwxxw.yama-stream/Modules/VideoInfoDownloader/VideoInfoDownloader.prefab";
@@ -52,8 +64,15 @@ namespace StargazingHill.Editor
         private const float HillRadius = 10f;
         private const float HillTopRadius = 2.25f;
         private static readonly Vector3 HillPosition = new Vector3(9f, 0f, 8f);
-        private static readonly Vector3 SpawnGroundPosition = new Vector3(0f, 0f, -14f);
-        private static readonly Vector3 AmenityCenter = new Vector3(-4f, 0f, -22f);
+        private static readonly Vector3 SpawnGroundPosition = new Vector3(-2.78f, 0f, -20.80f);
+        private static readonly Vector3 SpawnEuler = new Vector3(0.96409f, 22.24902f, 0f);
+        private static readonly Vector3 YamaPlayerPosition = new Vector3(-4f, 1.813f, -24f);
+        private static readonly Vector3 YamaPlayerEuler = new Vector3(0f, 202.2865f, 0f);
+        private static readonly Vector3 QvPenPosition = new Vector3(-7.6f, 0.848461f, -22.454f);
+        private static readonly Vector3 QvPenEuler = new Vector3(0f, 238.2345f, 0f);
+        private static readonly Vector3 UnyStylusPosition = new Vector3(-8.668f, 0.858f, -20.672f);
+        private static readonly Vector3 UnyStylusEuler = new Vector3(0f, 239.9454f, 0f);
+        private static readonly Vector3 AmenityCenter = new Vector3(-6.756f, 0f, -22.375f);
 
         [MenuItem("Stargazing Hill/Build Complete World", false, 10)]
         public static void BuildCompleteWorld()
@@ -63,11 +82,18 @@ namespace StargazingHill.Editor
             ConfigureThirdPartyImportSettings();
             EnsureProgramAsset(typeof(RealSkyController), SkyControllerScriptPath, SkyControllerProgramPath);
             EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
+            EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
 
             Texture2D grassDiffuse = LoadRequiredAsset<Texture2D>(GrassDiffusePath);
             Texture2D grassNormal = LoadRequiredAsset<Texture2D>(GrassNormalPath);
-            Texture2D treeBark = LoadRequiredAsset<Texture2D>(TreeBarkPath);
-            Texture2D treeLeaves = LoadRequiredAsset<Texture2D>(TreeLeavesPath);
+            Mesh treeMesh = LoadRequiredAsset<Mesh>(TreeMeshPath);
+            Texture2D treeBranchesDiffuse = LoadRequiredAsset<Texture2D>(TreeBranchesDiffusePath);
+            Texture2D treeBranchesNormal = LoadRequiredAsset<Texture2D>(TreeBranchesNormalPath);
+            Texture2D treeTrunkDiffuse = LoadRequiredAsset<Texture2D>(TreeTrunkDiffusePath);
+            Texture2D treeTrunkNormal = LoadRequiredAsset<Texture2D>(TreeTrunkNormalPath);
+            Texture2D treeLeavesDiffuse = LoadRequiredAsset<Texture2D>(TreeLeavesDiffusePath);
+            Texture2D treeLeavesNormal = LoadRequiredAsset<Texture2D>(TreeLeavesNormalPath);
+            Texture2D treeLeavesAlpha = LoadRequiredAsset<Texture2D>(TreeLeavesAlphaPath);
 
             Material groundMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/GrassGround.mat", "StargazingHill/Environment",
@@ -78,38 +104,54 @@ namespace StargazingHill.Editor
             Material bladeMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/GrassBlades.mat", "StargazingHill/Environment",
                 new Color(0.23f, 0.44f, 0.17f), 0.66f);
-            Material barkMaterial = CreateOrUpdateMaterial(
-                MaterialRoot + "/TreeBark.mat", "StargazingHill/Environment",
-                new Color(0.28f, 0.16f, 0.09f), 0.48f);
+            Material branchMaterial = CreateOrUpdateMaterial(
+                MaterialRoot + "/JacarandaBranches.mat", "StargazingHill/Environment",
+                Color.white, 0.42f);
+            Material trunkMaterial = CreateOrUpdateMaterial(
+                MaterialRoot + "/JacarandaTrunk.mat", "StargazingHill/Environment",
+                Color.white, 0.42f);
             Material leafMaterial = CreateOrUpdateMaterial(
-                MaterialRoot + "/TreeLeaves.mat", "StargazingHill/Environment",
-                new Color(0.60f, 0.76f, 0.53f), 0.52f);
-            ConfigureTexturedMaterial(groundMaterial, grassDiffuse, grassNormal, new Vector2(40f, 40f), false, true);
-            ConfigureTexturedMaterial(hillMaterial, grassDiffuse, grassNormal, new Vector2(10f, 10f), false, true);
-            ConfigureTexturedMaterial(barkMaterial, treeBark, null, Vector2.one, false, false);
-            ConfigureTexturedMaterial(leafMaterial, treeLeaves, null, Vector2.one, true, false);
+                MaterialRoot + "/JacarandaLeaves.mat", "StargazingHill/Environment",
+                Color.white, 0.48f);
+            ConfigureTexturedMaterial(groundMaterial, grassDiffuse, grassNormal, null,
+                new Vector2(40f, 40f), false, true);
+            ConfigureTexturedMaterial(hillMaterial, grassDiffuse, grassNormal, null,
+                new Vector2(10f, 10f), false, true);
+            ConfigureTexturedMaterial(branchMaterial, treeBranchesDiffuse, treeBranchesNormal, null,
+                Vector2.one, false, false);
+            ConfigureTexturedMaterial(trunkMaterial, treeTrunkDiffuse, treeTrunkNormal, null,
+                Vector2.one, false, false);
+            ConfigureTexturedMaterial(leafMaterial, treeLeavesDiffuse, treeLeavesNormal, treeLeavesAlpha,
+                Vector2.one, true, false);
             Material starMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/Starfield.mat", "StargazingHill/Starfield", Color.white, 0f);
             starMaterial.SetFloat("_Intensity", 1.35f);
             starMaterial.SetFloat("_HorizonStart", 0f);
             starMaterial.SetFloat("_HorizonFull", Mathf.Sin(15f * Mathf.Deg2Rad));
             EditorUtility.SetDirty(starMaterial);
+            Material meteorMaterial = CreateOrUpdateMaterial(
+                MaterialRoot + "/Meteor.mat", "StargazingHill/Meteor",
+                new Color(0.65f, 0.82f, 1f), 0f);
+            meteorMaterial.SetFloat("_Intensity", 6.0f);
+            EditorUtility.SetDirty(meteorMaterial);
 
             Mesh groundMesh = SaveMesh(MeshRoot + "/GrassGround.asset", BuildGroundMesh());
             Mesh hillMesh = SaveMesh(MeshRoot + "/Hill.asset", BuildHillMesh());
             Mesh grassMesh = SaveMesh(MeshRoot + "/GrassClusters.asset", BuildGrassMesh());
             Mesh starMesh = SaveMesh(MeshRoot + "/Starfield_Celestial.asset", BuildStarMesh());
+            Mesh meteorMesh = SaveMesh(MeshRoot + "/MeteorQuad.asset", BuildMeteorMesh());
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             ConfigureRenderSettings();
 
             GameObject world = new GameObject("World");
             GameObject environment = CreateChild(world.transform, "Environment");
-            CreateEnvironment(environment.transform, groundMesh, hillMesh, grassMesh,
-                groundMaterial, hillMaterial, bladeMaterial, barkMaterial, leafMaterial);
+            CreateEnvironment(environment.transform, groundMesh, hillMesh, grassMesh, treeMesh,
+                groundMaterial, hillMaterial, bladeMaterial, branchMaterial, trunkMaterial, leafMaterial);
             CreateLighting(environment.transform);
             CreateWorldSettings(world.transform);
             CreateRealSky(world.transform, starMesh, starMaterial);
+            CreateMeteorSystem(world.transform, meteorMesh, meteorMaterial);
             CreateYamaPlayer(world.transform);
             CreateDrawingSystems(world.transform);
 
@@ -123,6 +165,45 @@ namespace StargazingHill.Editor
                       "Tokyo real-time sky, YamaPlayer, QvPen, and locally licensed UnyStylus.");
         }
 
+        [MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower", false, 50)]
+        public static void DebugTriggerHourlyMeteorShower()
+        {
+            MeteorController controller = Object.FindObjectOfType<MeteorController>(true);
+            if (!Application.isPlaying || controller == null)
+            {
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before triggering meteors.");
+                return;
+            }
+            controller.DebugTriggerHourlyEvent();
+            Debug.Log("[Stargazing Hill] Forced the local hourly meteor event from t=0.");
+        }
+
+        [MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour", false, 51)]
+        public static void DebugAdvanceSkyOneHour()
+        {
+            RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
+            if (!Application.isPlaying || controller == null)
+            {
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before advancing the sky.");
+                return;
+            }
+            controller.DebugAdvanceOneHour();
+            Debug.Log("[Stargazing Hill] Advanced the local sky debug offset by one hour.");
+        }
+
+        [MenuItem("Stargazing Hill/Debug/Reset Sky Time Offset", false, 52)]
+        public static void DebugResetSkyTimeOffset()
+        {
+            RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
+            if (!Application.isPlaying || controller == null)
+            {
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before resetting the sky.");
+                return;
+            }
+            controller.DebugResetTimeOffset();
+            Debug.Log("[Stargazing Hill] Reset the local sky debug offset.");
+        }
+
         public static void BuildForBatchMode()
         {
             BuildCompleteWorld();
@@ -133,6 +214,38 @@ namespace StargazingHill.Editor
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             ValidateScene(scene);
             Debug.Log("[Stargazing Hill] Saved scene validation passed.");
+        }
+
+        public static void TestSkyAndMeteorForBatchMode()
+        {
+            Quaternion reference = RealSkyController.CalculateSkyRotation(
+                2026, 8, 11, 12, 0, 0.0, 35.68f, 139.76f);
+            Quaternion sameReference = RealSkyController.CalculateSkyRotation(
+                2026, 8, 11, 12, 0, 0.0, 35.68f, 139.76f);
+            Quaternion oneHourLater = RealSkyController.CalculateSkyRotation(
+                2026, 8, 11, 13, 0, 0.0, 35.68f, 139.76f);
+            Quaternion oneDayLater = RealSkyController.CalculateSkyRotation(
+                2026, 8, 12, 12, 0, 0.0, 35.68f, 139.76f);
+            float oneHourMotion = Quaternion.Angle(reference, oneHourLater);
+            float oneDayResidual = Quaternion.Angle(reference, oneDayLater);
+            if (Quaternion.Angle(reference, sameReference) > 0.0001f ||
+                oneHourMotion < 14.9f || oneHourMotion > 15.2f ||
+                oneDayResidual < 0.9f || oneDayResidual > 1.1f)
+                throw new InvalidOperationException(
+                    "Sky motion test failed: hour=" + oneHourMotion + ", dayResidual=" + oneDayResidual);
+
+            int eventId = MeteorController.GetHourlyEventId(2026, 8, 11, 12);
+            int nextEventId = MeteorController.GetHourlyEventId(2026, 8, 11, 13);
+            float sample = MeteorController.DebugSampleValue(eventId, 2, 1, 4);
+            float sameSample = MeteorController.DebugSampleValue(eventId, 2, 1, 4);
+            float nextSample = MeteorController.DebugSampleValue(nextEventId, 2, 1, 4);
+            if (eventId == nextEventId || !Mathf.Approximately(sample, sameSample) ||
+                Mathf.Approximately(sample, nextSample))
+                throw new InvalidOperationException("Hourly meteor determinism test failed.");
+
+            Debug.Log("[Stargazing Hill] Sky/meteor test passed: +1h=" + oneHourMotion.ToString("F4") +
+                      " degrees, +24h residual=" + oneDayResidual.ToString("F4") +
+                      " degrees, deterministic hourly event IDs=" + eventId + "/" + nextEventId + ".");
         }
 
         public static void RenderPreviewForBatchMode()
@@ -166,6 +279,74 @@ namespace StargazingHill.Editor
                 AmenityCenter.x, EvaluateTerrainHeight(AmenityCenter.x, AmenityCenter.z) + 2.4f,
                 AmenityCenter.z));
             RenderCameraToPng(camera, "stargazing-hill-amenities.png");
+        }
+
+        public static void RenderMeteorDebugPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            MeteorController controller = Object.FindObjectOfType<MeteorController>(true);
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
+            Vector3 observer = new Vector3(
+                SpawnGroundPosition.x,
+                EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z) + 1.65f,
+                SpawnGroundPosition.z);
+            controller.transform.position = observer;
+            controller.DebugPreviewEventAtSecond(2.4f);
+
+            Renderer visibleMeteor = null;
+            for (int index = 0; index < controller.meteorRenderers.Length; index++)
+            {
+                if (controller.meteorRenderers[index].enabled)
+                {
+                    visibleMeteor = controller.meteorRenderers[index];
+                    break;
+                }
+            }
+            if (visibleMeteor == null)
+                throw new InvalidOperationException("Meteor debug preview did not enable a pooled visual.");
+
+            camera.transform.position = observer;
+            camera.transform.LookAt(visibleMeteor.transform.position);
+            RenderCameraToPng(camera, "stargazing-hill-meteor-debug.png");
+            controller.DebugStopHourlyEvent();
+        }
+
+        public static void ReportUserLayoutForBatchMode()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            string[] paths =
+            {
+                "World/WorldSettings/Spawn",
+                "World/VideoSystem/YamaPlayer",
+                "World/DrawingSystem/QvPen",
+                "World/DrawingSystem/UnyStylus"
+            };
+            for (int index = 0; index < paths.Length; index++)
+            {
+                GameObject target = GameObject.Find(paths[index]);
+                if (target == null)
+                {
+                    Debug.LogError("[UserLayout] Missing " + paths[index]);
+                    continue;
+                }
+                Transform transform = target.transform;
+                Debug.Log("[UserLayout] " + paths[index] +
+                          " localPosition=" + transform.localPosition.ToString("F6") +
+                          " localEuler=" + transform.localEulerAngles.ToString("F6") +
+                          " localScale=" + transform.localScale.ToString("F6"));
+            }
+        }
+
+        public static void ReportJacarandaAssetForBatchMode()
+        {
+            Mesh mesh = LoadRequiredAsset<Mesh>(TreeMeshPath);
+            long triangles = 0;
+            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
+                triangles += (long)mesh.GetIndexCount(subMesh) / 3L;
+            Debug.Log("[Jacaranda] mesh=" + mesh.name + " vertices=" + mesh.vertexCount +
+                      " triangles=" + triangles + " submeshes=" + mesh.subMeshCount +
+                      " bounds=" + mesh.bounds);
         }
 
         private static void RenderCameraToPng(Camera camera, string fileName)
@@ -206,23 +387,13 @@ namespace StargazingHill.Editor
         {
             ConfigureTextureImporter(GrassDiffusePath, false, false);
             ConfigureTextureImporter(GrassNormalPath, true, false);
-            ConfigureTextureImporter(TreeBarkPath, false, false);
-            ConfigureTextureImporter(TreeLeavesPath, false, true);
-
-            var modelImporter = AssetImporter.GetAtPath(TreeModelPath) as ModelImporter;
-            if (modelImporter != null &&
-                (modelImporter.importAnimation || modelImporter.importBlendShapes ||
-                 modelImporter.meshCompression != ModelImporterMeshCompression.Medium ||
-                 !Mathf.Approximately(modelImporter.globalScale, 1f)))
-            {
-                modelImporter.importAnimation = false;
-                modelImporter.importBlendShapes = false;
-                modelImporter.meshCompression = ModelImporterMeshCompression.Medium;
-                // Preserve the imported FBX root axis conversion and scale. Overriding either on the
-                // model instance makes this local Z-up mesh lie sideways.
-                modelImporter.globalScale = 1f;
-                modelImporter.SaveAndReimport();
-            }
+            ConfigureTextureImporter(TreeBranchesDiffusePath, false, false);
+            ConfigureTextureImporter(TreeBranchesNormalPath, true, false);
+            ConfigureTextureImporter(TreeTrunkDiffusePath, false, false);
+            ConfigureTextureImporter(TreeTrunkNormalPath, true, false);
+            ConfigureTextureImporter(TreeLeavesDiffusePath, false, false);
+            ConfigureTextureImporter(TreeLeavesNormalPath, true, false);
+            ConfigureTextureImporter(TreeLeavesAlphaPath, false, false);
         }
 
         private static void ConfigureTextureImporter(string path, bool normalMap, bool alphaTransparency)
@@ -312,14 +483,16 @@ namespace StargazingHill.Editor
         }
 
         private static void ConfigureTexturedMaterial(
-            Material material, Texture2D albedo, Texture2D normal, Vector2 tiling, bool alphaClip,
-            bool useVertexColor)
+            Material material, Texture2D albedo, Texture2D normal, Texture2D alpha,
+            Vector2 tiling, bool alphaClip, bool useVertexColor)
         {
             material.SetTexture("_MainTex", albedo);
             material.SetTextureScale("_MainTex", tiling);
             material.SetTexture("_BumpMap", normal);
+            material.SetTexture("_AlphaMap", alpha);
             material.SetFloat("_UseTexture", albedo == null ? 0f : 1f);
             material.SetFloat("_UseNormal", normal == null ? 0f : 1f);
+            material.SetFloat("_UseAlphaMap", alpha == null ? 0f : 1f);
             material.SetFloat("_UseVertexColor", useVertexColor ? 1f : 0f);
             material.SetFloat("_Cutoff", alphaClip ? 0.36f : 0f);
             if (alphaClip) material.EnableKeyword("_ALPHATEST_ON");
@@ -627,6 +800,27 @@ namespace StargazingHill.Editor
             return t < 0.5f ? Color.Lerp(blue, white, t * 2f) : Color.Lerp(white, orange, (t - 0.5f) * 2f);
         }
 
+        private static Mesh BuildMeteorMesh()
+        {
+            var mesh = new Mesh { name = "MeteorQuad" };
+            mesh.vertices = new[]
+            {
+                new Vector3(-0.5f, -0.5f, 0f),
+                new Vector3(0.5f, -0.5f, 0f),
+                new Vector3(0.5f, 0.5f, 0f),
+                new Vector3(-0.5f, 0.5f, 0f)
+            };
+            mesh.uv = new[]
+            {
+                new Vector2(0f, 0f), new Vector2(1f, 0f),
+                new Vector2(1f, 1f), new Vector2(0f, 1f)
+            };
+            mesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
         private static void ConfigureRenderSettings()
         {
             RenderSettings.skybox = null;
@@ -639,8 +833,8 @@ namespace StargazingHill.Editor
         }
 
         private static void CreateEnvironment(Transform parent, Mesh groundMesh, Mesh hillMesh, Mesh grassMesh,
-            Material groundMaterial, Material hillMaterial, Material bladeMaterial, Material barkMaterial,
-            Material leafMaterial)
+            Mesh treeMesh, Material groundMaterial, Material hillMaterial, Material bladeMaterial,
+            Material branchMaterial, Material trunkMaterial, Material leafMaterial)
         {
             GameObject ground = CreateMeshObject(parent, "GrassGround", groundMesh, groundMaterial, Vector3.zero);
             var groundCollider = ground.AddComponent<MeshCollider>();
@@ -652,19 +846,21 @@ namespace StargazingHill.Editor
 
             CreateMeshObject(parent, "GrassClusters", grassMesh, bladeMaterial, Vector3.zero);
 
-            GameObject treeSource = LoadRequiredAsset<GameObject>(TreeModelPath);
             GameObject tree = CreateChild(parent, "LandmarkTree");
             tree.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
-            tree.transform.localScale = Vector3.one * 1.45f;
-            GameObject treeModel = (GameObject)PrefabUtility.InstantiatePrefab(treeSource);
-            treeModel.name = "Model";
-            treeModel.transform.SetParent(tree.transform, false);
-            // Preserve the FBX root's imported X=270 degree axis conversion and scale=100.
-            // The source mesh is local Z-up; replacing this Transform is what made it lie sideways.
-            AssignTreeMaterials(treeModel, barkMaterial, leafMaterial);
+            tree.transform.localScale = Vector3.one * 0.40f;
+            GameObject treeModel = CreateChild(tree.transform, "Model");
+            MeshFilter treeFilter = treeModel.AddComponent<MeshFilter>();
+            treeFilter.sharedMesh = treeMesh;
+            MeshRenderer treeRenderer = treeModel.AddComponent<MeshRenderer>();
+            treeRenderer.sharedMaterials = new[] { branchMaterial, trunkMaterial, leafMaterial };
+            treeRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            treeRenderer.receiveShadows = false;
+            treeRenderer.lightProbeUsage = LightProbeUsage.Off;
+            treeRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
-            // Centre and ground the visible mesh from its imported bounds instead of trusting the FBX pivot.
-            // Quaternius' source file has an off-centre pivot after FBX unit conversion.
+            // The baked mesh already contains Poly Haven's FBX axis/unit conversion. The outer anchor only
+            // applies world scale/yaw, and bounds-based placement keeps the multi-trunk base on the hill.
             Bounds importedBounds = CalculateRendererBounds(tree);
             float treeSurfaceY = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
             tree.transform.position += new Vector3(
@@ -673,34 +869,10 @@ namespace StargazingHill.Editor
                 HillPosition.z - importedBounds.center.z);
 
             GameObject colliderObject = CreateChild(parent, "LandmarkTreeCollider");
-            colliderObject.transform.position = new Vector3(HillPosition.x, treeSurfaceY + 2.25f, HillPosition.z);
+            colliderObject.transform.position = new Vector3(HillPosition.x, treeSurfaceY + 2.40f, HillPosition.z);
             var trunkCollider = colliderObject.AddComponent<CapsuleCollider>();
-            trunkCollider.height = 4.50f;
-            trunkCollider.radius = 0.52f;
-        }
-
-        private static void AssignTreeMaterials(GameObject tree, Material barkMaterial, Material leafMaterial)
-        {
-            Renderer[] renderers = tree.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) throw new InvalidOperationException("CC0 landmark tree has no renderer.");
-            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
-            {
-                Renderer renderer = renderers[rendererIndex];
-                Material[] materials = renderer.sharedMaterials;
-                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
-                {
-                    string sourceName = materials[materialIndex] == null ? string.Empty : materials[materialIndex].name;
-                    materials[materialIndex] = sourceName.IndexOf("leav", StringComparison.OrdinalIgnoreCase) >= 0
-                        ? leafMaterial
-                        : barkMaterial;
-                }
-
-                renderer.sharedMaterials = materials;
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                renderer.lightProbeUsage = LightProbeUsage.Off;
-                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            }
+            trunkCollider.height = 4.80f;
+            trunkCollider.radius = 0.78f;
         }
 
         private static Bounds CalculateRendererBounds(GameObject root)
@@ -731,7 +903,7 @@ namespace StargazingHill.Editor
             float spawnSurfaceY = EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z);
             spawn.transform.position = new Vector3(
                 SpawnGroundPosition.x, spawnSurfaceY + 0.40f, SpawnGroundPosition.z);
-            spawn.transform.rotation = Quaternion.LookRotation((HillPosition - spawn.transform.position).normalized, Vector3.up);
+            spawn.transform.rotation = Quaternion.Euler(SpawnEuler);
 
             GameObject cameraObject = CreateChild(settings.transform, "ReferenceCamera");
             cameraObject.transform.position = new Vector3(
@@ -784,6 +956,31 @@ namespace StargazingHill.Editor
             EditorUtility.SetDirty(controller);
         }
 
+        private static void CreateMeteorSystem(Transform world, Mesh meteorMesh, Material meteorMaterial)
+        {
+            GameObject system = CreateChild(world, "MeteorShowerSystem");
+            MeteorController controller = UdonSharpUndo.AddComponent<MeteorController>(system);
+            controller.eventDurationSeconds = 25f;
+            controller.skyRadius = 65f;
+
+            const int poolSize = 4;
+            controller.meteorTransforms = new Transform[poolSize];
+            controller.meteorRenderers = new Renderer[poolSize];
+            GameObject visuals = CreateChild(system.transform, "MeteorVisuals");
+            for (int index = 0; index < poolSize; index++)
+            {
+                GameObject meteor = CreateMeshObject(
+                    visuals.transform, "Meteor_" + (index + 1), meteorMesh, meteorMaterial, Vector3.zero);
+                MeshRenderer renderer = meteor.GetComponent<MeshRenderer>();
+                renderer.enabled = false;
+                controller.meteorTransforms[index] = meteor.transform;
+                controller.meteorRenderers[index] = renderer;
+            }
+
+            UdonSharpEditorUtility.CopyProxyToUdon(controller);
+            EditorUtility.SetDirty(controller);
+        }
+
         private static void CreateYamaPlayer(Transform world)
         {
             GameObject videoSystem = CreateChild(world, "VideoSystem");
@@ -797,12 +994,8 @@ namespace StargazingHill.Editor
             GameObject player = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             player.name = "YamaPlayer";
             player.transform.SetParent(videoSystem.transform, false);
-            Vector3 playerPosition = new Vector3(
-                AmenityCenter.x,
-                EvaluateTerrainHeight(AmenityCenter.x, AmenityCenter.z - 2f) + 2.7f,
-                AmenityCenter.z - 2f);
-            player.transform.localPosition = playerPosition;
-            player.transform.localRotation = FaceSpawn(playerPosition);
+            player.transform.localPosition = YamaPlayerPosition;
+            player.transform.localRotation = Quaternion.Euler(YamaPlayerEuler);
             player.transform.localScale = Vector3.one * 2.20f;
 
             EnsureVideoInfoDownloader(player);
@@ -822,25 +1015,10 @@ namespace StargazingHill.Editor
         private static void CreateDrawingSystems(Transform world)
         {
             GameObject drawingSystem = CreateChild(world, "DrawingSystem");
-            Vector3 qvPenPosition = new Vector3(
-                AmenityCenter.x - 5.5f,
-                EvaluateTerrainHeight(AmenityCenter.x - 5.5f, AmenityCenter.z + 2f) + 0.80f,
-                AmenityCenter.z + 2f);
             InstantiateDrawingPrefab(drawingSystem.transform, QvPenPrefabPath, "QvPen",
-                qvPenPosition, FaceSpawn(qvPenPosition));
-            Vector3 unyStylusPosition = new Vector3(
-                AmenityCenter.x + 5.5f,
-                EvaluateTerrainHeight(AmenityCenter.x + 5.5f, AmenityCenter.z + 2f) + 0.80f,
-                AmenityCenter.z + 2f);
+                QvPenPosition, Quaternion.Euler(QvPenEuler));
             InstantiateDrawingPrefab(drawingSystem.transform, UnyStylusPrefabPath, "UnyStylus",
-                unyStylusPosition, FaceSpawn(unyStylusPosition));
-        }
-
-        private static Quaternion FaceSpawn(Vector3 position)
-        {
-            Vector3 direction = SpawnGroundPosition - position;
-            direction.y = 0f;
-            return Quaternion.LookRotation(direction.normalized, Vector3.up);
+                UnyStylusPosition, Quaternion.Euler(UnyStylusEuler));
         }
 
         private static void InstantiateDrawingPrefab(
@@ -980,12 +1158,27 @@ namespace StargazingHill.Editor
         {
             if (!scene.IsValid()) throw new InvalidOperationException("Generated scene is invalid.");
             RealSkyController[] skyControllers = Object.FindObjectsOfType<RealSkyController>(true);
+            MeteorController[] meteorControllers = Object.FindObjectsOfType<MeteorController>(true);
             WorldPlayerSettings[] playerSettings = Object.FindObjectsOfType<WorldPlayerSettings>(true);
             VRCSceneDescriptor[] descriptors = Object.FindObjectsOfType<VRCSceneDescriptor>(true);
             PipelineManager[] pipelineManagers = Object.FindObjectsOfType<PipelineManager>(true);
             ModuleManager[] yamaManagers = Object.FindObjectsOfType<ModuleManager>(true);
             if (skyControllers.Length != 1 || skyControllers[0].celestialSphere == null)
                 throw new InvalidOperationException("RealSkyController validation failed.");
+            if (meteorControllers.Length != 1 || meteorControllers[0].meteorTransforms == null ||
+                meteorControllers[0].meteorRenderers == null ||
+                meteorControllers[0].meteorTransforms.Length != 4 ||
+                meteorControllers[0].meteorRenderers.Length != 4 ||
+                !Mathf.Approximately(meteorControllers[0].eventDurationSeconds, 25f) ||
+                meteorControllers[0].GetComponentsInChildren<Collider>(true).Length != 0)
+                throw new InvalidOperationException("Hourly meteor/debug system validation failed.");
+            for (int meteorIndex = 0; meteorIndex < meteorControllers[0].meteorRenderers.Length; meteorIndex++)
+            {
+                Renderer meteorRenderer = meteorControllers[0].meteorRenderers[meteorIndex];
+                if (meteorRenderer == null || meteorRenderer.enabled || meteorRenderer.sharedMaterial == null ||
+                    meteorRenderer.sharedMaterial.shader.name != "StargazingHill/Meteor")
+                    throw new InvalidOperationException("Meteor visual pool validation failed.");
+            }
             if (descriptors.Length != 1 || descriptors[0].spawns == null || descriptors[0].spawns.Length != 1)
                 throw new InvalidOperationException("VRCSceneDescriptor validation failed.");
             if (pipelineManagers.Length != 1 || pipelineManagers[0].gameObject != descriptors[0].gameObject)
@@ -1003,10 +1196,20 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException("Landmark tree validation failed.");
             Bounds treeBounds = CalculateRendererBounds(tree);
             Transform treeModel = tree.transform.Find("Model");
+            Mesh treeAsset = treeModel == null ? null : treeModel.GetComponent<MeshFilter>()?.sharedMesh;
+            long treeTriangles = 0;
+            if (treeAsset != null)
+            {
+                for (int subMesh = 0; subMesh < treeAsset.subMeshCount; subMesh++)
+                    treeTriangles += (long)treeAsset.GetIndexCount(subMesh) / 3L;
+            }
             float expectedTreeBase = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
-            if (treeModel == null ||
-                Vector3.Angle(treeModel.TransformDirection(Vector3.forward), Vector3.up) > 1f ||
-                treeBounds.size.y < 7f || treeBounds.size.y > 9f ||
+            float treeMeshWidth = treeAsset == null ? 0f : treeAsset.bounds.size.x * tree.transform.lossyScale.x;
+            if (treeModel == null || treeAsset == null || treeAsset.subMeshCount != 3 ||
+                treeTriangles < 450000L || treeTriangles > 480000L ||
+                Vector3.Angle(treeModel.TransformDirection(Vector3.up), Vector3.up) > 1f ||
+                treeBounds.size.y < 7.5f || treeBounds.size.y > 8.5f ||
+                treeMeshWidth < 8.5f || treeMeshWidth > 10.5f ||
                 Mathf.Abs(treeBounds.min.y - expectedTreeBase) > 0.05f ||
                 Vector2.Distance(new Vector2(treeBounds.center.x, treeBounds.center.z),
                     new Vector2(HillPosition.x, HillPosition.z)) > 0.05f)
@@ -1097,28 +1300,28 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException("Hill height/slope is not normally walkable.");
 
             float expectedSpawnSurface = EvaluateTerrainHeight(spawn.position.x, spawn.position.z);
-            if (spawn.position.y < expectedSpawnSurface + 0.30f)
+            if (spawn.position.y < expectedSpawnSurface + 0.30f ||
+                !Approximately(spawn.position,
+                    new Vector3(SpawnGroundPosition.x, expectedSpawnSurface + 0.40f, SpawnGroundPosition.z), 0.001f) ||
+                Quaternion.Angle(spawn.rotation, Quaternion.Euler(SpawnEuler)) > 0.01f)
                 throw new InvalidOperationException("Spawn is embedded in the terrain.");
         }
 
         private static void ValidateAmenityPlacement(
             Transform spawn, GameObject yamaPlayer, GameObject qvPen, GameObject unyStylus)
         {
-            Vector3 viewForward = HillPosition - spawn.position;
-            viewForward.y = 0f;
-            viewForward.Normalize();
-            GameObject[] amenities = { yamaPlayer, qvPen, unyStylus };
-            for (int index = 0; index < amenities.Length; index++)
-            {
-                Vector3 fromSpawn = amenities[index].transform.position - spawn.position;
-                fromSpawn.y = 0f;
-                if (Vector3.Dot(fromSpawn, viewForward) > -3f)
-                    throw new InvalidOperationException(amenities[index].name + " is not behind the spawn view.");
-                if (Vector2.Distance(
-                        new Vector2(amenities[index].transform.position.x, amenities[index].transform.position.z),
-                        new Vector2(AmenityCenter.x, AmenityCenter.z)) > 7f)
-                    throw new InvalidOperationException(amenities[index].name + " is outside the amenity cluster.");
-            }
+            if (!Approximately(yamaPlayer.transform.localPosition, YamaPlayerPosition, 0.001f) ||
+                Quaternion.Angle(yamaPlayer.transform.localRotation, Quaternion.Euler(YamaPlayerEuler)) > 0.01f ||
+                !Approximately(qvPen.transform.localPosition, QvPenPosition, 0.001f) ||
+                Quaternion.Angle(qvPen.transform.localRotation, Quaternion.Euler(QvPenEuler)) > 0.01f ||
+                !Approximately(unyStylus.transform.localPosition, UnyStylusPosition, 0.001f) ||
+                Quaternion.Angle(unyStylus.transform.localRotation, Quaternion.Euler(UnyStylusEuler)) > 0.01f)
+                throw new InvalidOperationException("User-confirmed spawn amenity layout changed.");
+        }
+
+        private static bool Approximately(Vector3 left, Vector3 right, float tolerance)
+        {
+            return (left - right).sqrMagnitude <= tolerance * tolerance;
         }
     }
 }

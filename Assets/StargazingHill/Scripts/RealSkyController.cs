@@ -16,6 +16,9 @@ namespace StargazingHill
         public float longitudeDegreesEast = 139.76f;
         [Range(10f, 30f)] public float updateIntervalSeconds = 15f;
 
+        [Header("Debug (local only)")]
+        public float debugTimeOffsetHours;
+
         private float _nextUpdateTime;
         private VRCPlayerApi _localPlayer;
 
@@ -46,19 +49,41 @@ namespace StargazingHill
             if (celestialSphere == null) return;
 
             DateTime utc = Networking.GetNetworkDateTime();
-            double dayWithTime = utc.Day +
-                                 (utc.Hour + (utc.Minute + (utc.Second + utc.Millisecond / 1000.0) / 60.0) / 60.0) /
-                                 24.0;
-            double julianDate = JulianDate(utc.Year, utc.Month, dayWithTime);
+            if (!Mathf.Approximately(debugTimeOffsetHours, 0f))
+                utc = utc.AddHours(debugTimeOffsetHours);
+            celestialSphere.localRotation = CalculateSkyRotation(
+                utc.Year, utc.Month, utc.Day, utc.Hour, utc.Minute,
+                utc.Second + utc.Millisecond / 1000.0,
+                latitudeDegrees, longitudeDegreesEast);
+        }
+
+        public void DebugAdvanceOneHour()
+        {
+            debugTimeOffsetHours += 1f;
+            ApplyCurrentSkyRotation();
+        }
+
+        public void DebugResetTimeOffset()
+        {
+            debugTimeOffsetHours = 0f;
+            ApplyCurrentSkyRotation();
+        }
+
+        public static Quaternion CalculateSkyRotation(
+            int year, int month, int day, int hour, int minute, double second,
+            float latitude, float longitudeEast)
+        {
+            double dayWithTime = day + (hour + (minute + second / 60.0) / 60.0) / 24.0;
+            double julianDate = JulianDate(year, month, dayWithTime);
             double centuries = (julianDate - 2451545.0) / 36525.0;
             double greenwichSiderealDegrees = 280.46061837 +
                                               360.98564736629 * (julianDate - 2451545.0) +
                                               0.000387933 * centuries * centuries -
                                               centuries * centuries * centuries / 38710000.0;
-            double localSiderealDegrees = NormalizeDegrees(greenwichSiderealDegrees + longitudeDegreesEast);
+            double localSiderealDegrees = NormalizeDegrees(greenwichSiderealDegrees + longitudeEast);
 
             float siderealRadians = (float)(localSiderealDegrees * Math.PI / 180.0);
-            float latitudeRadians = latitudeDegrees * Mathf.Deg2Rad;
+            float latitudeRadians = latitude * Mathf.Deg2Rad;
             float sinLatitude = Mathf.Sin(latitudeRadians);
             float cosLatitude = Mathf.Cos(latitudeRadians);
             float sinSidereal = Mathf.Sin(siderealRadians);
@@ -70,7 +95,7 @@ namespace StargazingHill
                 cosSidereal,
                 cosLatitude * sinSidereal,
                 -sinLatitude * sinSidereal);
-            celestialSphere.localRotation = Quaternion.LookRotation(
+            return Quaternion.LookRotation(
                 rightAscensionSixHours.normalized,
                 northCelestialPole.normalized);
         }

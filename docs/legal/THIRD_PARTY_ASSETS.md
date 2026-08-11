@@ -7,7 +7,7 @@
 | HYG Stellar Database v4.1 | 星Mesh生成 | David Nash / Astronexus、GitHub archive commit `c7f7f883fe678cc7680169a50ccd7dcc49b060ce`、CC BY-SA 4.0、取得日・原本/派生hash・加工手順は `Assets/StargazingHill/Editor/Data/NOTICE.md` | Confirmed |
 | 流星群データ | 活動期間・放射点 | 一次出典URL、確認日、対象年、利用条件、加工手順 | Pending Evidence |
 | Poly Haven `Leafy Grass` | 地表diffuse / normal | Charlotte Baglioni、CC0 1.0、取得元・取得日・2ファイルのSHA-256は隣接 `NOTICE.md` | Confirmed |
-| Quaternius `Textured LowPoly Trees` / `Tree_3` | 一本木FBX・樹皮・葉 | Quaternius、CC0 1.0、配布元・archive SHA-256・採用ファイルは隣接 `NOTICE.md` | Confirmed |
+| Poly Haven `Jacaranda Tree` | 一本木の派生Mesh、枝・幹・葉の1K diffuse / normal / alpha | Rico Cilliers、Rob Tuytel、CC0 1.0。原本FBX/API hash、連結部品単位の軽量化工程、派生Meshと7テクスチャのSHA-256は隣接 `NOTICE.md` | Confirmed |
 | 立体草・地形Mesh | 環境表現 | リポジトリ内Editorコードで単一Meshへ生成。第三者Meshなし | Confirmed |
 | YamaPlayer関連素材 | 機能UI | package側の権利記録は `THIRD_PARTY_DEPENDENCIES.md` | Confirmed |
 | QvPen関連素材 | 機能UI | 公式VPM packageとして復元し、package本体は追跡しない | Provisional |

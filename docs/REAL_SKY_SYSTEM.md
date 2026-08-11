@@ -8,6 +8,8 @@
 - `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。
 - `Starfield.shader` がAdditive Unlit描画と地平線フェードを担当する。
 - `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、東京の緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
+- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。5秒waveを5回使い、1イベント最大20本とする。
+- Play Mode中の `Stargazing Hill/Debug/Trigger Hourly Meteor Shower` で同じローカル演出を任意発火できる。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
 - データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、Direct3DプレビューはPass。実機での天文位置確認はOpen。
 
@@ -219,6 +221,12 @@ YYYYMMDDHH
 ```
 
 過去に終了した流星を再生し直さない。
+
+### 9.3 デバッグ発火
+
+生成SceneをPlay Modeで開き、`Stargazing Hill/Debug/Trigger Hourly Meteor Shower` を実行すると、現在hourのEvent IDを使って経過0秒からローカル再生する。ネットワークイベントは送らず、他プレイヤーの状態を変更しない。`MeteorController.DebugTriggerHourlyEvent()` も公開し、将来のワールド内デバッグUIから同じ経路を呼べる。
+
+天球は `Stargazing Hill/Debug/Advance Sky +1 Hour` でローカル時刻offsetを1時間進め、`Reset Sky Time Offset` で現在UTCへ戻す。自動試験では同一時刻の回転一致、+1時間で約15.04°、+24時間で約0.985°の恒星日差を確認する。
 
 ## 10. 流星描画
 

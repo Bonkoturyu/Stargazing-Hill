@@ -85,3 +85,32 @@
 | 設備エリア | Pass | スポーンから主景観と逆方向3m以上、中心から7m以内にYamaPlayer・QvPen・UnyStylusがあることを検証。振り返りpreviewで3設備を目視確認 |
 | PipelineManager | Pass | VRCSceneDescriptorと同一GameObjectに1個存在することをScene再読込後に検証 |
 | VRChat Client実画面 | Open | 修正Sceneを開き直し、木と3設備の最終配置を再確認する |
+
+## 2026-08-11 Poly Haven Jacaranda置換
+
+- 要求: 一本木をCC0のPoly Haven `Jacaranda Tree`へ置き換え、利用者が調整したRespawn・YamaPlayer・QvPen・UnyStylus配置を維持する
+- 権利証拠: 公式asset page / license / files API、authors、取得日、原本FBX MD5・SHA-256、派生工程を隣接 `NOTICE.md`へ記録
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 原本FBX | Pass | API記載MD5一致。132,437,628 bytes、Unity展開後3,863,832 trianglesのため追跡せず `.gitignore` 対象 |
+| 軽量化境界 | Pass | 三角形単位ではなく連結部品単位で枝7%・幹100%・葉6%を決定的に選択し、葉や枝の途中切断なし |
+| 派生Mesh | Pass | 288,899 vertices、465,580 triangles（枝88,864 / 幹230,112 / 葉146,604）、3 submesh、約39MB |
+| テクスチャ | Pass | 枝・幹・葉の1K diffuse / normalと葉alpha、計7ファイルのSHA-256を検証対象化 |
+| 軸・接地 | Pass | FBX root軸・単位をMeshへベイク。Model Y-up、高さ7.74m、Mesh実幅9.67m、丘中央接地をScene生成時と再読込後に検証 |
+| 確定配置 | Pass | Respawn `(-2.78, 0.40, -20.80)`、YamaPlayer `(-4, 1.813, -24)`、QvPen `(-7.6, 0.848461, -22.454)`、UnyStylus `(-8.668, 0.858, -20.672)` と各回転を0.001m / 0.01°以内で検証 |
+| 正面・側面描画 | Pass | Direct3D 1280x720を2方向から生成し、複数幹・樹冠・alpha・丘への接地を目視確認 |
+| 実機性能 | Open | PC / Quest / iOSでGPU時間・メモリを測定し、必要なら遠距離LODを追加する |
+
+## 2026-08-12 星空移動・毎時流星デバッグ試験
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 同一時刻の天球 | Pass | 同じUTC入力のQuaternion差0.0001°以下 |
+| +1時間の天球移動 | Pass | 2026-08-11 12:00→13:00 UTCで15.0411°回転 |
+| +24時間の恒星日差 | Pass | 同UTC時刻の翌日との差0.9852°。太陽日24時間で完全一致しないことを確認 |
+| 毎時Event ID | Pass | `year/month/day/hour`から連続hourで異なるID `18094356` / `18094357` を生成 |
+| 決定的パラメータ | Pass | 同一Event ID / wave / slot / channelのsample一致、次hourで不一致 |
+| 任意発火入口 | Pass | Play Modeメニューと `DebugTriggerHourlyEvent()` を実装。UdonSharp 91 scripts変換、Scene生成・再読込検証Pass |
+| 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。任意発火と同じ経路の2.4秒地点をDirect3D描画し、複数の加算発光軌跡を目視確認 |
+| VRChat Client | Open | 毎時00分、途中参加、任意発火、星+1時間/resetをBuild & Testで確認する |

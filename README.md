@@ -31,6 +31,6 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ステータス
 
-CC0テクスチャの草原、単一Colliderの小丘、CC0テクスチャ付き一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、東京の現在時刻による天球回転、YamaPlayer 2.0.0-beta.7と距離減衰、QvPen 3.3.15、購入済みUnyStylus v1.3まで実装済み。月、流星群、各対象プラットフォームでの実機検証は未実装・未実施。
+CC0テクスチャの草原、単一Colliderの小丘、Poly Haven `Jacaranda Tree` のCC0一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、東京の現在時刻による天球回転、決定的な毎時流星イベントとデバッグ発火、YamaPlayer 2.0.0-beta.7と距離減衰、QvPen 3.3.15、購入済みUnyStylus v1.3まで実装済み。月、実在流星群データ、各対象プラットフォームでの実機検証は未実装・未実施。
 
 Unityライセンスが有効なEditorでプロジェクトを開き、メニュー `Stargazing Hill/Build Complete World` を実行すると、Mesh・Materialと `Assets/StargazingHill/Scenes/StargazingHill.unity` を生成する。生成後はConsoleとUdon変換結果を確認する。

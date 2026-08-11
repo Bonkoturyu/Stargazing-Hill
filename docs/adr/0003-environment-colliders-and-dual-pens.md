@@ -21,7 +21,7 @@
 - ジャンプと移動速度をUdonSharpで明示設定する。
 - QvPen 3.3.15とUnyStylus v1.3を主景観外へ併設する。
 - YamaPlayer、QvPen、UnyStylusをスポーン背後の1つの設備エリアへ集約する。
-- 木のFBXルートが持つZ-upからY-upへのimport変換は保持し、外側Anchorだけで配置する。
+- 木の素材・軸変換・軽量化判断は [ADR-0004](0004-poly-haven-jacaranda-landmark.md) で置き換える。
 - VRCSceneDescriptorと同じGameObjectにPipelineManagerを明示してSDK Builderから認識可能にする。
 - QvPenは公式VPMから復元し、購入品のUnyStylus本体はGitへ含めない。
 
