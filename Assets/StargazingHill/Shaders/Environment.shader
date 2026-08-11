@@ -6,8 +6,10 @@ Shader "StargazingHill/Environment"
         _Ambient ("Ambient", Range(0, 1)) = 0.35
         _MainTex ("Albedo", 2D) = "white" {}
         [Normal] _BumpMap ("Normal", 2D) = "bump" {}
+        _AlphaMap ("Alpha", 2D) = "white" {}
         [Toggle] _UseTexture ("Use Texture", Float) = 0
         [Toggle] _UseNormal ("Use Normal", Float) = 0
+        [Toggle] _UseAlphaMap ("Use Alpha Map", Float) = 0
         [Toggle] _UseVertexColor ("Use Vertex Color", Float) = 1
         _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.36
     }
@@ -57,8 +59,10 @@ Shader "StargazingHill/Environment"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             sampler2D _BumpMap;
+            sampler2D _AlphaMap;
             half _UseTexture;
             half _UseNormal;
+            half _UseAlphaMap;
             half _UseVertexColor;
             half _Cutoff;
 
@@ -80,7 +84,8 @@ Shader "StargazingHill/Environment"
                 fixed4 sampled = tex2D(_MainTex, i.uv);
                 fixed4 albedo = lerp(fixed4(1, 1, 1, 1), sampled, _UseTexture);
                 #ifdef _ALPHATEST_ON
-                    clip(albedo.a - _Cutoff);
+                    half alpha = lerp(albedo.a, tex2D(_AlphaMap, i.uv).r, _UseAlphaMap);
+                    clip(alpha - _Cutoff);
                 #endif
 
                 half3 worldNormal = normalize(i.normal);

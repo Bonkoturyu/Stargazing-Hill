@@ -13,17 +13,36 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "Assets/StargazingHill/Editor/Data/hyg_bright_v41.csv"
 BUILDER = ROOT / "Assets/StargazingHill/Editor/StargazingWorldBuilder.cs"
 SKY_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/RealSkyController.cs"
+METEOR_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/MeteorController.cs"
+METEOR_SHADER = ROOT / "Assets/StargazingHill/Shaders/Meteor.shader"
 PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
 GRASS_NORMAL = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg"
-TREE_MODEL = ROOT / "Assets/StargazingHill/ThirdParty/Quaternius/TexturedTrees/Tree_3.fbx"
+JACARANDA_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/JacarandaTree"
+TREE_MESH = JACARANDA_ROOT / "Jacaranda_LOD0.asset"
+TREE_TEXTURES = [
+    JACARANDA_ROOT / "jacaranda_tree_branches_diff_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_branches_nor_gl_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_trunk_diff_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_trunk_nor_gl_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_leaves_diff_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_leaves_nor_gl_1k.jpg",
+    JACARANDA_ROOT / "jacaranda_tree_leaves_alpha_1k.jpg",
+]
 EXPECTED_CATALOG_SHA256 = "976abeb38d0d6f7b12fb069943140b59c31a299a72dc04350014e9ca1a4a0e4a"
 EXPECTED_STAR_COUNT = 12_495
 EXPECTED_CC0_HASHES = {
     GRASS_DIFFUSE: "cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a",
     GRASS_NORMAL: "832328216adc0a7e1f70a31d5ee48c9ab7f2152d83816122736cf42ac4b2ebd6",
-    TREE_MODEL: "8a8d46bf5b41cc1aaf63b79a8992910a79371a508dc25fb3c64670428356cc52",
+    TREE_MESH: "8e361f258c85727d3df4676ee6ca8411ec51a286fc20394b9247171237c4f227",
+    TREE_TEXTURES[0]: "5a4fe735f0c346cec83b6b444a0169fc14d2b31bbb7b26e26b1b6c726b6e06f6",
+    TREE_TEXTURES[1]: "2d67393ba76a0f49cf965fa0c99d8c16268e71e87b1203d35539bfdb971a514e",
+    TREE_TEXTURES[2]: "e5582fba664a9255252d1ee8088f75ad557f07360aa7f4513f2b2f1577e90be9",
+    TREE_TEXTURES[3]: "b2ad4e5daf8ec3fb87ba6c5f38e6a6924c9a6adebec20389f503e42da5d04587",
+    TREE_TEXTURES[4]: "6fe80c1f514ef690cccefb90b7e559fbd1aa9c8935fdc02523cc8ab83c22f7c2",
+    TREE_TEXTURES[5]: "61520be2529ffe8e3d93d4361892134833bb4657117e121749089769067914c1",
+    TREE_TEXTURES[6]: "e040c86c4bd9ce703244e33a6b9cf25d2ac65c618be88178b8be3297f5d41960",
 }
 EXPECTED_ROLLOFF = [
     (0.0, 1.0),
@@ -99,13 +118,18 @@ def validate_environment_and_drawing() -> None:
     assert "private const float HillRadius = 10f;" in builder
     assert 'QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab"' in builder
     assert 'UnyStylusPrefabPath = "Assets/Rasta/UnyStylus/UnyStylus.prefab"' in builder
-    assert "modelImporter.globalScale = 1f;" in builder
+    assert 'TreeMeshPath =\n            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_LOD0.asset"' in builder
     assert 'CreateChild(parent, "LandmarkTree")' in builder
-    assert 'treeModel.name = "Model";' in builder
-    assert "treeModel.TransformDirection(Vector3.forward)" in builder
+    assert 'CreateChild(tree.transform, "Model")' in builder
+    assert "treeModel.TransformDirection(Vector3.up)" in builder
+    assert "treeTriangles < 450000L || treeTriangles > 480000L" in builder
     assert "descriptorObject.AddComponent<PipelineManager>();" in builder
-    assert "private static readonly Vector3 AmenityCenter = new Vector3(-4f, 0f, -22f);" in builder
+    assert "private static readonly Vector3 SpawnGroundPosition = new Vector3(-2.78f, 0f, -20.80f);" in builder
+    assert "private static readonly Vector3 YamaPlayerPosition = new Vector3(-4f, 1.813f, -24f);" in builder
+    assert "private static readonly Vector3 QvPenPosition = new Vector3(-7.6f, 0.848461f, -22.454f);" in builder
+    assert "private static readonly Vector3 UnyStylusPosition = new Vector3(-8.668f, 0.858f, -20.672f);" in builder
     assert "ValidateAmenityPlacement" in builder
+    assert 'material.SetTexture("_AlphaMap", alpha);' in builder
 
     player_settings = PLAYER_SETTINGS.read_text(encoding="utf-8")
     for expected_call in (
@@ -144,6 +168,26 @@ def validate_sky_reference() -> None:
     assert "latitudeDegrees = 35.68f" in controller
     assert "longitudeDegreesEast = 139.76f" in controller
     assert "celestialSphere.position = _localPlayer.GetPosition();" in controller
+    assert "CalculateSkyRotation(" in controller
+    assert "DebugAdvanceOneHour()" in controller
+    assert "DebugResetTimeOffset()" in controller
+
+    meteor = METEOR_CONTROLLER.read_text(encoding="utf-8")
+    assert "GetHourlyEventId(" in meteor
+    assert "DebugTriggerHourlyEvent()" in meteor
+    assert "DebugPreviewEventAtSecond(" in meteor
+    assert "const float waveLength = 5f;" in meteor
+    assert "eventDurationSeconds = 25f" in meteor
+    assert "Networking.GetNetworkDateTime()" in meteor
+
+    meteor_shader = METEOR_SHADER.read_text(encoding="utf-8")
+    assert 'Shader "StargazingHill/Meteor"' in meteor_shader
+    assert "Blend One One" in meteor_shader
+
+    builder = BUILDER.read_text(encoding="utf-8")
+    assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
+    assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
+    assert "TestSkyAndMeteorForBatchMode" in builder
 
 
 def main() -> None:

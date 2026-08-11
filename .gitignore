@@ -94,5 +94,9 @@ crashlytics-build.properties
 /Assets/TreeSelectionTemp/
 /Assets/TreeSelectionTemp.meta
 
+# Large upstream files used only as inputs when baking redistributable CC0 meshes.
+/Assets/StargazingHill/SourceDownloads/
+/Assets/StargazingHill/SourceDownloads.meta
+
 # AudioLink render-pipeline detection cache; rewritten when Unity opens.
 /.audiolink_pipeline
