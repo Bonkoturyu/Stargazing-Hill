@@ -24,6 +24,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _AlphaMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -36,6 +40,7 @@ Material:
     m_Floats:
     - _Ambient: 0.66
     - _Cutoff: 0.36
+    - _UseAlphaMap: 0
     - _UseNormal: 0
     - _UseTexture: 0
     - _UseVertexColor: 1
