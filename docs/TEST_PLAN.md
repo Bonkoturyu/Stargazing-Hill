@@ -37,7 +37,7 @@
 
 | 確認 | 結果 | 証拠・残課題 |
 |---|---|---|
-| HYG派生データ再生成 | Pass | 原本から12,495件を再生成し、追跡CSVとSHA-256が一致 |
+| HYG派生データ再生成 | Pass | 原本から12,495件を再生成し、checkoutのLF/CRLF差を正規化した追跡CSVのSHA-256が一致 |
 | 星表の件数・赤経・赤緯・等級・色指数 | Pass | `python Tools/Validate-StargazingImplementation.py` |
 | J2000東京恒星時と天球回転基底 | Pass | 同上。東京LST 60.22061837°、正規直交基底を確認 |
 | YamaPlayer依存版と8点距離減衰 | Pass | 同上。0m〜45mの基準点とSpatial Audio設定を静的確認 |
