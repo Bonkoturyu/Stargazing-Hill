@@ -99,7 +99,13 @@ def validate_environment_and_drawing() -> None:
     assert "private const float HillRadius = 10f;" in builder
     assert 'QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab"' in builder
     assert 'UnyStylusPrefabPath = "Assets/Rasta/UnyStylus/UnyStylus.prefab"' in builder
-    assert "modelImporter.globalScale = 100f;" in builder
+    assert "modelImporter.globalScale = 1f;" in builder
+    assert 'CreateChild(parent, "LandmarkTree")' in builder
+    assert 'treeModel.name = "Model";' in builder
+    assert "treeModel.TransformDirection(Vector3.forward)" in builder
+    assert "descriptorObject.AddComponent<PipelineManager>();" in builder
+    assert "private static readonly Vector3 AmenityCenter = new Vector3(-4f, 0f, -22f);" in builder
+    assert "ValidateAmenityPlacement" in builder
 
     player_settings = PLAYER_SETTINGS.read_text(encoding="utf-8")
     for expected_call in (

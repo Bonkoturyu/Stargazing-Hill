@@ -70,3 +70,18 @@
 | VRChat ClientSim / PC / Quest / iOS | Open | 実クライアントでジャンプ、斜面登坂、両ペンの描画・同期・負荷を再確認する |
 
 静的検証とEditor描画は合格したが、VRChatアバターControllerでの最終合格は実クライアント再試験後に更新する。
+
+## 2026-08-11 木の軸・設備配置の再修正結果
+
+- 発端: Unity Sceneで一本木が横倒しになり、YamaPlayer・QvPen・UnyStylusが分散している実画面が報告された
+- 原因: FBXのlocal Z-upをUnity Y-upへ変換するimport済みルート回転を、Scene生成時に上書きしていた
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 報告時の木 | Fail | 幹が水平方向を向いているUnity実画面を確認 |
+| FBX座標系 | Pass | Mesh local Z-up、import root X=270° / scale=100をUnityログで確認 |
+| 木の直立 | Pass | import TransformをModel子に保持し、外側Anchorで接地。Modelのlocal Zがworld Yと1°以内で一致 |
+| 木の正面・側面描画 | Pass | Direct3D 1280x720を2方向から生成し、幹の根元が丘へ接地し樹冠が上にあることを目視確認 |
+| 設備エリア | Pass | スポーンから主景観と逆方向3m以上、中心から7m以内にYamaPlayer・QvPen・UnyStylusがあることを検証。振り返りpreviewで3設備を目視確認 |
+| PipelineManager | Pass | VRCSceneDescriptorと同一GameObjectに1個存在することをScene再読込後に検証 |
+| VRChat Client実画面 | Open | 修正Sceneを開き直し、木と3設備の最終配置を再確認する |
