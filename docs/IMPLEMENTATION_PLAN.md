@@ -5,16 +5,17 @@
 ## Phase 0: 基盤
 
 - [x] Unity / VRChat SDK / UdonSharpの版を固定する（Unity 2022.3.22f1、VRChat SDK 3.10.4）。
-- [ ] 依存と第三者アセットの証拠記録を整える。
+- [x] HYG、Poly Haven、Quaternius、YamaPlayer、QvPen、UnyStylusの依存・権利記録を整える。
 - [ ] 空の基準シーンでPC・Android・iOS向けBuild & Test経路を確認する。
 
 完了条件: package lock、権利記録、各プラットフォームの既知制約が追跡できる。
 
 ## Phase 1: 草原MVP
 
-- [x] 地面、丘、一本木、固定照明を作成する。
+- [x] CC0素材による芝生地面、単一Colliderの丘、テクスチャ付き一本木、固定照明を作成する。
 - [x] 動画プレイヤーとしてYamaPlayer 2.0.0-beta.7を採用する。
-- [ ] QvPenの採用可否を確定する。
+- [x] QvPen 3.3.15と購入済みUnyStylus v1.3を主景観外へ配置する。
+- [x] ジャンプ・歩行速度を明示し、スポーンと丘の歩行面を静的検証する。
 - [ ] Quest/iOSで基準フレーム時間とメモリを測定する。
 
 完了条件: 星空なしでも安全に滞在でき、全対象プラットフォームで基本動作する。

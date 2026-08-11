@@ -239,6 +239,12 @@
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       }
     },
+    "net.ureishi.qvpen": {
+      "version": "file:net.ureishi.qvpen",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,

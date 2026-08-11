@@ -49,3 +49,24 @@
 | ClientSim / PC / Quest / iOS | Open | シーン生成後に実施 |
 
 残課題としてClientSimおよび実機でYamaPlayer再生・同期と、距離0/7/14/19/21/28/29.5/45mの聴感を確認する。
+
+## 2026-08-11 草原・移動・描画機能の修正結果
+
+- 対象ブランチ: `agent/fix-world-playability`
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、QvPen 3.3.15、UnyStylus 1.3
+- 発端: VRChat Build & Testで単色地面、簡素な木、ジャンプ不可、丘での埋まり・登坂不可、空Playlist警告が報告された
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| CC0素材の同一性 | Pass | Poly Haven grass 2点とQuaternius Tree_3のSHA-256を `Tools/Validate-StargazingImplementation.py` で確認 |
+| 草原表現 | Pass | 1K diffuse / normal地表と、3.5〜9.5cm・9,000株・108,000 verticesの単一立体草Meshを生成 |
+| 丘の歩行面 | Pass | 草原と丘を1つのMeshColliderへ統合。頂上高2.15m以上、斜面28°以下、重複ColliderなしをRaycast検証 |
+| スポーンと移動設定 | Pass | 地表+0.4mのスポーン、歩行2、走行4、横移動2、ジャンプ3.2、重力1.0をScene再読込後に検証 |
+| CC0一本木 | Pass | FBX単位・上下軸・接地を補正し、高さ7〜9m、丘中央、幹専用CapsuleColliderを検証 |
+| QvPen / UnyStylus | Pass | 両PrefabのScene参照を検証。購入品UnyStylus本体はGit追跡外 |
+| 空Playlist警告 | Pass | 空のYamaPlayer PlaylistManagerを生成時に除去し、Unity build logに `No playlists found` なし |
+| Unityシーン生成・Udon変換 | Pass | `StargazingWorldBuilder.BuildForBatchMode` 終了コード0、C# error/warningなし |
+| Direct3Dカメラ描画 | Pass | 1280x720 previewでCC0草地、立体草、緩斜面、接地した樹冠・幹、星空を目視確認 |
+| VRChat ClientSim / PC / Quest / iOS | Open | 実クライアントでジャンプ、斜面登坂、両ペンの描画・同期・負荷を再確認する |
+
+静的検証とEditor描画は合格したが、VRChatアバターControllerでの最終合格は実クライアント再試験後に更新する。
