@@ -1,0 +1,10 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
+
+[agents]
+max_concurrent_threads_per_session = 2
+max_depth = 1
+
+[agents.terra-worker]
+description = "境界が明確なUnity/VRChat実装・調査・検証を担当する補助エージェント"
+config_file = "agents/terra-worker.toml"
