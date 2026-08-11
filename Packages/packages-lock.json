@@ -231,6 +231,14 @@
         "com.unity.postprocessing": "3.1.1"
       }
     },
+    "net.kwxxw.yama-stream": {
+      "version": "file:net.kwxxw.yama-stream",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+      }
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
