@@ -72,3 +72,16 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# UdonSharp compiler output; regenerated during Unity import.
+/Assets/SerializedUdonPrograms/
+/Assets/SerializedUdonPrograms.meta
+
+# VRChat SDK sample content; restored from the VPM packages when needed.
+/Assets/Scenes/
+/Assets/Scenes.meta
+/Assets/UdonSharp/UtilityScripts/
+/Assets/UdonSharp/UtilityScripts.meta
+
+# AudioLink render-pipeline detection cache; rewritten when Unity opens.
+/.audiolink_pipeline
