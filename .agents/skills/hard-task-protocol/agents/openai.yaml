@@ -1,0 +1,4 @@
+interface:
+  display_name: "難タスク実行プロトコル"
+  short_description: "複雑なUnity・VRChat作業を検証可能な単位へ分解して実行する"
+  default_prompt: "Use $hard-task-protocol to plan and execute this complex Unity/VRChat task with explicit completion and validation boundaries."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ワールド記録管理"
+  short_description: "仕様・ADR・テスト・権利記録を正本と証拠に沿って更新する"
+  default_prompt: "Use $maintain-world-records to update Stargazing Hill specifications, decisions, tests, and asset records with traceable evidence."

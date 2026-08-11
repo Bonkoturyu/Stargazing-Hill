@@ -19,6 +19,7 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ドキュメント
 
+- [docs/README.md](docs/README.md) — ドキュメント全体の案内
 - [docs/PROJECT_SPEC.md](docs/PROJECT_SPEC.md) — ワールド全体仕様
 - [docs/REAL_SKY_SYSTEM.md](docs/REAL_SKY_SYSTEM.md) — 星空・月・流星群の技術仕様
 
