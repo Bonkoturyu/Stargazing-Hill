@@ -11,3 +11,4 @@
 | [0005](0005-data-driven-celestial-observatory.md) | Accepted | 観測地profile、11流星群catalog、月のtopocentric計算と精度基準 |
 | [0006](0006-vrcsdk-3104-clientsim-networking-guard.md) | Accepted | SDK 3.10.4 ClientSimのUdon networking初期化順序guard |
 | [0007](0007-data-driven-meteor-visual-profiles.md) | Accepted | IMO速度・光度分布を使うNormal / Bright / Fireball描画profile |
+| [0008](0008-three-minute-hourly-meteor-compression.md) | Accepted | 1時間相当の期待流星活動を毎時3分へ圧縮し、固定20本上限を廃止 |
