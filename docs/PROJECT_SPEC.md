@@ -137,7 +137,8 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - IMO Meteor Shower Calendar 2026 Table 5の活動期間、極大日、放射点、ZHRを11群共通catalogへ格納する
 - 群ごとの個別分岐は作らず、同一の活動カーブと放射点計算で処理する
 - 詳細は [REAL_SKY_SYSTEM.md](REAL_SKY_SYSTEM.md)
-- Play ModeのEditorメニューから毎時イベントを経過0秒で任意発火できる
+- Play ModeのEditorメニューから、現在条件の毎時イベントを再生できる
+- デバッグ専用プレビューでは主要11群から任意の1群を選び、活動期・放射点高度に関係なく25秒間20本をローカル再生できる。各5秒waveの最低1本を開始時の視線正面へ配置する
 - 星は+1時間のローカルoffsetとresetで移動を目視比較でき、自動試験でも回転差を検証する
 
 ## 8. 動画プレイヤー
