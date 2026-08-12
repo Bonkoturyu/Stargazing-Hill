@@ -44,6 +44,16 @@ namespace StargazingHill.Editor
             EditorSceneManager.SaveScene(scene);
         }
 
+        /// <summary>
+        /// Installs into a scene the world builder is still assembling. The sceneSaved hook cannot serve the
+        /// build: the builder validates before it saves, so a save-triggered install would always arrive too
+        /// late for validation and the panel would only appear on a later save.
+        /// </summary>
+        internal static void InstallForBuild(Scene scene)
+        {
+            Install(scene, true);
+        }
+
         private static void InstallIfTargetSceneIsAlreadyOpen()
         {
             if (Application.isPlaying) return;
@@ -83,6 +93,11 @@ namespace StargazingHill.Editor
                 Debug.LogWarning("[Stargazing Hill] VR debug panel install skipped: MeteorController / RealSkyController not found.");
                 return;
             }
+
+            // UdonSharpUndo.AddComponent throws a NullReferenceException when the behaviour has no compiled
+            // U# program asset, and it throws after the panel root already exists, which strands a partial
+            // panel in the open scene. Ensure the asset before anything is created.
+            StargazingWorldBuilder.EnsureDebugPanelButtonProgramAsset();
 
             Material boardMaterial = EnsureColorMaterial(
                 "Assets/StargazingHill/Generated/Materials/VRDebugPanel.mat",
