@@ -194,7 +194,9 @@ namespace StargazingHill.Editor
             if (backing != null)
             {
                 backing.InteractionText = interactionText;
-                backing.Proximity = 2.5f;
+                // VRC_Interactable.Proximity is read only in SDK 3.10.4; the serialized field behind it is
+                // UdonBehaviour.proximity, which is what ClientSim and the client both read.
+                backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
             }
             EditorUtility.SetDirty(behaviour);
