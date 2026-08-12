@@ -67,6 +67,8 @@ EXPECTED_SHOWERS = {
     "radiantRightAscensionDegrees": [230, 271, 338, 340, 48, 262, 95, 52, 58, 152, 112],
     "radiantDeclinationDegrees": [49, 34, -1, -16, 58, 54, 16, 15, 22, 22, 33],
     "zenithalHourlyRates": [80, 18, 50, 25, 100, 5, 20, 7, 5, 15, 150],
+    "geocentricVelocityKilometersPerSecond": [41, 49, 66, 41, 59, 20, 66, 27, 29, 71, 35],
+    "populationIndices": [2.1, 2.1, 2.4, 2.5, 2.2, 2.6, 2.5, 2.3, 2.3, 2.5, 2.6],
 }
 USNO_MOON_REFERENCES = [
     (2025, 1, 15, 12, 0, 31.961191, 88.018947),
@@ -226,10 +228,18 @@ def validate_sky_reference() -> None:
     assert "const float waveLength = 5f;" in meteor
     assert "eventDurationSeconds = 25f" in meteor
     assert "Networking.GetNetworkDateTime()" in meteor
+    assert "CalculateVisualTier(" in meteor
+    assert "CalculateMeteorDuration(" in meteor
+    assert "debugWidthScale" not in meteor
+    assert "debugLengthScale" not in meteor
 
     meteor_shader = METEOR_SHADER.read_text(encoding="utf-8")
     assert 'Shader "StargazingHill/Meteor"' in meteor_shader
     assert "Blend One One" in meteor_shader
+    assert "_TailColor" in meteor_shader
+    assert "_CoreColor" in meteor_shader
+    assert "_HeadColor" in meteor_shader
+    assert "_Afterglow" in meteor_shader
 
     moon_shader = MOON_SHADER.read_text(encoding="utf-8")
     assert 'Shader "StargazingHill/Moon"' in moon_shader
@@ -248,6 +258,8 @@ def validate_sky_reference() -> None:
     assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
     assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
     assert "TestSkyAndMeteorForBatchMode" in builder
+    assert "CreateOrUpdateMeteorMaterials" in builder
+    assert "UpgradeMeteorVisualsForBatchMode" in builder
 
     debug_window = (ROOT / "Assets/StargazingHill/Editor/MeteorShowerDebugWindow.cs").read_text(encoding="utf-8")
     assert 'MenuItem("Stargazing Hill/Debug/Meteor Shower Preview..."' in debug_window

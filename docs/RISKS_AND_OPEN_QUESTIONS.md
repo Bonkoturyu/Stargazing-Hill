@@ -14,6 +14,7 @@
 | Open | iOSで利用可能なShaderと動画経路 | 対象Unity/SDK版でBuild & Test |
 | Confirmed | 月位置の許容誤差 | USNO APIの東京5日時を基準に、高度・方位とも0.10°以内（実測最大0.0495°）。静的CIとUnity試験でPass |
 | Confirmed | 流星群データの一次出典 | IMO Meteor Shower Calendar 2026 Table 5、確認日2026-08-12。主要11群をcatalog化 |
+| Provisional | 流星の光度階級確率 | IMOの光度分布指標 `r` をNormal / Bright / Fireball確率へ変換する式は演出上の近似。PC / Quest / iOS実機で視認性と過剰発光を評価して調整する |
 | Provisional | Quest/iOS性能予算 | 基準シーンのProfilerと実機測定から確定 |
 | Provisional | Jacaranda一本木の実機描画負荷 | 原本約386万三角形を46.6万三角形へ削減済み。PC / Quest / iOS実機でGPU時間・メモリを測定し、必要なら遠距離LODを追加 |
 | Out of scope | 月相表示 | 初期MVPでは位置のみ。将来の視覚効果としてBacklogへ保持 |

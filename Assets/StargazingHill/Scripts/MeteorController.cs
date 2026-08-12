@@ -11,6 +11,7 @@ namespace StargazingHill
         [Header("Visual Pool")]
         public Transform[] meteorTransforms;
         public Renderer[] meteorRenderers;
+        public Material[] meteorMaterials;
 
         [Header("Hourly Event")]
         [Range(20f, 30f)] public float eventDurationSeconds = 25f;
@@ -30,6 +31,8 @@ namespace StargazingHill
         public float[] radiantRightAscensionDegrees;
         public float[] radiantDeclinationDegrees;
         public int[] zenithalHourlyRates;
+        public float[] geocentricVelocityKilometersPerSecond;
+        public float[] populationIndices;
 
         [HideInInspector] public int debugRequestedShowerIndex = 4;
         [HideInInspector] public Vector3 debugRequestedViewForward = Vector3.forward;
@@ -185,6 +188,20 @@ namespace StargazingHill
             return (value & 0x7fffffff) / 2147483647f;
         }
 
+        public static int CalculateVisualTier(float sample, float populationIndex)
+        {
+            float fireballChance = Mathf.Clamp(0.055f - (populationIndex - 2.1f) * 0.025f, 0.025f, 0.055f);
+            float brightChance = Mathf.Clamp(0.33f - (populationIndex - 2.1f) * 0.15f, 0.20f, 0.33f);
+            if (sample < fireballChance) return 2;
+            return sample < fireballChance + brightChance ? 1 : 0;
+        }
+
+        public static float CalculateMeteorDuration(float velocityKilometersPerSecond, float variation)
+        {
+            float speed = Mathf.InverseLerp(20f, 71f, Mathf.Clamp(velocityKilometersPerSecond, 20f, 71f));
+            return Mathf.Lerp(1.55f, 0.68f, speed) * Mathf.Lerp(0.86f, 1.14f, variation);
+        }
+
         public static float CalculateDateActivity(
             int year, int month, int day, int startMonthDay, int peakMonthDayValue, int endMonthDay)
         {
@@ -241,7 +258,8 @@ namespace StargazingHill
             if (forcedPreview)
             {
                 Vector3 localUp = transform.InverseTransformDirection(Vector3.up).normalized;
-                radiant = (localViewForward + localUp * 0.48f).normalized;
+                Vector3 localRight = Vector3.Cross(localUp, localViewForward).normalized;
+                radiant = (localViewForward + localUp * 0.42f + localRight * 0.30f).normalized;
             }
 
             int visibleCount = 0;
@@ -249,13 +267,15 @@ namespace StargazingHill
             {
                 int eventSlot = wave * count + slot;
                 float onset = 0.35f + slot * 0.88f + DebugSampleValue(eventId, wave, slot, 0) * 0.28f;
-                float duration = 0.9f + DebugSampleValue(eventId, wave, slot, 1) * 0.45f;
+                float velocity = showerIndex < 0 ? 42f : geocentricVelocityKilometersPerSecond[showerIndex];
+                float duration = CalculateMeteorDuration(
+                    velocity, DebugSampleValue(eventId, wave, slot, 1));
                 float progress = (waveTime - onset) / duration;
                 bool visible = eventSlot < targetCount && progress >= 0f && progress <= 1f &&
                                elapsed < eventDurationSeconds;
                 meteorRenderers[slot].enabled = visible;
                 if (visible) ConfigureMeteor(eventId, wave, slot, Mathf.Clamp01(progress), radiant,
-                    showerIndex >= 0, forcedPreview, localViewForward);
+                    showerIndex, forcedPreview, localViewForward, velocity);
                 if (visible) visibleCount++;
             }
             debugVisibleMeteorCount = visibleCount;
@@ -288,10 +308,11 @@ namespace StargazingHill
         }
 
         private void ConfigureMeteor(
-            int eventId, int wave, int slot, float progress, Vector3 radiant, bool showerActive,
-            bool forcedPreview, Vector3 localViewForward)
+            int eventId, int wave, int slot, float progress, Vector3 radiant, int showerIndex,
+            bool forcedPreview, Vector3 localViewForward, float velocityKilometersPerSecond)
         {
             Transform meteor = meteorTransforms[slot];
+            bool showerActive = showerIndex >= 0;
             Vector3 radial;
             Vector3 motion;
             if (showerActive)
@@ -328,15 +349,26 @@ namespace StargazingHill
                 motion = (tangent * Mathf.Cos(trackAngle) + bitangent * Mathf.Sin(trackAngle)).normalized;
             }
 
-            float travel = Mathf.Lerp(8f, -8f, progress);
+            float speed = Mathf.InverseLerp(20f, 71f, Mathf.Clamp(velocityKilometersPerSecond, 20f, 71f));
+            float travelDistance = Mathf.Lerp(12f, 22f, speed);
+            float travel = Mathf.Lerp(travelDistance * -0.5f, travelDistance * 0.5f, progress);
             meteor.localPosition = radial * skyRadius + motion * travel;
             meteor.localRotation = Quaternion.LookRotation(-radial, motion);
-            float length = Mathf.Lerp(7f, 11f, DebugSampleValue(eventId, wave, slot, 5));
+            float populationIndex = showerIndex < 0 ? 2.5f : populationIndices[showerIndex];
+            int visualTier = CalculateVisualTier(
+                DebugSampleValue(eventId, wave, slot, 6), populationIndex);
+            if (forcedPreview && wave == 0 && slot == 0) visualTier = 2;
+            if (meteorMaterials != null && visualTier < meteorMaterials.Length && meteorMaterials[visualTier] != null)
+                meteorRenderers[slot].sharedMaterial = meteorMaterials[visualTier];
+
+            float length = Mathf.Lerp(4.5f, 7f, speed) *
+                           Mathf.Lerp(0.80f, 1.25f, DebugSampleValue(eventId, wave, slot, 5));
+            if (visualTier == 1) length *= 1.30f;
+            else if (visualTier == 2) length *= 1.70f;
             float fade = Mathf.Sin(progress * Mathf.PI);
-            float debugWidthScale = forcedPreview ? 2.4f : 1f;
-            float debugLengthScale = forcedPreview ? 1.6f : 1f;
+            float width = visualTier == 0 ? 0.15f : visualTier == 1 ? 0.21f : 0.30f;
             meteor.localScale = new Vector3(
-                0.22f * fade * debugWidthScale, length * fade * debugLengthScale, 1f);
+                width * fade, length * Mathf.Clamp01(fade * 2.5f), 1f);
         }
 
         private bool CatalogLengthsMatch()
@@ -348,7 +380,10 @@ namespace StargazingHill
                    peakMonthDay != null && peakMonthDay.Length == count &&
                    radiantRightAscensionDegrees != null && radiantRightAscensionDegrees.Length == count &&
                    radiantDeclinationDegrees != null && radiantDeclinationDegrees.Length == count &&
-                   zenithalHourlyRates != null && zenithalHourlyRates.Length == count;
+                   zenithalHourlyRates != null && zenithalHourlyRates.Length == count &&
+                   geocentricVelocityKilometersPerSecond != null &&
+                   geocentricVelocityKilometersPerSecond.Length == count &&
+                   populationIndices != null && populationIndices.Length == count;
         }
 
         private static int PositiveModulo(int value, int modulus)

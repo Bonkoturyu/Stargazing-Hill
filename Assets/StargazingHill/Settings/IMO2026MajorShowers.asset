@@ -23,3 +23,5 @@ MonoBehaviour:
   radiantRightAscensionDegrees: [230, 271, 338, 340, 48, 262, 95, 52, 58, 152, 112]
   radiantDeclinationDegrees: [49, 34, -1, -16, 58, 54, 16, 15, 22, 22, 33]
   zenithalHourlyRates: [80, 18, 50, 25, 100, 5, 20, 7, 5, 15, 150]
+  geocentricVelocityKilometersPerSecond: [41, 49, 66, 41, 59, 20, 66, 27, 29, 71, 35]
+  populationIndices: [2.1, 2.1, 2.4, 2.5, 2.2, 2.6, 2.5, 2.3, 2.3, 2.5, 2.6]

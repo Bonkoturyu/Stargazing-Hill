@@ -10,3 +10,4 @@
 | [0004](0004-poly-haven-jacaranda-landmark.md) | Accepted | Poly Haven Jacaranda一本木、連結部品単位の軽量化、Y-up派生Mesh |
 | [0005](0005-data-driven-celestial-observatory.md) | Accepted | 観測地profile、11流星群catalog、月のtopocentric計算と精度基準 |
 | [0006](0006-vrcsdk-3104-clientsim-networking-guard.md) | Accepted | SDK 3.10.4 ClientSimのUdon networking初期化順序guard |
+| [0007](0007-data-driven-meteor-visual-profiles.md) | Accepted | IMO速度・光度分布を使うNormal / Bright / Fireball描画profile |
