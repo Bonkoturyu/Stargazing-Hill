@@ -119,31 +119,31 @@ namespace StargazingHill.Editor
                 int row = index / 2;
                 float x = column == 0 ? -0.57f : 0.57f;
                 float y = startY - row * rowStep;
-                CreateActionButton(panel.transform, labels[index], new Vector3(x, y, -0.035f),
-                    new Vector3(1.00f, 0.145f, 0.035f), buttonMaterial,
+                CreateActionButton(panel.transform, labels[index], new Vector3(x, y, -0.012f),
+                    new Vector3(1.00f, 0.145f, 0.006f), buttonMaterial,
                     WorldDebugPanelButton.ActionForcedShower, index, panel, meteor, sky);
             }
 
-            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(0.57f, -0.655f, -0.035f),
-                new Vector3(1.00f, 0.145f, 0.035f), buttonMaterial,
+            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(0.57f, -0.655f, -0.012f),
+                new Vector3(1.00f, 0.145f, 0.006f), buttonMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "STOP", new Vector3(-0.57f, -0.655f, -0.035f),
-                new Vector3(1.00f, 0.145f, 0.035f), dangerMaterial,
+            CreateActionButton(panel.transform, "STOP", new Vector3(-0.57f, -0.655f, -0.012f),
+                new Vector3(1.00f, 0.145f, 0.006f), dangerMaterial,
                 WorldDebugPanelButton.ActionStopMeteor, 0, panel, meteor, sky);
 
-            CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.76f, -0.86f, -0.035f),
-                new Vector3(0.64f, 0.145f, 0.035f), buttonMaterial,
+            CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.76f, -0.86f, -0.012f),
+                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
                 WorldDebugPanelButton.ActionSkyMinusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, -0.86f, -0.035f),
-                new Vector3(0.64f, 0.145f, 0.035f), buttonMaterial,
+            CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, -0.86f, -0.012f),
+                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
                 WorldDebugPanelButton.ActionSkyPlusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.76f, -0.86f, -0.035f),
-                new Vector3(0.64f, 0.145f, 0.035f), buttonMaterial,
+            CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.76f, -0.86f, -0.012f),
+                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
                 WorldDebugPanelButton.ActionSkyReset, 0, panel, meteor, sky);
 
             // Toggle stays outside panelRoot so it remains usable while the panel is hidden.
             GameObject toggle = CreatePrimitive(ToggleObjectName, null, buttonMaterial,
-                TogglePosition, Quaternion.Euler(ToggleEuler), new Vector3(0.78f, 0.22f, 0.035f));
+                TogglePosition, Quaternion.Euler(ToggleEuler), new Vector3(0.78f, 0.22f, 0.018f));
             SceneManager.MoveGameObjectToScene(toggle, scene);
             ConfigureButton(toggle, WorldDebugPanelButton.ActionTogglePanel, 0, panel, meteor, sky,
                 "Toggle meteor debug panel");
@@ -152,7 +152,7 @@ namespace StargazingHill.Editor
 
             panel.SetActive(false);
             EditorSceneManager.MarkSceneDirty(scene);
-            Debug.Log("[Stargazing Hill] Installed paper-thin local VR debug panel near the amenity cluster (default OFF).");
+            Debug.Log("[Stargazing Hill] Installed flat local VR debug panel near the amenity cluster (default OFF, color feedback enabled).");
         }
 
         private static void CreateThinBoard(Transform parent, Material material)
@@ -187,6 +187,7 @@ namespace StargazingHill.Editor
             behaviour.panelRoot = panelRoot;
             behaviour.meteorController = meteor;
             behaviour.skyController = sky;
+            behaviour.visualRenderer = button.GetComponent<Renderer>();
             UdonSharpEditorUtility.CopyProxyToUdon(behaviour);
 
             UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(behaviour);
