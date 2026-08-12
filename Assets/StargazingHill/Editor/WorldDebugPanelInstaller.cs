@@ -101,7 +101,7 @@ namespace StargazingHill.Editor
 
             CreateThinBoard(panel.transform, boardMaterial);
             CreateText(panel.transform, "METEOR DEBUG", new Vector3(0f, 0.67f, -0.022f), 0.085f, TextAnchor.MiddleCenter);
-            CreateText(panel.transform, "FORCED 25s / NATURAL 3min / LOCAL ONLY",
+            CreateText(panel.transform, "FORCED 25s / REPLAY CURRENT 3min / LOCAL ONLY",
                 new Vector3(0f, 0.54f, -0.022f), 0.036f, TextAnchor.MiddleCenter);
 
             string[] labels =
@@ -124,7 +124,7 @@ namespace StargazingHill.Editor
                     WorldDebugPanelButton.ActionForcedShower, index, panel, meteor, sky);
             }
 
-            CreateActionButton(panel.transform, "NATURAL 3 MIN", new Vector3(0.57f, -0.655f, -0.035f),
+            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(0.57f, -0.655f, -0.035f),
                 new Vector3(1.00f, 0.145f, 0.035f), buttonMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
             CreateActionButton(panel.transform, "STOP", new Vector3(-0.57f, -0.655f, -0.035f),
