@@ -12,7 +12,7 @@
 - 月は主要摂動と扁平地球上のtopocentric parallaxを含む低コスト計算で位置を求める。東京のUSNO基準5日時で高度・方位とも0.10°以内。
 - `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHRを保持する。
 - `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、活動群がなければ散在流星へfallbackする。5秒waveを5回使い、1イベント最大20本とする。
-- Play Mode中の `Stargazing Hill/Debug/Trigger Hourly Meteor Shower` で同じローカル演出を任意発火できる。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
+- Play Mode中の `Stargazing Hill/Debug/Meteor Shower Preview...` で主要11群を選択し、活動期と放射点高度に関係なく20本をローカル強制再生できる。`Force Perseids Preview (20 Meteors)` はペルセウス座流星群の短縮入口。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
 - データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、月のUSNO基準、5観測地parameterization、11群catalogはPass。ClientSimと実機確認はOpen。
 
@@ -227,7 +227,11 @@ YYYYMMDDHH
 
 ### 9.3 デバッグ発火
 
-生成SceneをPlay Modeで開き、`Stargazing Hill/Debug/Trigger Hourly Meteor Shower` を実行すると、現在hourのEvent IDを使って経過0秒からローカル再生する。ネットワークイベントは送らず、他プレイヤーの状態を変更しない。`MeteorController.DebugTriggerHourlyEvent()` も公開し、将来のワールド内デバッグUIから同じ経路を呼べる。
+生成SceneをPlay Modeで開き、`Stargazing Hill/Debug/Meteor Shower Preview...` を開く。主要11群から選択して `選択した流星群を正面へ強制表示` を押すと、選択群を25秒間・20本（5秒ごとに4本）でローカル再生する。活動期間、実際の放射点高度、ZHRはこの強制プレビューに限り無視する。各waveの1本目はボタン押下時のGame camera正面へ配置し、地形に隠れないよう高度が約13°未満の視線だけ画角内で上方補正するため、最初の流星は即時確認できる。他3本は選択群の収束する軌跡を保ったまま視界周辺へ配置する。
+
+`Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` はペルセウス座流星群を直接開始する。`Stargazing Hill/Debug/Trigger Hourly Meteor Shower` は現在hourの自然条件を経過0秒から再生する旧経路であり、活動群がない日時には散在流星だけになる。
+
+いずれもネットワークイベントは送らず、他プレイヤーの状態を変更しない。`MeteorController.DebugTriggerSelectedShower(int, Vector3)` と `DebugTriggerHourlyEvent()` を公開する。強制プレビューは観測方向へ演出を回し、見落とし防止のため軌跡の幅を2.4倍、長さを1.6倍にする視認性試験であり、自然発生側のUTC、活動度、実放射点計算と表示寸法は変更しない。
 
 天球は `Stargazing Hill/Debug/Advance Sky +1 Hour` でローカル時刻offsetを1時間進め、`Reset Sky Time Offset` で現在UTCへ戻す。自動試験では同一時刻の回転一致、+1時間で約15.04°、+24時間で約0.985°の恒星日差を確認する。
 

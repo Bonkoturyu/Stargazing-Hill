@@ -190,7 +190,8 @@ namespace StargazingHill.Editor
                 return;
             }
             controller.DebugTriggerHourlyEvent();
-            Debug.Log("[Stargazing Hill] Forced the local hourly meteor event from t=0.");
+            Debug.Log("[Stargazing Hill] Replayed the current natural hourly meteor event from t=0. " +
+                      "Use Meteor Shower Preview for a guaranteed 20-meteor shower.");
         }
 
         [MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour", false, 51)]
@@ -280,10 +281,26 @@ namespace StargazingHill.Editor
                 meteorController.DebugGetStrongestShowerIndex(2026, 8, 13, 0, 0, 0.0) != 4)
                 throw new InvalidOperationException("IMO shower database/activity test failed.");
 
+            Vector3 previewForward = new Vector3(0.16f, 0.22f, 0.96f).normalized;
+            meteorController.DebugPreviewSelectedShowerAtSecond(4, 0.8f, previewForward);
+            Vector3 previewLocalForward = meteorController.transform.InverseTransformDirection(previewForward).normalized;
+            bool previewVisible = meteorController.meteorRenderers != null &&
+                                  meteorController.meteorRenderers.Length >= 1 &&
+                                  meteorController.meteorRenderers[0].enabled;
+            float previewAlignment = meteorController.meteorTransforms == null ||
+                                     meteorController.meteorTransforms.Length < 1 ? -1f :
+                Vector3.Dot(meteorController.meteorTransforms[0].localPosition.normalized, previewLocalForward);
+            if (meteorController.DebugGetForcedMeteorCount() != 20 || !previewVisible || previewAlignment < 0.98f)
+                throw new InvalidOperationException(
+                    "Forced meteor preview test failed: visible=" + previewVisible +
+                    ", alignment=" + previewAlignment + ".");
+            meteorController.DebugStopHourlyEvent();
+
             Debug.Log("[Stargazing Hill] Sky/meteor test passed: +1h=" + oneHourMotion.ToString("F4") +
                       " degrees, +24h residual=" + oneDayResidual.ToString("F4") +
                       " degrees, five USNO lunar references <=0.10 degrees, five observatories, " +
-                      "11 IMO showers, deterministic hourly event IDs=" + eventId + "/" + nextEventId + ".");
+                      "11 IMO showers, deterministic hourly event IDs=" + eventId + "/" + nextEventId +
+                      ", forced 20-meteor front-view preview.");
         }
 
         private static void AssertMoonReference(
@@ -355,7 +372,7 @@ namespace StargazingHill.Editor
                 EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z) + 1.65f,
                 SpawnGroundPosition.z);
             controller.transform.position = observer;
-            controller.DebugPreviewEventAtSecond(2.4f);
+            controller.DebugPreviewSelectedShowerAtSecond(4, 1.1f, camera.transform.forward);
 
             Renderer visibleMeteor = null;
             for (int index = 0; index < controller.meteorRenderers.Length; index++)

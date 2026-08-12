@@ -218,6 +218,10 @@ def validate_sky_reference() -> None:
     assert "GetHourlyEventId(" in meteor
     assert "DebugTriggerHourlyEvent()" in meteor
     assert "DebugPreviewEventAtSecond(" in meteor
+    assert "DebugTriggerSelectedShower(" in meteor
+    assert "DebugPreviewSelectedShowerAtSecond(" in meteor
+    assert "DebugForcedMeteorCount = 20" in meteor
+    assert "forcedPreview && slot == 0" in meteor
     assert "const float waveLength = 5f;" in meteor
     assert "eventDurationSeconds = 25f" in meteor
     assert "Networking.GetNetworkDateTime()" in meteor
@@ -243,6 +247,11 @@ def validate_sky_reference() -> None:
     assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
     assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
     assert "TestSkyAndMeteorForBatchMode" in builder
+
+    debug_window = (ROOT / "Assets/StargazingHill/Editor/MeteorShowerDebugWindow.cs").read_text(encoding="utf-8")
+    assert 'MenuItem("Stargazing Hill/Debug/Meteor Shower Preview..."' in debug_window
+    assert 'MenuItem("Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)"' in debug_window
+    assert "controller.DebugTriggerSelectedShower(showerIndex, viewForward);" in debug_window
     assert "five USNO lunar references <=0.10 degrees" in builder
     assert "five observatories" in builder
     assert "11 IMO showers" in builder

@@ -36,6 +36,11 @@ namespace StargazingHill
         private float _debugStartTime;
         private int _debugEventId;
         private DateTime _debugUtc;
+        private int _debugForcedShowerIndex = -1;
+        private Vector3 _debugViewForward = Vector3.forward;
+
+        private const int DebugForcedMeteorCount = 20;
+        private const float DebugImmediatePreviewElapsed = 0.75f;
 
         private void Start()
         {
@@ -68,7 +73,8 @@ namespace StargazingHill
             }
 
             UpdateMeteorVisuals(eventId, elapsed, utc.Year, utc.Month, utc.Day, utc.Hour, utc.Minute,
-                utc.Second + utc.Millisecond / 1000.0);
+                utc.Second + utc.Millisecond / 1000.0, _debugEventActive ? _debugForcedShowerIndex : -1,
+                _debugViewForward);
         }
 
         public void DebugTriggerHourlyEvent()
@@ -76,14 +82,39 @@ namespace StargazingHill
             _debugUtc = Networking.GetNetworkDateTime();
             _debugEventId = GetHourlyEventId(_debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour);
             _debugStartTime = Time.time;
+            _debugForcedShowerIndex = -1;
             _debugEventActive = true;
             UpdateMeteorVisuals(_debugEventId, 0f, _debugUtc.Year, _debugUtc.Month, _debugUtc.Day,
-                _debugUtc.Hour, _debugUtc.Minute, _debugUtc.Second + _debugUtc.Millisecond / 1000.0);
+                _debugUtc.Hour, _debugUtc.Minute, _debugUtc.Second + _debugUtc.Millisecond / 1000.0,
+                -1, _debugViewForward);
+        }
+
+        public void DebugTriggerSelectedShower(int showerIndex, Vector3 viewForward)
+        {
+            if (!CatalogLengthsMatch() || showerIndex < 0 || showerIndex >= showerIds.Length)
+            {
+                Debug.LogWarning("[Stargazing Hill] Meteor preview rejected: invalid shower index " + showerIndex + ".");
+                return;
+            }
+
+            _debugUtc = Networking.GetNetworkDateTime();
+            _debugEventId = GetHourlyEventId(_debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour) +
+                            showerIndex * 104729;
+            _debugViewForward = NormalizeViewForward(viewForward);
+            _debugForcedShowerIndex = showerIndex;
+            _debugStartTime = Time.time - DebugImmediatePreviewElapsed;
+            _debugEventActive = true;
+            UpdateMeteorVisuals(_debugEventId, DebugImmediatePreviewElapsed,
+                _debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour, _debugUtc.Minute,
+                _debugUtc.Second + _debugUtc.Millisecond / 1000.0, showerIndex, _debugViewForward);
+            Debug.Log("[Stargazing Hill] Forced meteor shower preview: " + showerNamesJa[showerIndex] +
+                      " / " + showerIds[showerIndex] + " (20 meteors over 25 seconds, local-only).");
         }
 
         public void DebugStopHourlyEvent()
         {
             _debugEventActive = false;
+            _debugForcedShowerIndex = -1;
             SetAllVisible(false);
         }
 
@@ -91,7 +122,32 @@ namespace StargazingHill
         {
             int eventId = GetHourlyEventId(2026, 8, 13, 0);
             UpdateMeteorVisuals(eventId, Mathf.Clamp(elapsed, 0f, eventDurationSeconds - 0.001f),
-                2026, 8, 13, 0, 0, 0.0);
+                2026, 8, 13, 0, 0, 0.0, -1, Vector3.forward);
+        }
+
+        public void DebugPreviewSelectedShowerAtSecond(int showerIndex, float elapsed, Vector3 viewForward)
+        {
+            if (!CatalogLengthsMatch() || showerIndex < 0 || showerIndex >= showerIds.Length)
+            {
+                SetAllVisible(false);
+                return;
+            }
+
+            int eventId = GetHourlyEventId(2026, peakMonthDay[showerIndex] / 100,
+                peakMonthDay[showerIndex] % 100, 0) + showerIndex * 104729;
+            UpdateMeteorVisuals(eventId, Mathf.Clamp(elapsed, 0f, eventDurationSeconds - 0.001f),
+                2026, peakMonthDay[showerIndex] / 100, peakMonthDay[showerIndex] % 100,
+                0, 0, 0.0, showerIndex, NormalizeViewForward(viewForward));
+        }
+
+        public int DebugGetForcedMeteorCount()
+        {
+            return DebugForcedMeteorCount;
+        }
+
+        public int DebugGetForcedShowerIndex()
+        {
+            return _debugForcedShowerIndex;
         }
 
         public static int GetHourlyEventId(int year, int month, int day, int hour)
@@ -137,7 +193,8 @@ namespace StargazingHill
         }
 
         private void UpdateMeteorVisuals(
-            int eventId, float elapsed, int year, int month, int day, int hour, int minute, double second)
+            int eventId, float elapsed, int year, int month, int day, int hour, int minute, double second,
+            int forcedShowerIndex, Vector3 forcedViewForward)
         {
             if (meteorTransforms == null || meteorRenderers == null || elapsed < 0f)
             {
@@ -149,8 +206,10 @@ namespace StargazingHill
             int wave = Mathf.FloorToInt(elapsed / waveLength);
             float waveTime = elapsed - wave * waveLength;
             int count = Mathf.Min(meteorTransforms.Length, meteorRenderers.Length);
-            int showerIndex = GetStrongestShowerIndex(year, month, day, hour, minute, second);
-            int targetCount = showerIndex < 0 ? 2 : CalculateCompressedCount(
+            bool forcedPreview = forcedShowerIndex >= 0 && forcedShowerIndex < showerIds.Length;
+            int showerIndex = forcedPreview ? forcedShowerIndex :
+                GetStrongestShowerIndex(year, month, day, hour, minute, second);
+            int targetCount = forcedPreview ? DebugForcedMeteorCount : showerIndex < 0 ? 2 : CalculateCompressedCount(
                 CalculateDateActivity(year, month, day, activeStartMonthDay[showerIndex],
                     peakMonthDay[showerIndex], activeEndMonthDay[showerIndex]),
                 zenithalHourlyRates[showerIndex]);
@@ -158,6 +217,13 @@ namespace StargazingHill
                 RealSkyController.EquatorialDirectionToHorizontal(
                     radiantRightAscensionDegrees[showerIndex], radiantDeclinationDegrees[showerIndex],
                     year, month, day, hour, minute, second, latitudeDegrees, longitudeDegreesEast);
+            Vector3 localViewForward = transform.InverseTransformDirection(
+                EnsureSkywardViewForward(forcedViewForward)).normalized;
+            if (forcedPreview)
+            {
+                Vector3 localUp = transform.InverseTransformDirection(Vector3.up).normalized;
+                radiant = (localViewForward + localUp * 0.48f).normalized;
+            }
 
             for (int slot = 0; slot < count; slot++)
             {
@@ -168,7 +234,8 @@ namespace StargazingHill
                 bool visible = eventSlot < targetCount && progress >= 0f && progress <= 1f &&
                                elapsed < eventDurationSeconds;
                 meteorRenderers[slot].enabled = visible;
-                if (visible) ConfigureMeteor(eventId, wave, slot, Mathf.Clamp01(progress), radiant, showerIndex >= 0);
+                if (visible) ConfigureMeteor(eventId, wave, slot, Mathf.Clamp01(progress), radiant,
+                    showerIndex >= 0, forcedPreview, localViewForward);
             }
         }
 
@@ -199,20 +266,33 @@ namespace StargazingHill
         }
 
         private void ConfigureMeteor(
-            int eventId, int wave, int slot, float progress, Vector3 radiant, bool showerActive)
+            int eventId, int wave, int slot, float progress, Vector3 radiant, bool showerActive,
+            bool forcedPreview, Vector3 localViewForward)
         {
             Transform meteor = meteorTransforms[slot];
             Vector3 radial;
             Vector3 motion;
             if (showerActive)
             {
-                Vector3 basis = Vector3.Cross(radiant, Mathf.Abs(radiant.y) > 0.92f ? Vector3.right : Vector3.up).normalized;
-                Vector3 secondBasis = Vector3.Cross(radiant, basis).normalized;
-                float around = DebugSampleValue(eventId, wave, slot, 2) * Mathf.PI * 2f;
-                Vector3 away = (basis * Mathf.Cos(around) + secondBasis * Mathf.Sin(around)).normalized;
-                float separation = Mathf.Lerp(24f, 64f, DebugSampleValue(eventId, wave, slot, 3)) * Mathf.Deg2Rad;
-                radial = (radiant * Mathf.Cos(separation) + away * Mathf.Sin(separation)).normalized;
-                motion = (radial * Mathf.Cos(separation) - radiant).normalized;
+                if (forcedPreview && slot == 0)
+                {
+                    radial = localViewForward;
+                    motion = (radial * Vector3.Dot(radial, radiant) - radiant).normalized;
+                }
+                else
+                {
+                    Vector3 basis = Vector3.Cross(radiant,
+                        Mathf.Abs(radiant.y) > 0.92f ? Vector3.right : Vector3.up).normalized;
+                    Vector3 secondBasis = Vector3.Cross(radiant, basis).normalized;
+                    float around = DebugSampleValue(eventId, wave, slot, 2) * Mathf.PI * 2f;
+                    Vector3 away = (basis * Mathf.Cos(around) + secondBasis * Mathf.Sin(around)).normalized;
+                    float minimumSeparation = forcedPreview ? 12f : 24f;
+                    float maximumSeparation = forcedPreview ? 42f : 64f;
+                    float separation = Mathf.Lerp(minimumSeparation, maximumSeparation,
+                        DebugSampleValue(eventId, wave, slot, 3)) * Mathf.Deg2Rad;
+                    radial = (radiant * Mathf.Cos(separation) + away * Mathf.Sin(separation)).normalized;
+                    motion = (radial * Mathf.Cos(separation) - radiant).normalized;
+                }
             }
             else
             {
@@ -231,7 +311,10 @@ namespace StargazingHill
             meteor.localRotation = Quaternion.LookRotation(-radial, motion);
             float length = Mathf.Lerp(7f, 11f, DebugSampleValue(eventId, wave, slot, 5));
             float fade = Mathf.Sin(progress * Mathf.PI);
-            meteor.localScale = new Vector3(0.22f * fade, length * fade, 1f);
+            float debugWidthScale = forcedPreview ? 2.4f : 1f;
+            float debugLengthScale = forcedPreview ? 1.6f : 1f;
+            meteor.localScale = new Vector3(
+                0.22f * fade * debugWidthScale, length * fade * debugLengthScale, 1f);
         }
 
         private bool CatalogLengthsMatch()
@@ -250,6 +333,23 @@ namespace StargazingHill
         {
             int result = value % modulus;
             return result < 0 ? result + modulus : result;
+        }
+
+        private static Vector3 NormalizeViewForward(Vector3 viewForward)
+        {
+            return viewForward.sqrMagnitude < 0.0001f ? Vector3.forward : viewForward.normalized;
+        }
+
+        private static Vector3 EnsureSkywardViewForward(Vector3 viewForward)
+        {
+            Vector3 normalized = NormalizeViewForward(viewForward);
+            const float minimumVertical = 0.22f;
+            if (normalized.y >= minimumVertical) return normalized;
+
+            Vector3 horizontal = new Vector3(normalized.x, 0f, normalized.z);
+            if (horizontal.sqrMagnitude < 0.0001f) horizontal = Vector3.forward;
+            float horizontalScale = Mathf.Sqrt(1f - minimumVertical * minimumVertical);
+            return horizontal.normalized * horizontalScale + Vector3.up * minimumVertical;
         }
 
         private static bool IsLeapYear(int year)

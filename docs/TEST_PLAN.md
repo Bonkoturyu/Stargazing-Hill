@@ -111,9 +111,22 @@
 | +24時間の恒星日差 | Pass | 同UTC時刻の翌日との差0.9852°。太陽日24時間で完全一致しないことを確認 |
 | 毎時Event ID | Pass | `year/month/day/hour`から連続hourで異なるID `18094356` / `18094357` を生成 |
 | 決定的パラメータ | Pass | 同一Event ID / wave / slot / channelのsample一致、次hourで不一致 |
-| 任意発火入口 | Pass | Play Modeメニューと `DebugTriggerHourlyEvent()` を実装。UdonSharp 91 scripts変換、Scene生成・再読込検証Pass |
-| 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。任意発火と同じ経路の2.4秒地点をDirect3D描画し、複数の加算発光軌跡を目視確認 |
+| 任意発火入口 | Pass | Play Modeメニューと `DebugTriggerHourlyEvent()` を実装。UdonSharp 92 scripts変換、Scene生成・再読込検証Pass |
+| 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。強制経路の1.1秒地点をDirect3D描画し、加算発光軌跡を目視確認 |
 | VRChat Client | Open | 毎時00分、途中参加、任意発火、星+1時間/resetをBuild & Testで確認する |
+
+## 2026-08-12 流星群強制プレビュー試験
+
+| 項目 | 状態 | 証拠 / 判定 |
+|---|---|---|
+| 主要11群の選択 | Confirmed | `MeteorShowerDebugWindow` が正本catalogの日本語名・IDを列挙し、選択indexを `MeteorController` へ渡す |
+| 活動期・高度の無視 | Confirmed | 強制経路は選択indexを直接採用し、自然発生の活動日・放射点高度選択を通らない |
+| 20本固定 | Pass | 4本pool × 5wave、`DebugForcedMeteorCount = 20`。静的検査とUnity batch testで確認 |
+| 視線正面の保証 | Pass | 各waveのslot 0を開始時のcamera forwardへ配置し、地形回避の最低高度を約13°に設定。強制時だけ幅2.4倍・長さ1.6倍。Unity batch testで先頭Renderer有効かつ方向dot >= 0.98を確認 |
+| Direct3D描画 | Pass | 1280×720画像を生成し、丘と木の上に強制流星の発光軌跡が出ることを目視確認 |
+| ペルセウス座短縮入口 | Pass | `Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` がcatalog index 4を起動 |
+| 自然発生への非干渉 | Confirmed | 強制indexはローカルdebug状態だけに保持し、通常経路は従来のUTC・活動度・実放射点を使用 |
+| Play Mode目視 | Pending Evidence | 利用者がGame viewでメニュー操作し、25秒・5waveとログ上の選択群名を確認する |
 
 ## 2026-08-12 TreeSelectionTempビルド阻害の回帰試験
 
