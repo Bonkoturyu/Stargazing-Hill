@@ -6,7 +6,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using VRC.SDKBase;
 using Yamadev.YamaStream;
 using Yamadev.YamaStream.Modules.AutoPlay;
 
@@ -46,6 +45,14 @@ namespace StargazingHill.Editor
             Scene scene = SceneManager.GetActiveScene();
             if (scene.path != ScenePath)
                 scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            Sync(scene, true);
+            EditorSceneManager.SaveScene(scene);
+        }
+
+        public static void SyncOpenSceneFromConfig()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.path != ScenePath || Application.isPlaying) return;
             Sync(scene, true);
             EditorSceneManager.SaveScene(scene);
         }
