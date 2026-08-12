@@ -12,6 +12,7 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using VRC.Core;
 using VRC.SDK3.Components;
+using VRC.Udon;
 using Yamadev.YamaStream;
 using Object = UnityEngine.Object;
 
@@ -184,12 +185,14 @@ namespace StargazingHill.Editor
         public static void DebugTriggerHourlyMeteorShower()
         {
             MeteorController controller = Object.FindObjectOfType<MeteorController>(true);
-            if (!Application.isPlaying || controller == null)
+            UdonBehaviour backing = controller == null ? null :
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(controller);
+            if (!Application.isPlaying || backing == null || !backing.IsInitialized || backing.HasError)
             {
-                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before triggering meteors.");
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode and wait for Udon initialization before triggering meteors.");
                 return;
             }
-            controller.DebugTriggerHourlyEvent();
+            backing.SendCustomEvent(nameof(MeteorController.DebugTriggerHourlyEvent));
             Debug.Log("[Stargazing Hill] Replayed the current natural hourly meteor event from t=0. " +
                       "Use Meteor Shower Preview for a guaranteed 20-meteor shower.");
         }
@@ -198,12 +201,14 @@ namespace StargazingHill.Editor
         public static void DebugAdvanceSkyOneHour()
         {
             RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
-            if (!Application.isPlaying || controller == null)
+            UdonBehaviour backing = controller == null ? null :
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(controller);
+            if (!Application.isPlaying || backing == null || !backing.IsInitialized || backing.HasError)
             {
-                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before advancing the sky.");
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode and wait for Udon initialization before advancing the sky.");
                 return;
             }
-            controller.DebugAdvanceOneHour();
+            backing.SendCustomEvent(nameof(RealSkyController.DebugAdvanceOneHour));
             Debug.Log("[Stargazing Hill] Advanced the local sky debug offset by one hour.");
         }
 
@@ -211,12 +216,14 @@ namespace StargazingHill.Editor
         public static void DebugResetSkyTimeOffset()
         {
             RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
-            if (!Application.isPlaying || controller == null)
+            UdonBehaviour backing = controller == null ? null :
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(controller);
+            if (!Application.isPlaying || backing == null || !backing.IsInitialized || backing.HasError)
             {
-                Debug.LogWarning("[Stargazing Hill] Enter Play Mode with the generated scene open before resetting the sky.");
+                Debug.LogWarning("[Stargazing Hill] Enter Play Mode and wait for Udon initialization before resetting the sky.");
                 return;
             }
-            controller.DebugResetTimeOffset();
+            backing.SendCustomEvent(nameof(RealSkyController.DebugResetTimeOffset));
             Debug.Log("[Stargazing Hill] Reset the local sky debug offset.");
         }
 
@@ -300,7 +307,7 @@ namespace StargazingHill.Editor
                       " degrees, +24h residual=" + oneDayResidual.ToString("F4") +
                       " degrees, five USNO lunar references <=0.10 degrees, five observatories, " +
                       "11 IMO showers, deterministic hourly event IDs=" + eventId + "/" + nextEventId +
-                      ", forced 20-meteor front-view preview.");
+                      ", forced 20-meteor front-view preview calculation.");
         }
 
         private static void AssertMoonReference(

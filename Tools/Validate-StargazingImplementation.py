@@ -14,6 +14,7 @@ CATALOG = ROOT / "Assets/StargazingHill/Editor/Data/hyg_bright_v41.csv"
 BUILDER = ROOT / "Assets/StargazingHill/Editor/StargazingWorldBuilder.cs"
 SKY_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/RealSkyController.cs"
 METEOR_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/MeteorController.cs"
+CLIENTSIM_GUARD = ROOT / "Assets/StargazingHill/Editor/VrcSdk3104ClientSimGuard.cs"
 METEOR_SHADER = ROOT / "Assets/StargazingHill/Shaders/Meteor.shader"
 MOON_SHADER = ROOT / "Assets/StargazingHill/Shaders/Moon.shader"
 OBSERVATORY_PROFILE = ROOT / "Assets/StargazingHill/Settings/TokyoObservatory.asset"
@@ -218,7 +219,7 @@ def validate_sky_reference() -> None:
     assert "GetHourlyEventId(" in meteor
     assert "DebugTriggerHourlyEvent()" in meteor
     assert "DebugPreviewEventAtSecond(" in meteor
-    assert "DebugTriggerSelectedShower(" in meteor
+    assert "public void DebugTriggerSelectedShower()" in meteor
     assert "DebugPreviewSelectedShowerAtSecond(" in meteor
     assert "DebugForcedMeteorCount = 20" in meteor
     assert "forcedPreview && slot == 0" in meteor
@@ -251,7 +252,16 @@ def validate_sky_reference() -> None:
     debug_window = (ROOT / "Assets/StargazingHill/Editor/MeteorShowerDebugWindow.cs").read_text(encoding="utf-8")
     assert 'MenuItem("Stargazing Hill/Debug/Meteor Shower Preview..."' in debug_window
     assert 'MenuItem("Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)"' in debug_window
-    assert "controller.DebugTriggerSelectedShower(showerIndex, viewForward);" in debug_window
+    assert "backing.SetProgramVariable(nameof(MeteorController.debugRequestedShowerIndex), showerIndex);" in debug_window
+    assert "backing.SendCustomEvent(nameof(MeteorController.DebugTriggerSelectedShower));" in debug_window
+    assert "Networking.LocalPlayer" in debug_window
+    assert "controller.DebugTriggerSelectedShower(showerIndex, viewForward);" not in debug_window
+
+    clientsim_guard = CLIENTSIM_GUARD.read_text(encoding="utf-8")
+    assert 'private const string PackageVersion = "3.10.4";' in clientsim_guard
+    assert "if(!udonBehaviour.IsInitialized)" in clientsim_guard
+    assert "udonBehaviour.IsNetworkingSupported = true;" in clientsim_guard
+    assert "did not match the verified source" in clientsim_guard
     assert "five USNO lunar references <=0.10 degrees" in builder
     assert "five observatories" in builder
     assert "11 IMO showers" in builder

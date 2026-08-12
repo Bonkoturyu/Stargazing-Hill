@@ -21,6 +21,8 @@
 - `Provisional`: 大きな整数を単純に `int` へキャストしない。Udonの型制約とオーバーフローを確認する。
 - `Provisional`: `OnDeserialization` は受信側の適用経路として設計し、Owner側は状態変更時に明示適用する。適用処理は冪等にする。
 - `Confirmed`: 日時から決定的に再構成できる星空・月・毎時イベントは、ネットワーク同期を持たず同じ時刻源から算出する。
+- `Confirmed`: Play Mode中のEditorツールからUdonSharpを操作するときはproxyのC#メソッドを直接呼ばない。`UdonSharpEditorUtility.GetBackingUdonBehaviour` でbacking Udonを取得し、入力を `SetProgramVariable` して引数なしCustomEventを送る。proxy直接呼出しの状態はUdon VM heapへ反映されず、次のUdon Updateで上書きされる。
+- `Provisional`: VRChat Worlds SDK 3.10.4のClientSimでは、Scene load中にUdonを先行初期化した後で `IsNetworkingSupported` を再設定して例外になる場合がある。`VrcSdk3104ClientSimGuard` は上流3.10.4の該当2断片が完全一致するときだけ、初回登録前のnetworking有効化と初期化済みsetterのskipをVPM管理packageへ適用する。VPM復元後も再適用し、SDK版または上流コードが変わった場合は書換えず警告する。詳細は [ADR 0006](adr/0006-vrcsdk-3104-clientsim-networking-guard.md) を正本とする。
 
 ## コンポーネントとUI
 
