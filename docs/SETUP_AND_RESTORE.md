@@ -15,10 +15,11 @@
 1. リポジトリをcloneし、VCCのProjectsへ追加する。
 2. VCCからプロジェクトを開く。`Packages/vpm-manifest.json` の固定版を使って、VRChat SDK、AudioLink、YamaPlayer、QvPen、VRWorld Toolkitを復元する。
 3. 購入済み `UnyStylus_v1.3.unitypackage` をImportする。ビルダーが参照するPrefabは `Assets/Rasta/UnyStylus/UnyStylus.prefab` とする。
-4. UnityのimportとUdonSharp compileが完了し、Consoleのcompile errorが0件であることを確認する。
-5. `python Tools/Validate-StargazingImplementation.py` を実行する。
-6. Unityメニュー `Stargazing Hill/Build Complete World` を実行し、`Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。
-7. `Stargazing Hill/Validate Saved Scene` を実行する。
+4. 初回importとUdonSharp compileが静止するまで待ち、一度Unityを終了して開き直す。初回import中にビルダーを実行しない。
+5. 再起動後、Consoleのcompile errorが0件であることを確認する。
+6. `python Tools/Validate-StargazingImplementation.py` を実行する。
+7. Unityメニュー `Stargazing Hill/Build Complete World` を実行し、`Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。
+8. `Stargazing Hill/Validate Saved Scene` を実行する。
 
 ## Gitへ入れないもの
 
@@ -27,7 +28,7 @@
 - UdonSharp生成キャッシュ
 - 購入品UnyStylusのpackageと展開本体
 
-UnyStylusが未導入ならビルダーは意図的に停止する。購入品を代替ファイルで埋めたり、Gitへ再配布したりしない。
+UnyStylusが未導入ならビルダーは意図的に停止する。購入品を代替ファイルで埋めたり、Gitへ再配布したりしない。Libraryなしの初回importと同時にbatchビルダーを呼ぶと、YamaPlayerのUdon extension登録が一時的に二重化することがある。import完了後の再起動で解消し、以後のbuildでは再現しない。
 
 ## 検証境界
 

@@ -143,4 +143,5 @@
 | Unity生成・UdonSharp | Pass | `BuildForBatchMode` 終了コード0、C# error 0、Udon error 0、exception 0。明示的Udon compile後に新規fieldをSceneへ保存 |
 | Unity天文試験 | Pass | +1h=15.0411°、+24h residual=0.9852°、USNO月5件、5観測地、11 IMO群、hour Event IDの決定性を確認 |
 | VRChat SDK Windows bundle | Pass | SDK 3.10.4公開World Builder APIで `.vrcw` を生成。C# error 0、exception 0、build failure 0 |
+| Libraryなしcloneからの復元 | Pass | ローカルclone、固定VPM package、購入済みUnyStylusのみから新規Libraryを構築。初回import完了後にUnityを再起動し、Scene生成、C#、Udon、参照検証がPass。初回importと同時のbatch実行ではYamaPlayer extensionの一時的な二重登録が出たため復元手順へ再起動を明記 |
 | ClientSim / PC / Quest / iOS | Open | 利用者方針により後続。途中参加・複数人同期はClientSimで確認する |
