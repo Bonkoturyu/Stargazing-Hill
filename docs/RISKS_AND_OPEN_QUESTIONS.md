@@ -7,6 +7,7 @@
 | Confirmed | HYG星表と派生Meshの配布条件 | v4.1、原本commit/hash、CC BY-SA 4.0、加工工程と表示を記録済み |
 | Provisional | YamaPlayer 2.0.0-beta.7 | 採用・依存固定・距離減衰実装済み。PC/Android/iOS実機検証はOpen |
 | Confirmed | クリーンclone初回import順序 | import完了前のbatchビルダー実行ではYamaPlayer extensionが一時的に二重登録される。初回import後にUnityを再起動する復元手順でC# / Udon / Scene生成Pass |
+| Provisional | VRChat Worlds SDK 3.10.4 ClientSim Udon初期化順序 | `VrcSdk3104ClientSimGuard` で既知の2断片だけをguard化。SDK更新時は自動書換えを止めるため、上流修正有無を確認し、不要ならADR 0006とguardを削除する |
 | Provisional | QvPen 3.3.15 | 公式VPM依存として導入済み。上流packageに明示ライセンスファイルがないため、package本体は追跡せず公式配布から復元する |
 | Confirmed | UnyStylus v1.3の復元手順 | 購入済みVN3素材としてローカル導入。本体は再配布せず、`SETUP_AND_RESTORE.md` に期待Prefabと手順を記録済み。実機動作は別項目 |
 | Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |

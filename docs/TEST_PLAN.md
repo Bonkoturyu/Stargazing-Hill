@@ -119,14 +119,16 @@
 
 | 項目 | 状態 | 証拠 / 判定 |
 |---|---|---|
-| 主要11群の選択 | Confirmed | `MeteorShowerDebugWindow` が正本catalogの日本語名・IDを列挙し、選択indexを `MeteorController` へ渡す |
+| 主要11群の選択 | Confirmed | `MeteorShowerDebugWindow` が正本catalogの日本語名・IDを列挙し、backing `UdonBehaviour` の入力変数へ選択indexを渡してCustomEventを送る |
 | 活動期・高度の無視 | Confirmed | 強制経路は選択indexを直接採用し、自然発生の活動日・放射点高度選択を通らない |
 | 20本固定 | Pass | 4本pool × 5wave、`DebugForcedMeteorCount = 20`。静的検査とUnity batch testで確認 |
 | 視線正面の保証 | Pass | 各waveのslot 0を開始時のcamera forwardへ配置し、地形回避の最低高度を約13°に設定。強制時だけ幅2.4倍・長さ1.6倍。Unity batch testで先頭Renderer有効かつ方向dot >= 0.98を確認 |
 | Direct3D描画 | Pass | 1280×720画像を生成し、丘と木の上に強制流星の発光軌跡が出ることを目視確認 |
+| Udon VM発火経路 | Pass | proxy直接呼出しでは次のUdon Updateに表示を消される不具合を再現。backing `UdonBehaviour.SetProgramVariable` + `SendCustomEvent` へ修正し、ClientSim Play ModeでPERSEIDS、debug active、表示Renderer 1本以上を自動確認 |
 | ペルセウス座短縮入口 | Pass | `Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` がcatalog index 4を起動 |
 | 自然発生への非干渉 | Confirmed | 強制indexはローカルdebug状態だけに保持し、通常経路は従来のUTC・活動度・実放射点を使用 |
-| Play Mode目視 | Pending Evidence | 利用者がGame viewでメニュー操作し、25秒・5waveとログ上の選択群名を確認する |
+| ClientSim単一クライアント | Pass | `ClientSimMeteorDebugVerifier` が実Udon VMへ強制イベントを送信し、PERSEIDS、25秒preview active、表示Rendererを確認。SDK 3.10.4のnetworking初期化例外0件 |
+| Play Mode目視 | Pending Evidence | 利用者が修正版Game viewでメニュー操作し、ウィンドウの `再生中: PERSEIDS`、5秒ごとのwave、25秒終了を確認する |
 
 ## 2026-08-12 TreeSelectionTempビルド阻害の回帰試験
 

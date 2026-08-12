@@ -31,6 +31,13 @@ namespace StargazingHill
         public float[] radiantDeclinationDegrees;
         public int[] zenithalHourlyRates;
 
+        [HideInInspector] public int debugRequestedShowerIndex = 4;
+        [HideInInspector] public Vector3 debugRequestedViewForward = Vector3.forward;
+        [HideInInspector] public bool debugPreviewActive;
+        [HideInInspector] public float debugPreviewElapsedSeconds = -1f;
+        [HideInInspector] public int debugVisibleMeteorCount;
+        [HideInInspector] public string debugPreviewShowerId = "";
+
         private VRCPlayerApi _localPlayer;
         private bool _debugEventActive;
         private float _debugStartTime;
@@ -75,6 +82,8 @@ namespace StargazingHill
             UpdateMeteorVisuals(eventId, elapsed, utc.Year, utc.Month, utc.Day, utc.Hour, utc.Minute,
                 utc.Second + utc.Millisecond / 1000.0, _debugEventActive ? _debugForcedShowerIndex : -1,
                 _debugViewForward);
+            debugPreviewActive = _debugEventActive;
+            debugPreviewElapsedSeconds = _debugEventActive ? elapsed : -1f;
         }
 
         public void DebugTriggerHourlyEvent()
@@ -89,8 +98,10 @@ namespace StargazingHill
                 -1, _debugViewForward);
         }
 
-        public void DebugTriggerSelectedShower(int showerIndex, Vector3 viewForward)
+        public void DebugTriggerSelectedShower()
         {
+            int showerIndex = debugRequestedShowerIndex;
+            Vector3 viewForward = debugRequestedViewForward;
             if (!CatalogLengthsMatch() || showerIndex < 0 || showerIndex >= showerIds.Length)
             {
                 Debug.LogWarning("[Stargazing Hill] Meteor preview rejected: invalid shower index " + showerIndex + ".");
@@ -104,6 +115,9 @@ namespace StargazingHill
             _debugForcedShowerIndex = showerIndex;
             _debugStartTime = Time.time - DebugImmediatePreviewElapsed;
             _debugEventActive = true;
+            debugPreviewActive = true;
+            debugPreviewElapsedSeconds = DebugImmediatePreviewElapsed;
+            debugPreviewShowerId = showerIds[showerIndex];
             UpdateMeteorVisuals(_debugEventId, DebugImmediatePreviewElapsed,
                 _debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour, _debugUtc.Minute,
                 _debugUtc.Second + _debugUtc.Millisecond / 1000.0, showerIndex, _debugViewForward);
@@ -115,6 +129,10 @@ namespace StargazingHill
         {
             _debugEventActive = false;
             _debugForcedShowerIndex = -1;
+            debugPreviewActive = false;
+            debugPreviewElapsedSeconds = -1f;
+            debugVisibleMeteorCount = 0;
+            debugPreviewShowerId = "";
             SetAllVisible(false);
         }
 
@@ -198,6 +216,7 @@ namespace StargazingHill
         {
             if (meteorTransforms == null || meteorRenderers == null || elapsed < 0f)
             {
+                debugVisibleMeteorCount = 0;
                 SetAllVisible(false);
                 return;
             }
@@ -225,6 +244,7 @@ namespace StargazingHill
                 radiant = (localViewForward + localUp * 0.48f).normalized;
             }
 
+            int visibleCount = 0;
             for (int slot = 0; slot < count; slot++)
             {
                 int eventSlot = wave * count + slot;
@@ -236,7 +256,9 @@ namespace StargazingHill
                 meteorRenderers[slot].enabled = visible;
                 if (visible) ConfigureMeteor(eventId, wave, slot, Mathf.Clamp01(progress), radiant,
                     showerIndex >= 0, forcedPreview, localViewForward);
+                if (visible) visibleCount++;
             }
+            debugVisibleMeteorCount = visibleCount;
         }
 
         private int GetStrongestShowerIndex(
