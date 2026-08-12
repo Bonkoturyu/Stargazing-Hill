@@ -2,16 +2,15 @@
 
 ## Ready
 
-- 星空計算の基準日時と許容誤差を決める。
 - ClientSimと実機でYamaPlayer再生・同期・距離減衰を確認する。
+- PC / Quest(Android) / iOSで月、11流星群、描画負荷を確認する。
+- 次年のIMO calendar採用時にcatalogと検証fixtureを更新する。
 
 ## Blocked by evidence
 
-- 流星群データの確定。
-- QvPenの導入。
+- QvPen upstream packageの明示ライセンスを確認する。
 
 ## Later
 
-- 月位置計算。
-- 毎時流星と11流星群。
-- PC / Quest(Android) / iOSの公開候補検証。
+- 月相表現を採用するか決定する。
+- 複数流星群の同時放射点演出が必要か実機で評価する。

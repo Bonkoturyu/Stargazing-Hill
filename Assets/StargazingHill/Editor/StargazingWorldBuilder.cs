@@ -32,6 +32,8 @@ namespace StargazingHill.Editor
         private const string PlayerSettingsProgramPath = Root + "/Scripts/WorldPlayerSettings.asset";
         private const string MeteorControllerScriptPath = Root + "/Scripts/MeteorController.cs";
         private const string MeteorControllerProgramPath = Root + "/Scripts/MeteorController.asset";
+        private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
+        private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
             Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg";
         private const string GrassNormalPath =
@@ -83,6 +85,10 @@ namespace StargazingHill.Editor
             EnsureProgramAsset(typeof(RealSkyController), SkyControllerScriptPath, SkyControllerProgramPath);
             EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
+            // Source edits do not always lower CompiledVersion before a batch build. Compile explicitly so
+            // newly added serialized fields exist before proxies are copied into generated scene objects.
+            UdonSharpCompilerV1.CompileSync();
+            AssetDatabase.SaveAssets();
 
             Texture2D grassDiffuse = LoadRequiredAsset<Texture2D>(GrassDiffusePath);
             Texture2D grassNormal = LoadRequiredAsset<Texture2D>(GrassNormalPath);
@@ -94,6 +100,8 @@ namespace StargazingHill.Editor
             Texture2D treeLeavesDiffuse = LoadRequiredAsset<Texture2D>(TreeLeavesDiffusePath);
             Texture2D treeLeavesNormal = LoadRequiredAsset<Texture2D>(TreeLeavesNormalPath);
             Texture2D treeLeavesAlpha = LoadRequiredAsset<Texture2D>(TreeLeavesAlphaPath);
+            ObservatoryProfile observatory = LoadRequiredAsset<ObservatoryProfile>(ObservatoryProfilePath);
+            MeteorShowerCatalog showerCatalog = LoadRequiredAsset<MeteorShowerCatalog>(ShowerCatalogPath);
 
             Material groundMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/GrassGround.mat", "StargazingHill/Environment",
@@ -134,12 +142,18 @@ namespace StargazingHill.Editor
                 new Color(0.65f, 0.82f, 1f), 0f);
             meteorMaterial.SetFloat("_Intensity", 6.0f);
             EditorUtility.SetDirty(meteorMaterial);
+            Material moonMaterial = CreateOrUpdateMaterial(
+                MaterialRoot + "/Moon.mat", "StargazingHill/Moon",
+                new Color(0.84f, 0.89f, 1f), 0f);
+            moonMaterial.SetFloat("_Intensity", 1.4f);
+            EditorUtility.SetDirty(moonMaterial);
 
             Mesh groundMesh = SaveMesh(MeshRoot + "/GrassGround.asset", BuildGroundMesh());
             Mesh hillMesh = SaveMesh(MeshRoot + "/Hill.asset", BuildHillMesh());
             Mesh grassMesh = SaveMesh(MeshRoot + "/GrassClusters.asset", BuildGrassMesh());
             Mesh starMesh = SaveMesh(MeshRoot + "/Starfield_Celestial.asset", BuildStarMesh());
             Mesh meteorMesh = SaveMesh(MeshRoot + "/MeteorQuad.asset", BuildMeteorMesh());
+            Mesh moonMesh = SaveMesh(MeshRoot + "/MoonQuad.asset", BuildMoonMesh());
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             ConfigureRenderSettings();
@@ -150,8 +164,8 @@ namespace StargazingHill.Editor
                 groundMaterial, hillMaterial, bladeMaterial, branchMaterial, trunkMaterial, leafMaterial);
             CreateLighting(environment.transform);
             CreateWorldSettings(world.transform);
-            CreateRealSky(world.transform, starMesh, starMaterial);
-            CreateMeteorSystem(world.transform, meteorMesh, meteorMaterial);
+            CreateRealSky(world.transform, starMesh, starMaterial, moonMesh, moonMaterial, observatory);
+            CreateMeteorSystem(world.transform, meteorMesh, meteorMaterial, observatory, showerCatalog);
             CreateYamaPlayer(world.transform);
             CreateDrawingSystems(world.transform);
 
@@ -162,7 +176,8 @@ namespace StargazingHill.Editor
             AssetDatabase.Refresh();
 
             Debug.Log("[Stargazing Hill] Build complete: textured walkable grassland and hill, CC0 landmark tree, " +
-                      "Tokyo real-time sky, YamaPlayer, QvPen, and locally licensed UnyStylus.");
+                      observatory.displayName + " real-time sky, Moon, 11 IMO meteor showers, YamaPlayer, QvPen, " +
+                      "and locally licensed UnyStylus.");
         }
 
         [MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower", false, 50)]
@@ -218,6 +233,7 @@ namespace StargazingHill.Editor
 
         public static void TestSkyAndMeteorForBatchMode()
         {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Quaternion reference = RealSkyController.CalculateSkyRotation(
                 2026, 8, 11, 12, 0, 0.0, 35.68f, 139.76f);
             Quaternion sameReference = RealSkyController.CalculateSkyRotation(
@@ -243,9 +259,56 @@ namespace StargazingHill.Editor
                 Mathf.Approximately(sample, nextSample))
                 throw new InvalidOperationException("Hourly meteor determinism test failed.");
 
+            AssertMoonReference(2025, 1, 15, 12, 0, 31.961191f, 88.018947f);
+            AssertMoonReference(2025, 3, 14, 12, 0, 35.566529f, 119.239320f);
+            AssertMoonReference(2025, 6, 10, 12, 0, 20.737319f, 151.921682f);
+            AssertMoonReference(2025, 8, 12, 12, 0, 8.438289f, 95.119726f);
+            AssertMoonReference(2025, 11, 5, 12, 0, 55.521352f, 109.156911f);
+
+            AssertNorthPoleAltitude(35.68f, 139.76f);       // Tokyo
+            AssertNorthPoleAltitude(37.7749f, -122.4194f);  // San Francisco
+            AssertNorthPoleAltitude(41.9028f, 12.4964f);    // Rome
+            AssertNorthPoleAltitude(55.7558f, 37.6173f);    // Moscow
+            AssertNorthPoleAltitude(43.6532f, -79.3832f);   // Toronto
+
+            MeteorController meteorController = Object.FindObjectOfType<MeteorController>(true);
+            if (meteorController == null || meteorController.showerIds == null ||
+                meteorController.showerIds.Length != 11 || meteorController.showerIds[4] != "PERSEIDS" ||
+                !Mathf.Approximately(MeteorController.CalculateDateActivity(2026, 8, 13, 717, 813, 824), 1f) ||
+                MeteorController.CalculateDateActivity(2026, 6, 30, 717, 813, 824) != 0f ||
+                !Mathf.Approximately(MeteorController.CalculateDateActivity(2026, 1, 3, 1228, 103, 112), 1f) ||
+                meteorController.DebugGetStrongestShowerIndex(2026, 8, 13, 0, 0, 0.0) != 4)
+                throw new InvalidOperationException("IMO shower database/activity test failed.");
+
             Debug.Log("[Stargazing Hill] Sky/meteor test passed: +1h=" + oneHourMotion.ToString("F4") +
                       " degrees, +24h residual=" + oneDayResidual.ToString("F4") +
-                      " degrees, deterministic hourly event IDs=" + eventId + "/" + nextEventId + ".");
+                      " degrees, five USNO lunar references <=0.10 degrees, five observatories, " +
+                      "11 IMO showers, deterministic hourly event IDs=" + eventId + "/" + nextEventId + ".");
+        }
+
+        private static void AssertMoonReference(
+            int year, int month, int day, int hour, int minute, float expectedAltitude, float expectedAzimuth)
+        {
+            Vector3 direction = RealSkyController.CalculateMoonDirection(
+                year, month, day, hour, minute, 0.0, 35.68f, 139.76f);
+            float altitude = Mathf.Asin(direction.y) * Mathf.Rad2Deg;
+            float azimuth = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            if (azimuth < 0f) azimuth += 360f;
+            if (Mathf.Abs(altitude - expectedAltitude) > 0.10f ||
+                Mathf.Abs(Mathf.DeltaAngle(azimuth, expectedAzimuth)) > 0.10f)
+                throw new InvalidOperationException(
+                    "USNO lunar reference failed for " + year + "-" + month + "-" + day +
+                    ": alt=" + altitude + ", az=" + azimuth + ".");
+        }
+
+        private static void AssertNorthPoleAltitude(float latitude, float longitudeEast)
+        {
+            Vector3 northPole = RealSkyController.EquatorialDirectionToHorizontal(
+                0f, 90f, 2026, 8, 12, 0, 0, 0.0, latitude, longitudeEast);
+            float altitude = Mathf.Asin(northPole.y) * Mathf.Rad2Deg;
+            if (Mathf.Abs(altitude - latitude) > 0.001f)
+                throw new InvalidOperationException(
+                    "Observatory parameterization failed at " + latitude + ", " + longitudeEast + ".");
         }
 
         public static void RenderPreviewForBatchMode()
@@ -821,6 +884,21 @@ namespace StargazingHill.Editor
             return mesh;
         }
 
+        private static Mesh BuildMoonMesh()
+        {
+            Mesh mesh = BuildMeteorMesh();
+            mesh.name = "MoonQuad";
+            mesh.vertices = new[]
+            {
+                new Vector3(-0.82f, -0.82f, 0f),
+                new Vector3(0.82f, -0.82f, 0f),
+                new Vector3(0.82f, 0.82f, 0f),
+                new Vector3(-0.82f, 0.82f, 0f)
+            };
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
         private static void ConfigureRenderSettings()
         {
             RenderSettings.skybox = null;
@@ -936,7 +1014,9 @@ namespace StargazingHill.Editor
             EditorUtility.SetDirty(playerSettings);
         }
 
-        private static void CreateRealSky(Transform world, Mesh starMesh, Material starMaterial)
+        private static void CreateRealSky(
+            Transform world, Mesh starMesh, Material starMaterial, Mesh moonMesh, Material moonMaterial,
+            ObservatoryProfile observatory)
         {
             GameObject system = CreateChild(world, "RealSkySystem");
             GameObject celestial = CreateMeshObject(system.transform, "Starfield_Celestial", starMesh, starMaterial, Vector3.zero);
@@ -946,22 +1026,43 @@ namespace StargazingHill.Editor
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
+            GameObject moon = CreateMeshObject(system.transform, "Moon", moonMesh, moonMaterial, Vector3.zero);
+            MeshRenderer moonRenderer = moon.GetComponent<MeshRenderer>();
+            moonRenderer.enabled = false;
+
             GameObject controllerObject = CreateChild(system.transform, "RealSkyController");
             RealSkyController controller = UdonSharpUndo.AddComponent<RealSkyController>(controllerObject);
             controller.celestialSphere = celestial.transform;
-            controller.latitudeDegrees = 35.68f;
-            controller.longitudeDegreesEast = 139.76f;
+            controller.moonTransform = moon.transform;
+            controller.moonRenderer = moonRenderer;
+            controller.moonRadius = 180f;
+            controller.observatoryProfileId = observatory.profileId;
+            controller.latitudeDegrees = observatory.latitudeDegrees;
+            controller.longitudeDegreesEast = observatory.longitudeDegreesEast;
             controller.updateIntervalSeconds = 15f;
             UdonSharpEditorUtility.CopyProxyToUdon(controller);
             EditorUtility.SetDirty(controller);
         }
 
-        private static void CreateMeteorSystem(Transform world, Mesh meteorMesh, Material meteorMaterial)
+        private static void CreateMeteorSystem(
+            Transform world, Mesh meteorMesh, Material meteorMaterial, ObservatoryProfile observatory,
+            MeteorShowerCatalog catalog)
         {
             GameObject system = CreateChild(world, "MeteorShowerSystem");
             MeteorController controller = UdonSharpUndo.AddComponent<MeteorController>(system);
             controller.eventDurationSeconds = 25f;
             controller.skyRadius = 65f;
+            controller.observatoryProfileId = observatory.profileId;
+            controller.latitudeDegrees = observatory.latitudeDegrees;
+            controller.longitudeDegreesEast = observatory.longitudeDegreesEast;
+            controller.showerIds = (string[])catalog.ids.Clone();
+            controller.showerNamesJa = (string[])catalog.namesJa.Clone();
+            controller.activeStartMonthDay = (int[])catalog.activeStartMonthDay.Clone();
+            controller.activeEndMonthDay = (int[])catalog.activeEndMonthDay.Clone();
+            controller.peakMonthDay = (int[])catalog.peakMonthDay.Clone();
+            controller.radiantRightAscensionDegrees = (float[])catalog.radiantRightAscensionDegrees.Clone();
+            controller.radiantDeclinationDegrees = (float[])catalog.radiantDeclinationDegrees.Clone();
+            controller.zenithalHourlyRates = (int[])catalog.zenithalHourlyRates.Clone();
 
             const int poolSize = 4;
             controller.meteorTransforms = new Transform[poolSize];
@@ -1163,12 +1264,20 @@ namespace StargazingHill.Editor
             VRCSceneDescriptor[] descriptors = Object.FindObjectsOfType<VRCSceneDescriptor>(true);
             PipelineManager[] pipelineManagers = Object.FindObjectsOfType<PipelineManager>(true);
             ModuleManager[] yamaManagers = Object.FindObjectsOfType<ModuleManager>(true);
-            if (skyControllers.Length != 1 || skyControllers[0].celestialSphere == null)
+            if (skyControllers.Length != 1 || skyControllers[0].celestialSphere == null ||
+                skyControllers[0].moonTransform == null || skyControllers[0].moonRenderer == null ||
+                skyControllers[0].moonRenderer.sharedMaterial == null ||
+                skyControllers[0].moonRenderer.sharedMaterial.shader.name != "StargazingHill/Moon" ||
+                skyControllers[0].observatoryProfileId != "tokyo")
                 throw new InvalidOperationException("RealSkyController validation failed.");
             if (meteorControllers.Length != 1 || meteorControllers[0].meteorTransforms == null ||
                 meteorControllers[0].meteorRenderers == null ||
                 meteorControllers[0].meteorTransforms.Length != 4 ||
                 meteorControllers[0].meteorRenderers.Length != 4 ||
+                meteorControllers[0].showerIds == null || meteorControllers[0].showerIds.Length != 11 ||
+                meteorControllers[0].observatoryProfileId != skyControllers[0].observatoryProfileId ||
+                !Mathf.Approximately(meteorControllers[0].latitudeDegrees, skyControllers[0].latitudeDegrees) ||
+                !Mathf.Approximately(meteorControllers[0].longitudeDegreesEast, skyControllers[0].longitudeDegreesEast) ||
                 !Mathf.Approximately(meteorControllers[0].eventDurationSeconds, 25f) ||
                 meteorControllers[0].GetComponentsInChildren<Collider>(true).Length != 0)
                 throw new InvalidOperationException("Hourly meteor/debug system validation failed.");

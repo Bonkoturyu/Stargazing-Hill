@@ -98,6 +98,9 @@ crashlytics-build.properties
 # Put model-comparison imports and scripts under /Temp/TreeSelectionTemp instead.
 /Temp/TreeSelectionTemp/
 
+# Local Python bytecode from repository validators.
+/Tools/__pycache__/
+
 # Large upstream files used only as inputs when baking redistributable CC0 meshes.
 /Assets/StargazingHill/SourceDownloads/
 /Assets/StargazingHill/SourceDownloads.meta

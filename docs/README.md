@@ -7,6 +7,7 @@
 - [VRCHAT_IMPLEMENTATION_GUIDE.md](VRCHAT_IMPLEMENTATION_GUIDE.md): Unity / VRChat実装の注意事項
 - [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md): 実装順序と完了条件
 - [TEST_PLAN.md](TEST_PLAN.md): 検証方針とテスト記録
+- [SETUP_AND_RESTORE.md](SETUP_AND_RESTORE.md): クリーンclone、VPM依存、購入品UnyStylusの復元手順
 - [RISKS_AND_OPEN_QUESTIONS.md](RISKS_AND_OPEN_QUESTIONS.md): 未解決事項とリスク
 
 ## 運用と証拠

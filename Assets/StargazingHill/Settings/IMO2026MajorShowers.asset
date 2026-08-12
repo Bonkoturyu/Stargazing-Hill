@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 459befa644d0437a84f028c378374061, type: 3}
+  m_Name: IMO2026MajorShowers
+  m_EditorClassIdentifier: 
+  sourceTitle: IMO Meteor Shower Calendar 2026
+  sourceUrl: https://imo.net/files/meteor-shower/cal2026.pdf
+  verifiedDate: 2026-08-12
+  ids: [QUADRANTIDS, LYRIDS, ETA_AQUARIIDS, SOUTH_DELTA_AQUARIIDS, PERSEIDS, DRACONIDS, ORIONIDS, SOUTH_TAURIDS, NORTH_TAURIDS, LEONIDS, GEMINIDS]
+  namesJa: [しぶんぎ座流星群, 4月こと座流星群, みずがめ座η流星群, みずがめ座δ南流星群, ペルセウス座流星群, 10月りゅう座流星群, オリオン座流星群, おうし座南流星群, おうし座北流星群, しし座流星群, ふたご座流星群]
+  activeStartMonthDay: [1228, 414, 419, 712, 717, 1006, 1002, 920, 1020, 1106, 1204]
+  activeEndMonthDay: [112, 430, 528, 823, 824, 1010, 1107, 1120, 1210, 1130, 1220]
+  peakMonthDay: [103, 422, 506, 731, 813, 1009, 1021, 1105, 1112, 1117, 1214]
+  radiantRightAscensionDegrees: [230, 271, 338, 340, 48, 262, 95, 52, 58, 152, 112]
+  radiantDeclinationDegrees: [49, 34, -1, -16, 58, 54, 16, 15, 22, 22, 33]
+  zenithalHourlyRates: [80, 18, 50, 25, 100, 5, 20, 7, 5, 15, 150]
