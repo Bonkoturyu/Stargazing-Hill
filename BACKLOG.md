@@ -15,5 +15,6 @@
 
 ## Later
 
+- プロジェクトのScript / Editorコードをasmdefへ分割し、Unity Test Runnerで動くEditModeテストへ移行するか決定する。現状は `Assembly-CSharp` / `Assembly-CSharp-Editor` に直置きで、テスト用asmdefから定義済みアセンブリを参照できないため、Test Runnerでは検査できない。代替として `Tools/Run-LocalChecks.ps1` が `-executeMethod` 経由で同等の検査を実行している。UdonSharpのコンパイル経路へ影響するため、移行時は流星・天球・Udon同期の再検証が要る。
 - 月相表現を採用するか決定する。
 - 複数流星群の同時放射点演出が必要か実機で評価する。

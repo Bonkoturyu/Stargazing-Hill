@@ -345,8 +345,13 @@ namespace StargazingHill
             {
                 int eventSlot = firstEventIndex + slot;
                 bool scheduled = slot < eventsThisWave && eventSlot < targetCount;
+                // Forced QA keeps the historic onset ramp. Centring a slot inside its spacing puts the first
+                // meteor at 0.625s +/- jitter, which is not reliably before the 0.75s the forced preview
+                // starts at, so pressing a debug button could show nothing at all.
                 float jitter = (DebugSampleValue(eventId, wave, slot, 0) - 0.5f) * slotSpacing * 0.45f;
-                float onset = (slot + 0.5f) * slotSpacing + jitter;
+                float onset = forcedPreview
+                    ? 0.35f + slot * 0.88f + DebugSampleValue(eventId, wave, slot, 0) * 0.28f
+                    : (slot + 0.5f) * slotSpacing + jitter;
                 float velocity = showerIndex < 0 ? 42f : geocentricVelocityKilometersPerSecond[showerIndex];
                 float duration = CalculateMeteorDuration(
                     velocity, DebugSampleValue(eventId, wave, slot, 1));
