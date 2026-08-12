@@ -33,6 +33,8 @@ namespace StargazingHill.Editor
         private const string PlayerSettingsProgramPath = Root + "/Scripts/WorldPlayerSettings.asset";
         private const string MeteorControllerScriptPath = Root + "/Scripts/MeteorController.cs";
         private const string MeteorControllerProgramPath = Root + "/Scripts/MeteorController.asset";
+        private const string DebugPanelButtonScriptPath = Root + "/Scripts/WorldDebugPanelButton.cs";
+        private const string DebugPanelButtonProgramPath = Root + "/Scripts/WorldDebugPanelButton.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -86,6 +88,7 @@ namespace StargazingHill.Editor
             EnsureProgramAsset(typeof(RealSkyController), SkyControllerScriptPath, SkyControllerProgramPath);
             EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
+            EnsureDebugPanelButtonProgramAsset();
             // Source edits do not always lower CompiledVersion before a batch build. Compile explicitly so
             // newly added serialized fields exist before proxies are copied into generated scene objects.
             UdonSharpCompilerV1.CompileSync();
@@ -168,6 +171,9 @@ namespace StargazingHill.Editor
             CreateMeteorSystem(world.transform, meteorMesh, meteorMaterials, observatory, showerCatalog);
             CreateYamaPlayer(world.transform);
             CreateDrawingSystems(world.transform);
+            // Install explicitly rather than relying on the installer's sceneSaved hook: validation below
+            // runs before the save, so a save-triggered install would never be present for it to check.
+            WorldDebugPanelInstaller.InstallForBuild(scene);
 
             ValidateScene(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -568,6 +574,17 @@ namespace StargazingHill.Editor
             importer.alphaIsTransparency = alphaTransparency;
             importer.mipmapEnabled = true;
             importer.SaveAndReimport();
+        }
+
+        /// <summary>
+        /// The VR debug panel installs itself from a scene hook, not from a world build, so it cannot rely on
+        /// the build having run. Without a U# program asset, adding the behaviour throws inside UdonSharp and
+        /// leaves a half-built panel in the scene, so the installer ensures the asset through here first.
+        /// </summary>
+        internal static void EnsureDebugPanelButtonProgramAsset()
+        {
+            EnsureProgramAsset(typeof(WorldDebugPanelButton), DebugPanelButtonScriptPath,
+                DebugPanelButtonProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -1485,6 +1502,20 @@ namespace StargazingHill.Editor
             // asset bundle, so nothing may reference it.
             if (GameObject.Find("World/Environment").transform.Find("LandmarkTreeLegacy") != null)
                 throw new InvalidOperationException("Pre-Quest landmark tree must not be in the scene.");
+
+            // The debug panel installs from a scene hook and previously failed halfway through, leaving a
+            // panel root with no working buttons. Check a button actually carries its backing Udon program.
+            WorldDebugPanelButton[] debugButtons =
+                Object.FindObjectsOfType<WorldDebugPanelButton>(true);
+            if (debugButtons.Length < 15)
+                throw new InvalidOperationException(
+                    "VR debug panel validation failed: found " + debugButtons.Length + " buttons.");
+            for (int index = 0; index < debugButtons.Length; index++)
+            {
+                if (UdonSharpEditorUtility.GetBackingUdonBehaviour(debugButtons[index]) == null)
+                    throw new InvalidOperationException(
+                        "VR debug panel button has no backing Udon behaviour: " + debugButtons[index].name);
+            }
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
             GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
             if (qvPen == null || unyStylus == null)
