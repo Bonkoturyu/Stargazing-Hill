@@ -114,3 +114,15 @@
 | 任意発火入口 | Pass | Play Modeメニューと `DebugTriggerHourlyEvent()` を実装。UdonSharp 91 scripts変換、Scene生成・再読込検証Pass |
 | 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。任意発火と同じ経路の2.4秒地点をDirect3D描画し、複数の加算発光軌跡を目視確認 |
 | VRChat Client | Open | 毎時00分、途中参加、任意発火、星+1時間/resetをBuild & Testで確認する |
+
+## 2026-08-12 TreeSelectionTempビルド阻害の回帰試験
+
+- 報告: VRChat Build & Testで `TreeCandidateRenderer.cs` の `AssetDatabase` CS0103が9件発生し、AssetBundle・World build・UdonSharp scene upgradeが連鎖失敗
+- 原因: 木の比較用EditorスクリプトをGitでは無視していたが、Unityがコンパイルする `Assets/TreeSelectionTemp` に残していた
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 一時比較物の除去 | Pass | `Assets/TreeSelectionTemp` と対応 `.meta` を削除。完成Scene・Prefabからの参照なし |
+| 再発防止 | Pass | 同パスを `.gitignore` 対象から外し、静的検証で存在をFailにする。今後はUnity非管理の `Temp/TreeSelectionTemp` を使用 |
+| C# / UdonSharp / Scene生成 | Pass | キャッシュ更新後のUnity clean runで `TreeCandidateRenderer=0`、`error CS=0`、compiler error=0、exception=0。World生成と保存Scene再読込検証も終了コード0 |
+| VRChat SDK AssetBundle / Build & Test | Pass | SDK公開APIのWorld build経路でWindows `.vrcw` を2回生成。2回目は `TreeCandidateRenderer=0`、`error CS=0`、compiler error=0、Udon `ArgumentNullException=0`、build failure=0。初回のUdon Prefab参照再生成時だけ例外が発生し、再実行では解消 |

@@ -76,6 +76,8 @@ crashlytics-build.properties
 # UdonSharp compiler output; regenerated during Unity import.
 /Assets/SerializedUdonPrograms/
 /Assets/SerializedUdonPrograms.meta
+/Assets/UdonSharp/PrefabBuild/
+/Assets/UdonSharp/PrefabBuild.meta
 
 # VRChat SDK sample content; restored from the VPM packages when needed.
 /Assets/Scenes/
@@ -89,10 +91,12 @@ crashlytics-build.properties
 /Assets/Rasta/
 /Assets/Rasta.meta
 
-# ClientSim persistence and temporary model comparison imports.
+# ClientSim persistence.
 /ClientSimStorage/
-/Assets/TreeSelectionTemp/
-/Assets/TreeSelectionTemp.meta
+
+# Never ignore temporary C# tools under Assets: Unity compiles ignored files too.
+# Put model-comparison imports and scripts under /Temp/TreeSelectionTemp instead.
+/Temp/TreeSelectionTemp/
 
 # Large upstream files used only as inputs when baking redistributable CC0 meshes.
 /Assets/StargazingHill/SourceDownloads/
