@@ -17,6 +17,7 @@ METEOR_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/MeteorController.cs"
 METEOR_SHADER = ROOT / "Assets/StargazingHill/Shaders/Meteor.shader"
 PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
+TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
 GRASS_NORMAL = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg"
 JACARANDA_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/JacarandaTree"
@@ -54,6 +55,13 @@ EXPECTED_ROLLOFF = [
     (29.5, 0.2),
     (45.0, 0.05),
 ]
+
+
+def validate_repository_hygiene() -> None:
+    assert not TREE_SELECTION_TEMP.exists(), (
+        "Assets/TreeSelectionTemp is a local comparison workspace and must not exist: "
+        "Unity compiles ignored C# files under Assets. Use Temp/TreeSelectionTemp instead."
+    )
 
 
 def validate_catalog() -> None:
@@ -196,6 +204,7 @@ def validate_sky_reference() -> None:
 
 
 def main() -> None:
+    validate_repository_hygiene()
     validate_catalog()
     validate_yama_dependency_and_rolloff()
     validate_environment_and_drawing()
