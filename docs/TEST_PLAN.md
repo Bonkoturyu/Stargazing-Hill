@@ -201,3 +201,27 @@
 | 近接描画の常設化 | Pass | 遠景2方向では葉と枝の接続不良、垂れ下がり、幹の破綻をいずれも検出できなかった。`RenderTreeCloseupsForBatchMode` で樹冠端・見上げ・幹接合部の3視点を追加 |
 | 樹冠直下の遮蔽 | Open | 真下から見上げると樹冠がほぼ不透明で空が見えない。木の下を鑑賞位置にするなら密度を再検討する。現行のspawn導線では未影響 |
 | alpha test overdraw | Open | 19,507 trianglesは幾何としては軽いが、密なalpha test樹冠のoverdrawはtile GPUで別コスト。樹冠を見上げる状態のGPU時間をPC / Quest / iOS実機で測定する |
+
+## 2026-08-13 ローカル検査ランナーの導入
+
+- 要求: 静的CIで検出できない欠陥を、push前にローカルで捕捉する
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4
+
+静的CI（`.github/workflows/static-validation.yml`）はPython検証のみを実行する。この検証はソース文字列とアセットhashを読むだけでUnityを起動しないため、コンパイル不能なスクリプト、U# program assetの欠落、生成Sceneの不備をいずれも検出できない。実際にPR #16 の4件の欠陥は、CIが正常動作していても全て素通りしていた。
+
+`Tools/Run-LocalChecks.ps1` が安く落ちる順に検査を実行する。
+
+| 段階 | 検査 | 検出対象 |
+|---|---|---|
+| 1 | Python静的検証 | hash・定数の退行 |
+| 2 | `StargazingChecks.CheckUdonSharpProgramAssetsForBatchMode` | U# program assetの欠落・未コンパイル |
+| 3 | `BuildForBatchMode` | コンパイルエラー、Scene生成の退行 |
+| 4 | `ValidateForBatchMode` / `TestSkyAndMeteorForBatchMode` | Scene不変条件、天球・流星の数値退行 |
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 全検査の通過 | Pass | 5検査すべてPass。`-SkipBuild` で段階3を省略可 |
+| program asset検査の範囲 | Pass | `Assembly-CSharp` かつ名前空間 `StargazingHill` の4 behaviour（MeteorController / RealSkyController / WorldDebugPanelButton / WorldPlayerSettings）を対象。YamaPlayer同梱のTAC UI 7 behaviourは自プロジェクト外として除外 |
+| 強制プレビューの退行検出 | Pass | 導入直後に `TestSkyAndMeteorForBatchMode` の失敗を検出（`visible=False`）。PR #16 がonset式を `0.35+slot*0.88` から `(slot+0.5)*slotSpacing+jitter` へ変更した結果、slot 0のonsetが0.625±0.28秒となり、強制プレビュー開始点0.75秒より後になる場合に流星が1本も出なかった。強制プレビューのみ旧onset式へ戻し、自然イベントのPR #16 スケジューリングは維持 |
+| Test Runner統合 | Open | テスト用asmdefから `Assembly-CSharp-Editor` を参照できないため、EditModeテスト化にはプロジェクトのasmdef分割が要る。BACKLOG `Later` へ記録 |
+| CI側でのUnity実行 | Open | ライセンスと実行時間の都合で未導入。実行枠が使えるときは現行のPython検証がCIで走る |
