@@ -178,3 +178,26 @@
 | ClientSim単一クライアント | Pass | backing Udon VM経由でPERSEIDSを強制し、preview active、表示Renderer 1本、networking初期化例外0件 |
 | 保存シーン非破壊更新 | Pass | `UpgradeMeteorVisualsForBatchMode` でMeteorShowerSystemのcatalog / Material参照だけを更新。Respawn、YamaPlayer、QvPen、UnyStylus配置差分なし |
 | PC / Quest / iOS実機 | Open | 明暗、尾の連続性、3階級比率、GPU時間を実機Build & Testで確認する |
+
+## 2026-08-12 Jacaranda樹冠のQuest向けカード化試験
+
+- 要求: Codexが導入したJacaranda一本木を、Questで見えるレベルまで簡易化する。葉の見た目と夜景としての雰囲気も改善する
+- 対象: [ADR 0009](adr/0009-quest-frond-card-canopy.md)
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、Direct3D 11
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 葉と枝の接続 | Pass | 茎から葉目標点までの距離が平均0.54、最大2.79 model unit。近接3視点の描画で葉が枝に接していることを確認 |
+| 葉の向きと分布 | Pass | 向きは茎から葉目標点へのベクトル。分布は破棄した葉三角形の重心をボクセル集約した4,645点。見上げ・樹冠端・幹接合部で、カーテン状の垂れ下がりも塊への偏りも解消 |
+| 幹の近接品質 | Pass | 2,162 trianglesでは樹皮が平たい破片とねじれたリボンに折り畳まれた。6,872へ引き上げ、幹接合部の描画で解消を確認 |
+| 樹冠の見た目 | Pass | 連結部品6%選択の葉ジオメトリは向こう側が透ける斑点状だった。4,645枚のフロンドカードで連続した樹冠になったことを遠景・近景・見上げで確認 |
+| 三角形数 | Pass | 465,580から19,507へ削減（枝3,345 / 幹6,872 / 葉9,290）。Scene検証で3 submeshと4,000〜26,000 trianglesを機械確認 |
+| アセットサイズ | Pass | `Jacaranda_Quest.asset` は2,522,857 bytes。従来の派生Meshは約39MB |
+| フロンド寸法 | Pass | 実物の複合葉30〜45cmに対し初回1.43m相当。0.76m相当では個々のカードが平たいシートとして読め、樹冠下端が直線的な棚になり、真横のカードが長い筋として視界を横切った。0.50m相当へ縮め枚数を4,645へ増やして解消 |
+| 軸・接地 | Pass | Model Y-up、高さ8.02m、Mesh実幅10.12m、丘中央接地をScene生成時と再読込後に検証。カード樹冠の広がりに合わせ実幅上限を10.5mから12.0mへ更新 |
+| 夜景の明度 | Pass | 全面被覆化により白tint・ambient 0.48では昼間的な淡色の塊になった。深緑tintとambient 0.32へ変更し、草地と整合することを描画で確認 |
+| ベイクの決定性 | Pass | カード位置・姿勢・frond選択を決定的hashで生成。`0cebaa16…` を静的検証のSHA-256対象に追加 |
+| 旧木の削除 | Pass | 利用者判断により旧Meshを削除。`LandmarkTreeLegacy` がSceneに存在しないことをScene検証で機械確認し、38MBの中間Meshを追跡対象から外した |
+| 近接描画の常設化 | Pass | 遠景2方向では葉と枝の接続不良、垂れ下がり、幹の破綻をいずれも検出できなかった。`RenderTreeCloseupsForBatchMode` で樹冠端・見上げ・幹接合部の3視点を追加 |
+| 樹冠直下の遮蔽 | Open | 真下から見上げると樹冠がほぼ不透明で空が見えない。木の下を鑑賞位置にするなら密度を再検討する。現行のspawn導線では未影響 |
+| alpha test overdraw | Open | 19,507 trianglesは幾何としては軽いが、密なalpha test樹冠のoverdrawはtile GPUで別コスト。樹冠を見上げる状態のGPU時間をPC / Quest / iOS実機で測定する |

@@ -25,7 +25,7 @@ TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
 GRASS_NORMAL = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg"
 JACARANDA_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/JacarandaTree"
-TREE_MESH = JACARANDA_ROOT / "Jacaranda_LOD0.asset"
+TREE_MESH = JACARANDA_ROOT / "Jacaranda_Quest.asset"
 TREE_TEXTURES = [
     JACARANDA_ROOT / "jacaranda_tree_branches_diff_1k.jpg",
     JACARANDA_ROOT / "jacaranda_tree_branches_nor_gl_1k.jpg",
@@ -40,7 +40,7 @@ EXPECTED_STAR_COUNT = 12_495
 EXPECTED_CC0_HASHES = {
     GRASS_DIFFUSE: "cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a",
     GRASS_NORMAL: "832328216adc0a7e1f70a31d5ee48c9ab7f2152d83816122736cf42ac4b2ebd6",
-    TREE_MESH: "8e361f258c85727d3df4676ee6ca8411ec51a286fc20394b9247171237c4f227",
+    TREE_MESH: "0cebaa16c70c9c08a6d7ce83133a2a1ce0edb8d44cb6c6e8628d3c79f97318b2",
     TREE_TEXTURES[0]: "5a4fe735f0c346cec83b6b444a0169fc14d2b31bbb7b26e26b1b6c726b6e06f6",
     TREE_TEXTURES[1]: "2d67393ba76a0f49cf965fa0c99d8c16268e71e87b1203d35539bfdb971a514e",
     TREE_TEXTURES[2]: "e5582fba664a9255252d1ee8088f75ad557f07360aa7f4513f2b2f1577e90be9",
@@ -153,11 +153,12 @@ def validate_environment_and_drawing() -> None:
     assert "private const float HillRadius = 10f;" in builder
     assert 'QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab"' in builder
     assert 'UnyStylusPrefabPath = "Assets/Rasta/UnyStylus/UnyStylus.prefab"' in builder
-    assert 'TreeMeshPath =\n            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_LOD0.asset"' in builder
+    assert 'TreeMeshPath =\n            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_Quest.asset"' in builder
     assert 'CreateChild(parent, "LandmarkTree")' in builder
     assert 'CreateChild(tree.transform, "Model")' in builder
+    assert "Pre-Quest landmark tree must not be in the scene." in builder
     assert "treeModel.TransformDirection(Vector3.up)" in builder
-    assert "treeTriangles < 450000L || treeTriangles > 480000L" in builder
+    assert "treeTriangles < 4000L || treeTriangles > 26000L" in builder
     assert "descriptorObject.AddComponent<PipelineManager>();" in builder
     assert "private static readonly Vector3 SpawnGroundPosition = new Vector3(-2.78f, 0f, -20.80f);" in builder
     assert "private static readonly Vector3 YamaPlayerPosition = new Vector3(-4f, 1.813f, -24f);" in builder

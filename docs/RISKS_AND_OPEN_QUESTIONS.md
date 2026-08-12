@@ -16,5 +16,6 @@
 | Confirmed | 流星群データの一次出典 | IMO Meteor Shower Calendar 2026 Table 5、確認日2026-08-12。主要11群をcatalog化 |
 | Provisional | 流星の光度階級確率 | IMOの光度分布指標 `r` をNormal / Bright / Fireball確率へ変換する式は演出上の近似。PC / Quest / iOS実機で視認性と過剰発光を評価して調整する |
 | Provisional | Quest/iOS性能予算 | 基準シーンのProfilerと実機測定から確定 |
-| Provisional | Jacaranda一本木の実機描画負荷 | 原本約386万三角形を46.6万三角形へ削減済み。PC / Quest / iOS実機でGPU時間・メモリを測定し、必要なら遠距離LODを追加 |
+| Provisional | Jacaranda一本木の実機描画負荷 | 原本約386万三角形を19,507三角形へ削減済み（ADR-0009、樹冠はalpha testフロンドカード）。近距離の自然さのため葉を4,645枚まで増やしており、一本木としては軽量とは言えない。密なalpha test樹冠のoverdrawはtile GPUで別コストになるため、樹冠を見上げる状態のGPU時間をPC / Quest / iOS実機で測定し、必要なら枚数を戻す |
+| Open | 樹冠直下の空の遮蔽 | 真下から見上げると樹冠がほぼ不透明で星空が見えない。星空ワールドとして木の下を鑑賞位置に含めるなら、カード密度かカード配置の再検討が要る |
 | Out of scope | 月相表示 | 初期MVPでは位置のみ。将来の視覚効果としてBacklogへ保持 |

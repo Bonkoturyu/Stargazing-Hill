@@ -40,7 +40,7 @@ namespace StargazingHill.Editor
         private const string GrassNormalPath =
             Root + "/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg";
         private const string TreeMeshPath =
-            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_LOD0.asset";
+            Root + "/ThirdParty/PolyHaven/JacarandaTree/Jacaranda_Quest.asset";
         private const string TreeBranchesDiffusePath =
             Root + "/ThirdParty/PolyHaven/JacarandaTree/jacaranda_tree_branches_diff_1k.jpg";
         private const string TreeBranchesNormalPath =
@@ -119,9 +119,12 @@ namespace StargazingHill.Editor
             Material trunkMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/JacarandaTrunk.mat", "StargazingHill/Environment",
                 Color.white, 0.42f);
+            // The canopy is now full coverage instead of scattered leaf fragments, so an untinted, highly
+            // ambient leaf reads as a pale daylight blob against this scene's dim moonlight. Tint it toward
+            // deep foliage and cut the ambient so the tree stays a night-time silhouette.
             Material leafMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/JacarandaLeaves.mat", "StargazingHill/Environment",
-                Color.white, 0.48f);
+                new Color(0.55f, 0.62f, 0.52f), 0.32f);
             ConfigureTexturedMaterial(groundMaterial, grassDiffuse, grassNormal, null,
                 new Vector2(40f, 40f), false, true);
             ConfigureTexturedMaterial(hillMaterial, grassDiffuse, grassNormal, null,
@@ -407,6 +410,33 @@ namespace StargazingHill.Editor
                 AmenityCenter.x, EvaluateTerrainHeight(AmenityCenter.x, AmenityCenter.z) + 2.4f,
                 AmenityCenter.z));
             RenderCameraToPng(camera, "stargazing-hill-amenities.png");
+        }
+
+        /// <summary>
+        /// Close range views of the canopy. A distant silhouette hides whether foliage actually meets the
+        /// wood it grows from, which is exactly the failure these shots are meant to expose.
+        /// </summary>
+        public static void RenderTreeCloseupsForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
+            float treeBaseY = EvaluateTerrainHeight(HillPosition.x, HillPosition.z);
+
+            // Canopy edge, close enough to see individual fronds meeting their branch.
+            camera.transform.position = HillPosition + new Vector3(-4.6f, treeBaseY + 4.6f, -4.6f);
+            camera.transform.LookAt(HillPosition + Vector3.up * (treeBaseY + 4.3f));
+            RenderCameraToPng(camera, "stargazing-hill-tree-closeup.png");
+
+            // Standing under the tree looking up through the crown.
+            camera.transform.position = HillPosition + new Vector3(0.9f, treeBaseY + 1.7f, 0.9f);
+            camera.transform.LookAt(HillPosition + Vector3.up * (treeBaseY + 6.4f));
+            RenderCameraToPng(camera, "stargazing-hill-tree-underside.png");
+
+            // Trunk to crown junction, where a detached canopy is most obvious.
+            camera.transform.position = HillPosition + new Vector3(-6.2f, treeBaseY + 2.4f, -3.0f);
+            camera.transform.LookAt(HillPosition + Vector3.up * (treeBaseY + 3.4f));
+            RenderCameraToPng(camera, "stargazing-hill-tree-junction.png");
         }
 
         public static void RenderMeteorDebugPreviewForBatchMode()
@@ -1438,15 +1468,23 @@ namespace StargazingHill.Editor
             }
             float expectedTreeBase = EvaluateTerrainHeight(HillPosition.x, HillPosition.z) + 0.02f;
             float treeMeshWidth = treeAsset == null ? 0f : treeAsset.bounds.size.x * tree.transform.lossyScale.x;
+            // The landmark must stay inside a Quest triangle budget: the canopy is alpha-tested frond cards
+            // rather than leaf geometry, so the whole tree costs thousands of triangles, not hundreds of
+            // thousands. The width allowance covers the card canopy reaching past the old leaf envelope.
             if (treeModel == null || treeAsset == null || treeAsset.subMeshCount != 3 ||
-                treeTriangles < 450000L || treeTriangles > 480000L ||
+                treeTriangles < 4000L || treeTriangles > 26000L ||
                 Vector3.Angle(treeModel.TransformDirection(Vector3.up), Vector3.up) > 1f ||
                 treeBounds.size.y < 7.5f || treeBounds.size.y > 8.5f ||
-                treeMeshWidth < 8.5f || treeMeshWidth > 10.5f ||
+                treeMeshWidth < 8.5f || treeMeshWidth > 12.0f ||
                 Mathf.Abs(treeBounds.min.y - expectedTreeBase) > 0.05f ||
                 Vector2.Distance(new Vector2(treeBounds.center.x, treeBounds.center.z),
                     new Vector2(HillPosition.x, HillPosition.z)) > 0.05f)
                 throw new InvalidOperationException("Landmark tree import scale validation failed: " + treeBounds);
+
+            // The pre-Quest tree is gone for good: a disabled object still drags its 38MB mesh into the
+            // asset bundle, so nothing may reference it.
+            if (GameObject.Find("World/Environment").transform.Find("LandmarkTreeLegacy") != null)
+                throw new InvalidOperationException("Pre-Quest landmark tree must not be in the scene.");
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
             GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
             if (qvPen == null || unyStylus == null)
