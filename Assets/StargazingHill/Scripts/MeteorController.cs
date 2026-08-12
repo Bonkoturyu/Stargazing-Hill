@@ -14,7 +14,7 @@ namespace StargazingHill
         public Material[] meteorMaterials;
 
         [Header("Hourly Event")]
-        [Range(20f, 30f)] public float eventDurationSeconds = 25f;
+        [Range(60f, 300f)] public float eventDurationSeconds = 180f;
         public float skyRadius = 65f;
 
         [Header("Observatory (same profile as RealSkyController)")]
@@ -49,12 +49,20 @@ namespace StargazingHill
         private int _debugForcedShowerIndex = -1;
         private Vector3 _debugViewForward = Vector3.forward;
 
+        // The natural hourly event represents one hour of expected activity compressed into three minutes.
+        // The forced preview intentionally stays short and dense so VR/Editor visual QA does not take three minutes.
+        private const float NaturalEventDurationSeconds = 180f;
+        private const float DebugForcedPreviewDurationSeconds = 25f;
         private const int DebugForcedMeteorCount = 20;
         private const float DebugImmediatePreviewElapsed = 0.75f;
 
         private void Start()
         {
             _localPlayer = Networking.LocalPlayer;
+
+            // Migration guard for generated scenes made before ADR 0008. The old builder serialized
+            // eventDurationSeconds = 25f; until the scene is regenerated, so normalize that legacy value at runtime.
+            if (eventDurationSeconds <= 30f) eventDurationSeconds = NaturalEventDurationSeconds;
             SetAllVisible(false);
         }
 
@@ -70,7 +78,10 @@ namespace StargazingHill
                 elapsed = Time.time - _debugStartTime;
                 eventId = _debugEventId;
                 utc = _debugUtc;
-                if (elapsed >= eventDurationSeconds) { _debugEventActive = false; elapsed = -1f; }
+                float debugDuration = _debugForcedShowerIndex >= 0
+                    ? DebugForcedPreviewDurationSeconds
+                    : eventDurationSeconds;
+                if (elapsed >= debugDuration) { _debugEventActive = false; elapsed = -1f; }
             }
             else
             {
@@ -125,7 +136,7 @@ namespace StargazingHill
                 _debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour, _debugUtc.Minute,
                 _debugUtc.Second + _debugUtc.Millisecond / 1000.0, showerIndex, _debugViewForward);
             Debug.Log("[Stargazing Hill] Forced meteor shower preview: " + showerNamesJa[showerIndex] +
-                      " / " + showerIds[showerIndex] + " (20 meteors over 25 seconds, local-only).");
+                      " / " + showerIds[showerIndex] + " (20 meteors over 25 seconds, local-only accelerated QA).");
         }
 
         public void DebugStopHourlyEvent()
@@ -156,7 +167,8 @@ namespace StargazingHill
 
             int eventId = GetHourlyEventId(2026, peakMonthDay[showerIndex] / 100,
                 peakMonthDay[showerIndex] % 100, 0) + showerIndex * 104729;
-            UpdateMeteorVisuals(eventId, Mathf.Clamp(elapsed, 0f, eventDurationSeconds - 0.001f),
+            UpdateMeteorVisuals(eventId,
+                Mathf.Clamp(elapsed, 0f, DebugForcedPreviewDurationSeconds - 0.001f),
                 2026, peakMonthDay[showerIndex] / 100, peakMonthDay[showerIndex] % 100,
                 0, 0, 0.0, showerIndex, NormalizeViewForward(viewForward));
         }
@@ -221,6 +233,27 @@ namespace StargazingHill
             return fallingSpan == 0 ? 1f : Mathf.Clamp01((float)(span - position) / fallingSpan);
         }
 
+        public static float CalculateRadiantAltitudeFactor(
+            float radiantWorldY, float latitude, float radiantDeclination)
+        {
+            if (radiantWorldY <= 0f) return 0f;
+            float maximumAltitudeDegrees = 90f - Mathf.Abs(latitude - radiantDeclination);
+            if (maximumAltitudeDegrees <= 0f) return 0f;
+            float maximumWorldY = Mathf.Sin(Mathf.Min(90f, maximumAltitudeDegrees) * Mathf.Deg2Rad);
+            if (maximumWorldY <= 0.0001f) return 0f;
+            return Mathf.Clamp01(radiantWorldY / maximumWorldY);
+        }
+
+        public static int CalculateExpectedHourlyCount(
+            float activity, int peakHourlyRate, float radiantWorldY,
+            float latitude, float radiantDeclination)
+        {
+            float altitudeFactor = CalculateRadiantAltitudeFactor(
+                radiantWorldY, latitude, radiantDeclination);
+            return Mathf.Max(0, Mathf.RoundToInt(
+                Mathf.Clamp01(activity) * Mathf.Max(0, peakHourlyRate) * altitudeFactor));
+        }
+
         public int DebugGetStrongestShowerIndex(
             int year, int month, int day, int hour, int minute, double second)
         {
@@ -238,17 +271,16 @@ namespace StargazingHill
                 return;
             }
 
-            const float waveLength = 5f;
-            int wave = Mathf.FloorToInt(elapsed / waveLength);
-            float waveTime = elapsed - wave * waveLength;
             int count = Mathf.Min(meteorTransforms.Length, meteorRenderers.Length);
+            if (count <= 0)
+            {
+                debugVisibleMeteorCount = 0;
+                return;
+            }
+
             bool forcedPreview = forcedShowerIndex >= 0 && forcedShowerIndex < showerIds.Length;
             int showerIndex = forcedPreview ? forcedShowerIndex :
                 GetStrongestShowerIndex(year, month, day, hour, minute, second);
-            int targetCount = forcedPreview ? DebugForcedMeteorCount : showerIndex < 0 ? 2 : CalculateCompressedCount(
-                CalculateDateActivity(year, month, day, activeStartMonthDay[showerIndex],
-                    peakMonthDay[showerIndex], activeEndMonthDay[showerIndex]),
-                zenithalHourlyRates[showerIndex]);
             Vector3 radiant = showerIndex < 0 ? Vector3.zero :
                 RealSkyController.EquatorialDirectionToHorizontal(
                     radiantRightAscensionDegrees[showerIndex], radiantDeclinationDegrees[showerIndex],
@@ -262,17 +294,65 @@ namespace StargazingHill
                 radiant = (localViewForward + localUp * 0.42f + localRight * 0.30f).normalized;
             }
 
+            int targetCount;
+            if (forcedPreview)
+            {
+                targetCount = DebugForcedMeteorCount;
+            }
+            else if (showerIndex < 0)
+            {
+                // One hour of background activity, represented as one or two scattered meteors.
+                targetCount = DebugSampleValue(eventId, 0, 0, 9) < 0.5f ? 1 : 2;
+            }
+            else
+            {
+                float activity = CalculateDateActivity(year, month, day,
+                    activeStartMonthDay[showerIndex], peakMonthDay[showerIndex], activeEndMonthDay[showerIndex]);
+                targetCount = CalculateExpectedHourlyCount(activity,
+                    GetJapanDarkSkyPeakHourlyRate(showerIndex), radiant.y,
+                    latitudeDegrees, radiantDeclinationDegrees[showerIndex]);
+                if (targetCount <= 0)
+                {
+                    targetCount = DebugSampleValue(eventId, 0, 0, 9) < 0.5f ? 1 : 2;
+                    showerIndex = -1;
+                    radiant = Vector3.zero;
+                }
+            }
+
+            float scheduleDuration = forcedPreview
+                ? DebugForcedPreviewDurationSeconds
+                : eventDurationSeconds;
+            int waveCount = Mathf.Max(1, Mathf.CeilToInt((float)targetCount / count));
+
+            // Forced QA remains the historic 5-second wave so the first meteor appears immediately.
+            // Natural events derive wave length from target count, distributing the whole expected hour over 180 seconds.
+            const float waveLength = 5f;
+            float currentWaveLength = forcedPreview ? waveLength : scheduleDuration / waveCount;
+            int wave = Mathf.Min(waveCount - 1, Mathf.FloorToInt(elapsed / currentWaveLength));
+            float waveTime = elapsed - wave * currentWaveLength;
+            int firstEventIndex = wave * count;
+            int eventsThisWave = Mathf.Min(count, targetCount - firstEventIndex);
+            if (eventsThisWave <= 0)
+            {
+                debugVisibleMeteorCount = 0;
+                SetAllVisible(false);
+                return;
+            }
+
+            float slotSpacing = currentWaveLength / eventsThisWave;
             int visibleCount = 0;
             for (int slot = 0; slot < count; slot++)
             {
-                int eventSlot = wave * count + slot;
-                float onset = 0.35f + slot * 0.88f + DebugSampleValue(eventId, wave, slot, 0) * 0.28f;
+                int eventSlot = firstEventIndex + slot;
+                bool scheduled = slot < eventsThisWave && eventSlot < targetCount;
+                float jitter = (DebugSampleValue(eventId, wave, slot, 0) - 0.5f) * slotSpacing * 0.45f;
+                float onset = (slot + 0.5f) * slotSpacing + jitter;
                 float velocity = showerIndex < 0 ? 42f : geocentricVelocityKilometersPerSecond[showerIndex];
                 float duration = CalculateMeteorDuration(
                     velocity, DebugSampleValue(eventId, wave, slot, 1));
                 float progress = (waveTime - onset) / duration;
-                bool visible = eventSlot < targetCount && progress >= 0f && progress <= 1f &&
-                               elapsed < eventDurationSeconds;
+                bool visible = scheduled && progress >= 0f && progress <= 1f &&
+                               elapsed < scheduleDuration;
                 meteorRenderers[slot].enabled = visible;
                 if (visible) ConfigureMeteor(eventId, wave, slot, Mathf.Clamp01(progress), radiant,
                     showerIndex, forcedPreview, localViewForward, velocity);
@@ -295,16 +375,30 @@ namespace StargazingHill
                 Vector3 radiant = RealSkyController.EquatorialDirectionToHorizontal(
                     radiantRightAscensionDegrees[index], radiantDeclinationDegrees[index],
                     year, month, day, hour, minute, second, latitudeDegrees, longitudeDegreesEast);
-                float score = activity * Mathf.Max(0f, radiant.y) * zenithalHourlyRates[index];
+                float altitudeFactor = CalculateRadiantAltitudeFactor(
+                    radiant.y, latitudeDegrees, radiantDeclinationDegrees[index]);
+                float score = activity * altitudeFactor * GetJapanDarkSkyPeakHourlyRate(index);
                 if (score > bestScore) { bestScore = score; bestIndex = index; }
             }
             return bestIndex;
         }
 
-        private static int CalculateCompressedCount(float activity, int zhr)
+        // NAOJ "Major Meteor Showers": expected meteors per hour near maximum from Japan under a dark sky
+        // (no twilight/moon impact; approximately limiting magnitude 5.5). This is deliberately not ZHR.
+        private static int GetJapanDarkSkyPeakHourlyRate(int showerIndex)
         {
-            float strength = Mathf.Clamp01(activity * zhr / 100f);
-            return Mathf.Clamp(Mathf.RoundToInt(2f + 18f * Mathf.Sqrt(strength)), 2, 20);
+            if (showerIndex == 0) return 30; // Quadrantids
+            if (showerIndex == 1) return 10; // April Lyrids
+            if (showerIndex == 2) return 5;  // eta Aquariids
+            if (showerIndex == 3) return 5;  // Southern delta Aquariids
+            if (showerIndex == 4) return 40; // Perseids
+            if (showerIndex == 5) return 2;  // October Draconids
+            if (showerIndex == 6) return 10; // Orionids
+            if (showerIndex == 7) return 3;  // Southern Taurids
+            if (showerIndex == 8) return 2;  // Northern Taurids
+            if (showerIndex == 9) return 4;  // Leonids
+            if (showerIndex == 10) return 60; // Geminids
+            return 0;
         }
 
         private void ConfigureMeteor(
