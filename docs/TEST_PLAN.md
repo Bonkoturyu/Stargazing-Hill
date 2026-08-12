@@ -126,3 +126,21 @@
 | 再発防止 | Pass | 同パスを `.gitignore` 対象から外し、静的検証で存在をFailにする。今後はUnity非管理の `Temp/TreeSelectionTemp` を使用 |
 | C# / UdonSharp / Scene生成 | Pass | キャッシュ更新後のUnity clean runで `TreeCandidateRenderer=0`、`error CS=0`、compiler error=0、exception=0。World生成と保存Scene再読込検証も終了コード0 |
 | VRChat SDK AssetBundle / Build & Test | Pass | SDK公開APIのWorld build経路でWindows `.vrcw` を2回生成。2回目は `TreeCandidateRenderer=0`、`error CS=0`、compiler error=0、Udon `ArgumentNullException=0`、build failure=0。初回のUdon Prefab参照再生成時だけ例外が発生し、再実行では解消 |
+
+## 2026-08-12 観測地・月・IMO主要11流星群
+
+- 対象ブランチ: `agent/complete-sky-mvp-before-device-tests`
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4
+- 外部基準: USNO Celestial Navigation API、IMO Meteor Shower Calendar 2026 Table 5（いずれも確認日2026-08-12）
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| ObservatoryProfile | Pass | Tokyo 35.68 / 139.76をasset化し、星・月・流星へ同一profileを複製。San Francisco、Rome、Moscow、Torontoを含む5地点で天の北極高度=観測緯度を確認 |
+| 月のtopocentric位置 | Pass | 主要月摂動と扁平地球上の観測者視差を実装。2025年の東京5基準日時でUSNOとの差は高度最大0.0394°、方位最大0.0495°、合格閾値0.10°。UnityとPython CIの両方で検証 |
+| 主要11流星群catalog | Pass | IMO 2026 Table 5のID、活動開始・終了、極大日、代表放射点、ZHRを全件比較。年跨ぎのしぶんぎ座流星群も境界試験 |
+| 放射点と活動群選択 | Pass | 共通赤道座標変換、日付活動カーブ × 放射点高度 × ZHR、ペルセウス座極大時の選択をUnity試験で確認 |
+| 静的回帰検証 | Pass | `python Tools/Validate-StargazingImplementation.py`。12,495星、月5基準、11群、観測地asset、依存とCC0 hashを検証 |
+| Unity生成・UdonSharp | Pass | `BuildForBatchMode` 終了コード0、C# error 0、Udon error 0、exception 0。明示的Udon compile後に新規fieldをSceneへ保存 |
+| Unity天文試験 | Pass | +1h=15.0411°、+24h residual=0.9852°、USNO月5件、5観測地、11 IMO群、hour Event IDの決定性を確認 |
+| VRChat SDK Windows bundle | Pass | SDK 3.10.4公開World Builder APIで `.vrcw` を生成。C# error 0、exception 0、build failure 0 |
+| ClientSim / PC / Quest / iOS | Open | 利用者方針により後続。途中参加・複数人同期はClientSimで確認する |

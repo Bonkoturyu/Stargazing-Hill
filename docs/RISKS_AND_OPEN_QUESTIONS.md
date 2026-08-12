@@ -1,17 +1,17 @@
 # リスクと未解決事項
 
-確認日: 2026-08-11
+確認日: 2026-08-12
 
 | 状態 | 項目 | 解決条件 |
 |---|---|---|
 | Confirmed | HYG星表と派生Meshの配布条件 | v4.1、原本commit/hash、CC BY-SA 4.0、加工工程と表示を記録済み |
 | Provisional | YamaPlayer 2.0.0-beta.7 | 採用・依存固定・距離減衰実装済み。PC/Android/iOS実機検証はOpen |
 | Provisional | QvPen 3.3.15 | 公式VPM依存として導入済み。上流packageに明示ライセンスファイルがないため、package本体は追跡せず公式配布から復元する |
-| Provisional | UnyStylus v1.3 | 購入済みVN3素材としてローカル導入。本体は再配布せず、clone後の購入済みpackage再導入手順と実機動作を確認する |
+| Confirmed | UnyStylus v1.3の復元手順 | 購入済みVN3素材としてローカル導入。本体は再配布せず、`SETUP_AND_RESTORE.md` に期待Prefabと手順を記録済み。実機動作は別項目 |
 | Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |
 | Open | iOSで利用可能なShaderと動画経路 | 対象Unity/SDK版でBuild & Test |
-| Open | 天文計算の許容誤差 | 基準値と見た目上の合格基準を定義 |
-| Open | 流星群データの一次出典 | URL、確認日、年次変化の扱いを記録 |
+| Confirmed | 月位置の許容誤差 | USNO APIの東京5日時を基準に、高度・方位とも0.10°以内（実測最大0.0495°）。静的CIとUnity試験でPass |
+| Confirmed | 流星群データの一次出典 | IMO Meteor Shower Calendar 2026 Table 5、確認日2026-08-12。主要11群をcatalog化 |
 | Provisional | Quest/iOS性能予算 | 基準シーンのProfilerと実機測定から確定 |
 | Provisional | Jacaranda一本木の実機描画負荷 | 原本約386万三角形を46.6万三角形へ削減済み。PC / Quest / iOS実機でGPU時間・メモリを測定し、必要なら遠距離LODを追加 |
-| Open | 月相表示をMVPに含めるか | 視覚効果、負荷、工数を比較して決定 |
+| Out of scope | 月相表示 | 初期MVPでは位置のみ。将来の視覚効果としてBacklogへ保持 |

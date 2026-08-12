@@ -2,16 +2,19 @@
 
 作成日: 2026-08-11
 
-## 実装状況（2026-08-11）
+## 実装状況（2026-08-12）
 
 - HYG Stellar Database v4.1から `mag <= 6.8` の12,495星を抽出し、赤経・赤緯・等級・色指数だけを追跡する。
 - `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。
 - `Starfield.shader` がAdditive Unlit描画と地平線フェードを担当する。
-- `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、東京の緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
-- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。5秒waveを5回使い、1イベント最大20本とする。
+- `ObservatoryProfile` が観測地ID、表示名、緯度、東経を一元管理する。初期assetはTokyo 35.68°N / 139.76°E。
+- `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、profileの緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
+- 月は主要摂動と扁平地球上のtopocentric parallaxを含む低コスト計算で位置を求める。東京のUSNO基準5日時で高度・方位とも0.10°以内。
+- `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHRを保持する。
+- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、活動群がなければ散在流星へfallbackする。5秒waveを5回使い、1イベント最大20本とする。
 - Play Mode中の `Stargazing Hill/Debug/Trigger Hourly Meteor Shower` で同じローカル演出を任意発火できる。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
-- データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、Direct3DプレビューはPass。実機での天文位置確認はOpen。
+- データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、月のUSNO基準、5観測地parameterization、11群catalogはPass。ClientSimと実機確認はOpen。
 
 ## 1. 目的
 
@@ -77,16 +80,12 @@ Starfield_Celestial.mesh
 
 ## 4. 観測地点
 
-観測地点は東京固定。
-
-実装定数は東京都心の代表座標を用いる。
-
-初期候補:
+観測地点は `Assets/StargazingHill/Settings/TokyoObservatory.asset` を正本とする。初期値:
 
 - Latitude: 35.68 deg N前後
 - Longitude: 139.76 deg E前後
 
-厳密な地点差は本ワールドの用途上不要なため、代表座標を固定値として採用する。
+緯度は北を正、経度は東を正とする。星、月、流星放射点へ同じ値を渡すため、別の都市・緯度経度へ差し替えても個別コード変更は不要。San Francisco、Rome、Moscow、Torontoを含む5地点で、天の北極高度が観測緯度と一致することを試験する。
 
 ## 5. 時刻
 
@@ -153,14 +152,16 @@ Moon
 └─ MoonQuad / MoonMesh
 ```
 
-現在日時から月の赤経・赤緯を求め、東京から見た高度・方位へ変換する。
+現在日時から月の地心赤道座標を求め、観測地から見たtopocentric高度・方位へ変換する。
 
 ```text
 現在日時
  ↓
-Moon RA / Dec
+- 主要月摂動を含む地心月位置
  ↓
-Tokyo Alt / Az
+- 扁平地球上の観測者視差補正
+ ↓
+- profile地点のAlt / Az
  ↓
 Moon Transform
 ```
@@ -172,6 +173,8 @@ Moon Transform
 - Light方向は変更しない
 - Realtime Shadowには使用しない
 - 月齢表現はMVP外
+
+精度基準はUSNO Celestial Navigation APIの `hc - pa` を月中心のtopocentric高度、`zn` を方位として使用する。2025-01-15、03-14、06-10、08-12、11-05の各12:00 UTC、Tokyo 35.68 / 139.76で高度・方位の絶対誤差を各0.10°以内とする。実測最大誤差は高度0.0394°、方位0.0495°。この保証は当該5fixtureに対するものであり、全時刻・全地点の高精度暦を意味しない。参照URLと判定は `Tools/Validate-StargazingImplementation.py` および [ADR 0005](adr/0005-data-driven-celestial-observatory.md) を正本とする。
 
 ## 9. 毎時流星イベント
 
@@ -248,11 +251,11 @@ Shader側で尾の減衰、フェード、移動を行える構造を優先す�
 
 ## 11. 対応する主な流星群
 
-国立天文台の「主な流星群」を基準に、以下11群をデータとして持つ。
+IMO `Meteor Shower Calendar 2026` Table 5を基準に、以下11群をデータとして持つ。日付と放射点は2026版、ZHRは同表のrecent observed returnsに基づく値であり、年次更新時はcatalogと検証値を同時更新する。
 
 | ID | 流星群 | 活動期間の目安 | 極大の目安 | 初期演出強度 |
 |---|---|---|---|---|
-| QUADRANTIDS | しぶんぎ座流星群 | 12月末〜1月中旬 | 1/4頃 | Strong |
+| QUADRANTIDS | しぶんぎ座流星群 | 12/28〜1/12 | 1/3 | Strong |
 | LYRIDS | 4月こと座流星群 | 4月中旬〜下旬 | 4/22頃 | Medium |
 | ETA_AQUARIIDS | みずがめ座η流星群 | 4月下旬〜5月下旬 | 5/6頃 | Medium |
 | SOUTH_DELTA_AQUARIIDS | みずがめ座δ南流星群 | 7月中旬〜8月下旬 | 7/31頃 | Medium |
@@ -261,7 +264,7 @@ Shader側で尾の減衰、フェード、移動を行える構造を優先す�
 | ORIONIDS | オリオン座流星群 | 10月上旬〜11月上旬 | 10/21頃 | Medium |
 | SOUTH_TAURIDS | おうし座南流星群 | 9月下旬〜11月下旬 | 11/5頃 | Weak |
 | NORTH_TAURIDS | おうし座北流星群 | 10月下旬〜12月上旬 | 11/12頃 | Weak |
-| LEONIDS | しし座流星群 | 11月上旬〜下旬 | 11/18頃 | Weak-Medium |
+| LEONIDS | しし座流星群 | 11/6〜11/30 | 11/17 | Weak-Medium |
 | GEMINIDS | ふたご座流星群 | 12月上旬〜下旬 | 12/14頃 | Strong |
 
 三大流星群:
@@ -323,7 +326,7 @@ MVPでは簡易カーブで実装し、必要なら将来ZHR等を用いた年�
 
 流星は放射点そのものから開始するのではなく、画面上で放射点から離れた場所に生成し、軌跡を逆延長すると放射点へ収束するようにする。
 
-複数群が活動中の場合は各放射点を同時に有効とする。
+複数群が活動中の場合は、日付活動強度 × 放射点高度factor × ZHRが最大の群を当該hourの代表群とする。これは20〜30秒の圧縮演出で複数の放射点を混在させないMVP上の選択であり、catalog構造は将来の同時描画拡張を妨げない。
 
 ## 15. 演出本数の初期目安
 
@@ -366,26 +369,25 @@ MVPでは簡易カーブで実装し、必要なら将来ZHR等を用いた年�
 
 ## 17. MVP実装順
 
-1. 全天球Star Mesh Baker
-2. Star Shaderの地平線処理
-3. RealSkyController
-4. 東京での天球回転
-5. Moon計算と表示
-6. MeteorRenderer
-7. 決定論的毎時イベント
-8. 散在流星
-9. ペルセウス座流星群
-10. ShowerDatabase化
-11. 残り10群追加
-12. Quest / iOS実機負荷確認
+1. [x] 全天球Star Mesh Baker
+2. [x] Star Shaderの地平線処理
+3. [x] RealSkyController
+4. [x] ObservatoryProfileと東京初期値
+5. [x] topocentric Moon計算と表示
+6. [x] MeteorRenderer
+7. [x] 決定論的毎時イベント
+8. [x] 散在流星
+9. [x] MeteorShowerCatalog化
+10. [x] IMO 2026主要11群
+11. [ ] Quest / iOS実機負荷確認
 
 ## 18. 実装前に再確認するもの
 
 天文データは正確性を優先し、実装着手時に以下を公式・一次情報で再確認する。
 
-- 流星群ごとの活動期間
-- 極大時期
-- 放射点座標
+- 次年版の流星群ごとの活動期間
+- 次年版の極大時期
+- 次年版の放射点座標
 - 必要なら年別の極大予測
 - VRChat SDK / Udonの現在利用可能な時刻API
 

@@ -15,6 +15,9 @@ BUILDER = ROOT / "Assets/StargazingHill/Editor/StargazingWorldBuilder.cs"
 SKY_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/RealSkyController.cs"
 METEOR_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/MeteorController.cs"
 METEOR_SHADER = ROOT / "Assets/StargazingHill/Shaders/Meteor.shader"
+MOON_SHADER = ROOT / "Assets/StargazingHill/Shaders/Moon.shader"
+OBSERVATORY_PROFILE = ROOT / "Assets/StargazingHill/Settings/TokyoObservatory.asset"
+SHOWER_CATALOG = ROOT / "Assets/StargazingHill/Settings/IMO2026MajorShowers.asset"
 PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
@@ -54,6 +57,22 @@ EXPECTED_ROLLOFF = [
     (28.0, 0.24),
     (29.5, 0.2),
     (45.0, 0.05),
+]
+EXPECTED_SHOWERS = {
+    "ids": ["QUADRANTIDS", "LYRIDS", "ETA_AQUARIIDS", "SOUTH_DELTA_AQUARIIDS", "PERSEIDS", "DRACONIDS", "ORIONIDS", "SOUTH_TAURIDS", "NORTH_TAURIDS", "LEONIDS", "GEMINIDS"],
+    "activeStartMonthDay": [1228, 414, 419, 712, 717, 1006, 1002, 920, 1020, 1106, 1204],
+    "activeEndMonthDay": [112, 430, 528, 823, 824, 1010, 1107, 1120, 1210, 1130, 1220],
+    "peakMonthDay": [103, 422, 506, 731, 813, 1009, 1021, 1105, 1112, 1117, 1214],
+    "radiantRightAscensionDegrees": [230, 271, 338, 340, 48, 262, 95, 52, 58, 152, 112],
+    "radiantDeclinationDegrees": [49, 34, -1, -16, 58, 54, 16, 15, 22, 22, 33],
+    "zenithalHourlyRates": [80, 18, 50, 25, 100, 5, 20, 7, 5, 15, 150],
+}
+USNO_MOON_REFERENCES = [
+    (2025, 1, 15, 12, 0, 31.961191, 88.018947),
+    (2025, 3, 14, 12, 0, 35.566529, 119.239320),
+    (2025, 6, 10, 12, 0, 20.737319, 151.921682),
+    (2025, 8, 12, 12, 0, 8.438289, 95.119726),
+    (2025, 11, 5, 12, 0, 55.521352, 109.156911),
 ]
 
 
@@ -180,10 +199,20 @@ def validate_sky_reference() -> None:
     assert "Networking.GetNetworkDateTime()" in controller
     assert "latitudeDegrees = 35.68f" in controller
     assert "longitudeDegreesEast = 139.76f" in controller
-    assert "celestialSphere.position = _localPlayer.GetPosition();" in controller
+    assert "Vector3 observer = _localPlayer.GetPosition();" in controller
+    assert "celestialSphere.position = observer;" in controller
     assert "CalculateSkyRotation(" in controller
     assert "DebugAdvanceOneHour()" in controller
     assert "DebugResetTimeOffset()" in controller
+    assert "CalculateMoonDirection(" in controller
+    assert "EquatorialDirectionToHorizontal(" in controller
+    assert "topocentric parallax on an oblate Earth" in controller
+
+    profile = OBSERVATORY_PROFILE.read_text(encoding="utf-8")
+    assert "profileId: tokyo" in profile
+    assert "displayName: Tokyo" in profile
+    assert "latitudeDegrees: 35.68" in profile
+    assert "longitudeDegreesEast: 139.76" in profile
 
     meteor = METEOR_CONTROLLER.read_text(encoding="utf-8")
     assert "GetHourlyEventId(" in meteor
@@ -197,10 +226,162 @@ def validate_sky_reference() -> None:
     assert 'Shader "StargazingHill/Meteor"' in meteor_shader
     assert "Blend One One" in meteor_shader
 
+    moon_shader = MOON_SHADER.read_text(encoding="utf-8")
+    assert 'Shader "StargazingHill/Moon"' in moon_shader
+
+    catalog = SHOWER_CATALOG.read_text(encoding="utf-8")
+    assert "sourceUrl: https://imo.net/files/meteor-shower/cal2026.pdf" in catalog
+    assert "verifiedDate: 2026-08-12" in catalog
+    for field, expected in EXPECTED_SHOWERS.items():
+        match = re.search(rf"^  {field}: \[(.*?)\]$", catalog, re.MULTILINE)
+        assert match, f"missing meteor shower field: {field}"
+        values = [value.strip() for value in match.group(1).split(",")]
+        actual = values if field == "ids" else [float(value) for value in values]
+        assert actual == expected, f"unexpected IMO 2026 {field}: {actual}"
+
     builder = BUILDER.read_text(encoding="utf-8")
     assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
     assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
     assert "TestSkyAndMeteorForBatchMode" in builder
+    assert "five USNO lunar references <=0.10 degrees" in builder
+    assert "five observatories" in builder
+    assert "11 IMO showers" in builder
+
+    for year, month, day, hour, minute, expected_altitude, expected_azimuth in USNO_MOON_REFERENCES:
+        altitude, azimuth = calculate_moon_horizontal(
+            year, month, day, hour, minute, 0.0, 35.68, 139.76
+        )
+        azimuth_error = abs((azimuth - expected_azimuth + 180.0) % 360.0 - 180.0)
+        assert abs(altitude - expected_altitude) <= 0.10, (
+            f"USNO Moon altitude error at {year}-{month:02}-{day:02}: {altitude}"
+        )
+        assert azimuth_error <= 0.10, (
+            f"USNO Moon azimuth error at {year}-{month:02}-{day:02}: {azimuth}"
+        )
+
+    for latitude, longitude in ((35.68, 139.76), (37.7749, -122.4194),
+                                (41.9028, 12.4964), (55.7558, 37.6173),
+                                (43.6532, -79.3832)):
+        pole_altitude = math.degrees(math.asin(math.sin(math.radians(latitude))))
+        assert math.isclose(pole_altitude, latitude, abs_tol=1e-9), (latitude, longitude)
+
+
+def normalize_degrees(value: float) -> float:
+    return value % 360.0
+
+
+def sin_degrees(value: float) -> float:
+    return math.sin(math.radians(value))
+
+
+def cos_degrees(value: float) -> float:
+    return math.cos(math.radians(value))
+
+
+def julian_date(year: int, month: int, day: float) -> float:
+    if month <= 2:
+        year -= 1
+        month += 12
+    century = year // 100
+    correction = 2 - century + century // 4
+    return (math.floor(365.25 * (year + 4716)) +
+            math.floor(30.6001 * (month + 1)) + day + correction - 1524.5)
+
+
+def local_sidereal_degrees(year: int, month: int, day: int, hour: int,
+                           minute: int, second: float, longitude_east: float) -> float:
+    day_with_time = day + (hour + (minute + second / 60.0) / 60.0) / 24.0
+    jd = julian_date(year, month, day_with_time)
+    centuries = (jd - 2451545.0) / 36525.0
+    gmst = (280.46061837 + 360.98564736629 * (jd - 2451545.0) +
+            0.000387933 * centuries * centuries - centuries ** 3 / 38710000.0)
+    return normalize_degrees(gmst + longitude_east)
+
+
+def calculate_moon_horizontal(year: int, month: int, day: int, hour: int,
+                              minute: int, second: float, latitude: float,
+                              longitude_east: float) -> tuple[float, float]:
+    """Independent port of the Udon lunar approximation for CI reference checks."""
+    day_with_time = day + (hour + (minute + second / 60.0) / 60.0) / 24.0
+    days = julian_date(year, month, day_with_time) - 2451543.5
+    node = normalize_degrees(125.1228 - 0.0529538083 * days)
+    inclination = 5.1454
+    periapsis = normalize_degrees(318.0634 + 0.1643573223 * days)
+    eccentricity = 0.0549
+    mean_anomaly = normalize_degrees(115.3654 + 13.0649929509 * days)
+    eccentric_anomaly = (mean_anomaly + eccentricity * 180.0 / math.pi *
+                         sin_degrees(mean_anomaly) *
+                         (1.0 + eccentricity * cos_degrees(mean_anomaly)))
+    x_orbit = 60.2666 * (cos_degrees(eccentric_anomaly) - eccentricity)
+    y_orbit = (60.2666 * math.sqrt(1.0 - eccentricity * eccentricity) *
+               sin_degrees(eccentric_anomaly))
+    true_anomaly = math.degrees(math.atan2(y_orbit, x_orbit))
+    distance = math.hypot(x_orbit, y_orbit)
+    argument = true_anomaly + periapsis
+    ecliptic_x = distance * (cos_degrees(node) * cos_degrees(argument) -
+                             sin_degrees(node) * sin_degrees(argument) * cos_degrees(inclination))
+    ecliptic_y = distance * (sin_degrees(node) * cos_degrees(argument) +
+                             cos_degrees(node) * sin_degrees(argument) * cos_degrees(inclination))
+    ecliptic_z = distance * sin_degrees(argument) * sin_degrees(inclination)
+    ecliptic_longitude = math.degrees(math.atan2(ecliptic_y, ecliptic_x))
+    ecliptic_latitude = math.degrees(math.atan2(
+        ecliptic_z, math.hypot(ecliptic_x, ecliptic_y)))
+
+    sun_periapsis = normalize_degrees(282.9404 + 0.0000470935 * days)
+    sun_mean_anomaly = normalize_degrees(356.0470 + 0.9856002585 * days)
+    sun_mean_longitude = normalize_degrees(sun_periapsis + sun_mean_anomaly)
+    moon_mean_longitude = normalize_degrees(node + periapsis + mean_anomaly)
+    elongation = normalize_degrees(moon_mean_longitude - sun_mean_longitude)
+    argument_latitude = normalize_degrees(moon_mean_longitude - node)
+    ecliptic_longitude += (
+        -1.274 * sin_degrees(mean_anomaly - 2.0 * elongation) +
+        0.658 * sin_degrees(2.0 * elongation) -
+        0.186 * sin_degrees(sun_mean_anomaly) -
+        0.059 * sin_degrees(2.0 * mean_anomaly - 2.0 * elongation) -
+        0.057 * sin_degrees(mean_anomaly - 2.0 * elongation + sun_mean_anomaly) +
+        0.053 * sin_degrees(mean_anomaly + 2.0 * elongation) +
+        0.046 * sin_degrees(2.0 * elongation - sun_mean_anomaly) +
+        0.041 * sin_degrees(mean_anomaly - sun_mean_anomaly) -
+        0.035 * sin_degrees(elongation) -
+        0.031 * sin_degrees(mean_anomaly + sun_mean_anomaly) -
+        0.015 * sin_degrees(2.0 * argument_latitude - 2.0 * elongation) +
+        0.011 * sin_degrees(mean_anomaly - 4.0 * elongation))
+    ecliptic_latitude += (
+        -0.173 * sin_degrees(argument_latitude - 2.0 * elongation) -
+        0.055 * sin_degrees(mean_anomaly - argument_latitude - 2.0 * elongation) -
+        0.046 * sin_degrees(mean_anomaly + argument_latitude - 2.0 * elongation) +
+        0.033 * sin_degrees(argument_latitude + 2.0 * elongation) +
+        0.017 * sin_degrees(2.0 * mean_anomaly + argument_latitude))
+
+    x = distance * cos_degrees(ecliptic_longitude) * cos_degrees(ecliptic_latitude)
+    y = distance * sin_degrees(ecliptic_longitude) * cos_degrees(ecliptic_latitude)
+    z = distance * sin_degrees(ecliptic_latitude)
+    obliquity = 23.4393 - 0.0000003563 * days
+    equatorial_x = x
+    equatorial_y = y * cos_degrees(obliquity) - z * sin_degrees(obliquity)
+    equatorial_z = y * sin_degrees(obliquity) + z * cos_degrees(obliquity)
+
+    sidereal = local_sidereal_degrees(
+        year, month, day, hour, minute, second, longitude_east)
+    geocentric_latitude = math.atan(0.99664719 * math.tan(math.radians(latitude)))
+    equatorial_x -= math.cos(geocentric_latitude) * cos_degrees(sidereal)
+    equatorial_y -= math.cos(geocentric_latitude) * sin_degrees(sidereal)
+    equatorial_z -= 0.99664719 * math.sin(geocentric_latitude)
+
+    magnitude = math.sqrt(equatorial_x ** 2 + equatorial_y ** 2 + equatorial_z ** 2)
+    equatorial_x /= magnitude
+    equatorial_y /= magnitude
+    equatorial_z /= magnitude
+    latitude_radians = math.radians(latitude)
+    sidereal_radians = math.radians(sidereal)
+    east = -math.sin(sidereal_radians) * equatorial_x + math.cos(sidereal_radians) * equatorial_y
+    north = (-math.sin(latitude_radians) * math.cos(sidereal_radians) * equatorial_x -
+             math.sin(latitude_radians) * math.sin(sidereal_radians) * equatorial_y +
+             math.cos(latitude_radians) * equatorial_z)
+    up = (math.cos(latitude_radians) * math.cos(sidereal_radians) * equatorial_x +
+          math.cos(latitude_radians) * math.sin(sidereal_radians) * equatorial_y +
+          math.sin(latitude_radians) * equatorial_z)
+    return math.degrees(math.asin(up)), normalize_degrees(math.degrees(math.atan2(east, north)))
 
 
 def main() -> None:
@@ -210,8 +391,9 @@ def main() -> None:
     validate_environment_and_drawing()
     validate_sky_reference()
     print(
-        f"OK: {EXPECTED_STAR_COUNT} HYG stars, Tokyo sky, YamaPlayer, CC0 environment, "
-        "locomotion, QvPen, and UnyStylus references validated"
+        f"OK: {EXPECTED_STAR_COUNT} HYG stars, parameterized observatory, five USNO Moon "
+        "references, 11 IMO showers, YamaPlayer, CC0 environment, locomotion, QvPen, "
+        "and UnyStylus references validated"
     )
 
 

@@ -6,10 +6,10 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## コア要素
 
-- 東京の現在時刻に連動する実在星空
+- Tokyo profileの現在時刻に連動し、緯度・東経の差替えに対応する実在星空
 - 現在時刻に連動する月の位置
 - 毎時00分の流星演出
-- 国立天文台の「主な流星群」11群をデータとして扱う流星群システム
+- IMO 2026 Calendarの主要11群をデータとして扱う流星群システム
 - 短い芝生の草原
 - 小さな丘と一本木
 - 淡い固定照明 / 月明かり風の固定照明
@@ -31,6 +31,8 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ステータス
 
-CC0テクスチャの草原、単一Colliderの小丘、Poly Haven `Jacaranda Tree` のCC0一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、東京の現在時刻による天球回転、決定的な毎時流星イベントとデバッグ発火、YamaPlayer 2.0.0-beta.7と距離減衰、QvPen 3.3.15、購入済みUnyStylus v1.3まで実装済み。月、実在流星群データ、各対象プラットフォームでの実機検証は未実装・未実施。
+CC0テクスチャの草原、単一Colliderの小丘、Poly Haven `Jacaranda Tree` のCC0一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、差替可能な観測地、topocentric月位置、IMO 2026主要11流星群、決定的な毎時流星イベントとデバッグ発火、YamaPlayer 2.0.0-beta.7と距離減衰、QvPen 3.3.15、購入済みUnyStylus v1.3まで実装済み。月位置は東京のUSNO基準5日時で高度・方位とも0.10°以内。ClientSimとPC / Quest / iOS実機検証は未実施。
 
 Unityライセンスが有効なEditorでプロジェクトを開き、メニュー `Stargazing Hill/Build Complete World` を実行すると、Mesh・Materialと `Assets/StargazingHill/Scenes/StargazingHill.unity` を生成する。生成後はConsoleとUdon変換結果を確認する。
+
+クリーン環境からの依存・購入品復元は [docs/SETUP_AND_RESTORE.md](docs/SETUP_AND_RESTORE.md) を参照する。
