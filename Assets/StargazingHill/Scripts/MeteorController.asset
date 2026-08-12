@@ -272,10 +272,10 @@ MonoBehaviour:
       Data: 16|UnityEngine.RangeAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
-      Data: 20
+      Data: 60
     - Name: max
       Entry: 4
-      Data: 30
+      Data: 300
     - Name: 
       Entry: 8
       Data: 

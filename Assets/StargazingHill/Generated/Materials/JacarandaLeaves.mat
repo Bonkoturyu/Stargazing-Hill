@@ -41,12 +41,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Ambient: 0.48
+    - _Ambient: 0.32
     - _Cutoff: 0.36
     - _UseAlphaMap: 1
     - _UseNormal: 1
     - _UseTexture: 1
     - _UseVertexColor: 0
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.55, g: 0.62, b: 0.52, a: 1}
   m_BuildTextureStacks: []

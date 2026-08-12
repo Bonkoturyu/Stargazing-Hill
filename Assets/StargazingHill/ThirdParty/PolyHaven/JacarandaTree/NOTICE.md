@@ -22,11 +22,34 @@ source, authors, selected files, and transformations are retained here for prove
   `leaves 2,402,434`), three material submeshes
 - Final bake: complete connected components were selected deterministically so no leaf,
   twig, or trunk component is cut mid-surface: branches 7%, trunk 100%, leaves 6%
-- Final mesh: `Jacaranda_LOD0.asset`, 288,899 vertices and 465,580 triangles
+- Intermediate mesh: `Jacaranda_LOD0.asset` (ignored local bake input), 288,899 vertices and 465,580 triangles
   (`branches 88,864`, `trunk 230,112`, `leaves 146,604`)
 - The imported FBX root axis/unit transform was baked into the mesh. The scene Model root is
   therefore identity/Y-up, preventing the previous sideways-tree failure.
-- Final mesh SHA-256: `8e361f258c85727d3df4676ee6ca8411ec51a286fc20394b9247171237c4f227`
+- Intermediate mesh SHA-256: `8e361f258c85727d3df4676ee6ca8411ec51a286fc20394b9247171237c4f227`
+
+## Quest bake record
+
+`Jacaranda_LOD0.asset` is the input to a second bake, not the shipped mesh, and is kept only as an
+ignored local input under `SourceDownloads/JacarandaTree/` alongside the original FBX. See ADR-0009.
+
+- Shipped mesh: `Jacaranda_Quest.asset`, 23,802 vertices and 19,507 triangles
+  (`branches 3,345`, `trunk 6,872`, `leaves 9,290`), three material submeshes in the same order
+- Baked by `StargazingHill.Editor.JacarandaQuestLodBaker`, deterministically from the intermediate
+- Branches and trunk: grid vertex clustering, cell size bisected against a triangle target, with each
+  cluster placed at the mean of its vertices rather than at the cell centre. The trunk keeps the larger
+  share because it is the surface players stand next to, and hard clustering folds bark into flat shards
+- Leaves: the leaf geometry is discarded. The canopy is rebuilt as 4,645 alpha-tested cards whose UVs
+  address the three complete compound fronds inside `jacaranda_tree_leaves_diff_1k.jpg`, each card
+  mapped so its petiole edge is the edge that meets the wood
+- Each card takes its position from the branches and its direction from the leaves. The target is a
+  voxel-binned centroid of the discarded leaf triangles, the stem sits on the nearest shipped branch
+  surface point, and the frond runs from stem to target. Mean stem-to-target distance is 0.54 and the
+  maximum is 2.79 model units, so foliage stays on wood while keeping the scan's crown shape.
+- Card length is 1.25 model units, roughly 0.50m at the scene's 0.40 scale, against a real compound
+  frond of 30-45cm. Cards above life size turn the crown into stacked slabs with straight edges.
+- Shipped mesh SHA-256: `0cebaa16c70c9c08a6d7ce83133a2a1ce0edb8d44cb6c6e8628d3c79f97318b2`
+- Shipped mesh size: `2522857` bytes
 
 ## Selected 1K textures
 

@@ -12,3 +12,4 @@
 | [0006](0006-vrcsdk-3104-clientsim-networking-guard.md) | Accepted | SDK 3.10.4 ClientSimのUdon networking初期化順序guard |
 | [0007](0007-data-driven-meteor-visual-profiles.md) | Accepted | IMO速度・光度分布を使うNormal / Bright / Fireball描画profile |
 | [0008](0008-three-minute-hourly-meteor-compression.md) | Accepted | 1時間相当の期待流星活動を毎時3分へ圧縮し、固定20本上限を廃止 |
+| [0009](0009-quest-frond-card-canopy.md) | Accepted | Jacaranda樹冠のフロンドカード化（位置は枝・向きは葉）とQuest向け19,507 triangles |
