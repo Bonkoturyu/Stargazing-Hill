@@ -138,11 +138,7 @@ namespace StargazingHill.Editor
             starMaterial.SetFloat("_HorizonStart", 0f);
             starMaterial.SetFloat("_HorizonFull", Mathf.Sin(15f * Mathf.Deg2Rad));
             EditorUtility.SetDirty(starMaterial);
-            Material meteorMaterial = CreateOrUpdateMaterial(
-                MaterialRoot + "/Meteor.mat", "StargazingHill/Meteor",
-                new Color(0.65f, 0.82f, 1f), 0f);
-            meteorMaterial.SetFloat("_Intensity", 6.0f);
-            EditorUtility.SetDirty(meteorMaterial);
+            Material[] meteorMaterials = CreateOrUpdateMeteorMaterials();
             Material moonMaterial = CreateOrUpdateMaterial(
                 MaterialRoot + "/Moon.mat", "StargazingHill/Moon",
                 new Color(0.84f, 0.89f, 1f), 0f);
@@ -166,7 +162,7 @@ namespace StargazingHill.Editor
             CreateLighting(environment.transform);
             CreateWorldSettings(world.transform);
             CreateRealSky(world.transform, starMesh, starMaterial, moonMesh, moonMaterial, observatory);
-            CreateMeteorSystem(world.transform, meteorMesh, meteorMaterial, observatory, showerCatalog);
+            CreateMeteorSystem(world.transform, meteorMesh, meteorMaterials, observatory, showerCatalog);
             CreateYamaPlayer(world.transform);
             CreateDrawingSystems(world.transform);
 
@@ -179,6 +175,33 @@ namespace StargazingHill.Editor
             Debug.Log("[Stargazing Hill] Build complete: textured walkable grassland and hill, CC0 landmark tree, " +
                       observatory.displayName + " real-time sky, Moon, 11 IMO meteor showers, YamaPlayer, QvPen, " +
                       "and locally licensed UnyStylus.");
+        }
+
+        [MenuItem("Stargazing Hill/Upgrade Meteor Visuals", false, 11)]
+        public static void UpgradeMeteorVisualsForBatchMode()
+        {
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
+            UdonSharpCompilerV1.CompileSync();
+
+            Material[] materials = CreateOrUpdateMeteorMaterials();
+            MeteorShowerCatalog catalog = LoadRequiredAsset<MeteorShowerCatalog>(ShowerCatalogPath);
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            MeteorController controller = Object.FindObjectOfType<MeteorController>(true);
+            if (controller == null) throw new InvalidOperationException("MeteorController is missing from saved scene.");
+
+            CopyMeteorCatalog(controller, catalog);
+            controller.meteorMaterials = materials;
+            for (int index = 0; index < controller.meteorRenderers.Length; index++)
+                controller.meteorRenderers[index].sharedMaterial = materials[0];
+            UdonSharpEditorUtility.CopyProxyToUdon(controller);
+            EditorUtility.SetDirty(controller);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+            ValidateScene(scene);
+            Debug.Log("[Stargazing Hill] Meteor visuals upgraded without changing user-adjusted scene placement.");
         }
 
         [MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower", false, 50)]
@@ -282,11 +305,23 @@ namespace StargazingHill.Editor
             MeteorController meteorController = Object.FindObjectOfType<MeteorController>(true);
             if (meteorController == null || meteorController.showerIds == null ||
                 meteorController.showerIds.Length != 11 || meteorController.showerIds[4] != "PERSEIDS" ||
+                meteorController.geocentricVelocityKilometersPerSecond == null ||
+                meteorController.populationIndices == null ||
+                !Mathf.Approximately(meteorController.geocentricVelocityKilometersPerSecond[4], 59f) ||
+                !Mathf.Approximately(meteorController.geocentricVelocityKilometersPerSecond[9], 71f) ||
+                !Mathf.Approximately(meteorController.populationIndices[4], 2.2f) ||
                 !Mathf.Approximately(MeteorController.CalculateDateActivity(2026, 8, 13, 717, 813, 824), 1f) ||
                 MeteorController.CalculateDateActivity(2026, 6, 30, 717, 813, 824) != 0f ||
                 !Mathf.Approximately(MeteorController.CalculateDateActivity(2026, 1, 3, 1228, 103, 112), 1f) ||
                 meteorController.DebugGetStrongestShowerIndex(2026, 8, 13, 0, 0, 0.0) != 4)
                 throw new InvalidOperationException("IMO shower database/activity test failed.");
+
+            if (MeteorController.CalculateVisualTier(0.01f, 2.2f) != 2 ||
+                MeteorController.CalculateVisualTier(0.20f, 2.2f) != 1 ||
+                MeteorController.CalculateVisualTier(0.90f, 2.2f) != 0 ||
+                MeteorController.CalculateMeteorDuration(20f, 0.5f) <=
+                MeteorController.CalculateMeteorDuration(71f, 0.5f))
+                throw new InvalidOperationException("Meteor visual profile calculation test failed.");
 
             Vector3 previewForward = new Vector3(0.16f, 0.22f, 0.96f).normalized;
             meteorController.DebugPreviewSelectedShowerAtSecond(4, 0.8f, previewForward);
@@ -294,19 +329,25 @@ namespace StargazingHill.Editor
             bool previewVisible = meteorController.meteorRenderers != null &&
                                   meteorController.meteorRenderers.Length >= 1 &&
                                   meteorController.meteorRenderers[0].enabled;
+            bool previewUsesFireball = previewVisible && meteorController.meteorMaterials != null &&
+                                       meteorController.meteorMaterials.Length == 3 &&
+                                       meteorController.meteorRenderers[0].sharedMaterial ==
+                                       meteorController.meteorMaterials[2];
             float previewAlignment = meteorController.meteorTransforms == null ||
                                      meteorController.meteorTransforms.Length < 1 ? -1f :
                 Vector3.Dot(meteorController.meteorTransforms[0].localPosition.normalized, previewLocalForward);
-            if (meteorController.DebugGetForcedMeteorCount() != 20 || !previewVisible || previewAlignment < 0.98f)
+            if (meteorController.DebugGetForcedMeteorCount() != 20 || !previewVisible ||
+                !previewUsesFireball || previewAlignment < 0.98f)
                 throw new InvalidOperationException(
                     "Forced meteor preview test failed: visible=" + previewVisible +
-                    ", alignment=" + previewAlignment + ".");
+                    ", fireball=" + previewUsesFireball + ", alignment=" + previewAlignment + ".");
             meteorController.DebugStopHourlyEvent();
 
             Debug.Log("[Stargazing Hill] Sky/meteor test passed: +1h=" + oneHourMotion.ToString("F4") +
                       " degrees, +24h residual=" + oneDayResidual.ToString("F4") +
                       " degrees, five USNO lunar references <=0.10 degrees, five observatories, " +
-                      "11 IMO showers, deterministic hourly event IDs=" + eventId + "/" + nextEventId +
+                      "11 IMO showers with velocity/population profiles, normal/bright/fireball tiers, " +
+                      "deterministic hourly event IDs=" + eventId + "/" + nextEventId +
                       ", forced 20-meteor front-view preview calculation.");
         }
 
@@ -379,7 +420,7 @@ namespace StargazingHill.Editor
                 EvaluateTerrainHeight(SpawnGroundPosition.x, SpawnGroundPosition.z) + 1.65f,
                 SpawnGroundPosition.z);
             controller.transform.position = observer;
-            controller.DebugPreviewSelectedShowerAtSecond(4, 1.1f, camera.transform.forward);
+            controller.DebugPreviewSelectedShowerAtSecond(4, 0.75f, camera.transform.forward);
 
             Renderer visibleMeteor = null;
             for (int index = 0; index < controller.meteorRenderers.Length; index++)
@@ -567,6 +608,46 @@ namespace StargazingHill.Editor
             if (material.HasProperty("_UseVertexColor")) material.SetFloat("_UseVertexColor", 1f);
             EditorUtility.SetDirty(material);
             return material;
+        }
+
+        private static Material[] CreateOrUpdateMeteorMaterials()
+        {
+            Material normal = CreateOrUpdateMaterial(
+                MaterialRoot + "/Meteor.mat", "StargazingHill/Meteor", Color.white, 0f);
+            ConfigureMeteorMaterial(normal,
+                new Color(0.78f, 0.76f, 0.72f), new Color(1.00f, 0.99f, 0.94f),
+                new Color(1.00f, 0.93f, 0.76f), 3.4f, 0.14f, 0.09f, 0.12f, 0.20f);
+
+            Material bright = CreateOrUpdateMaterial(
+                MaterialRoot + "/MeteorBright.mat", "StargazingHill/Meteor", Color.white, 0f);
+            ConfigureMeteorMaterial(bright,
+                new Color(0.72f, 0.76f, 0.80f), new Color(1.00f, 1.00f, 0.97f),
+                new Color(1.00f, 0.92f, 0.72f), 4.5f, 0.13f, 0.11f, 0.34f, 0.32f);
+
+            Material fireball = CreateOrUpdateMaterial(
+                MaterialRoot + "/MeteorFireball.mat", "StargazingHill/Meteor", Color.white, 0f);
+            ConfigureMeteorMaterial(fireball,
+                new Color(0.34f, 0.55f, 0.58f), new Color(1.00f, 1.00f, 0.96f),
+                new Color(0.78f, 1.00f, 0.78f), 6.2f, 0.10f, 0.15f, 0.82f, 0.52f);
+            return new[] { normal, bright, fireball };
+        }
+
+        private static void ConfigureMeteorMaterial(
+            Material material, Color tail, Color core, Color head, float intensity,
+            float coreWidth, float headSize, float flareStrength, float afterglow)
+        {
+            var defaults = new Material(material.shader);
+            material.CopyPropertiesFromMaterial(defaults);
+            Object.DestroyImmediate(defaults);
+            material.SetColor("_TailColor", tail);
+            material.SetColor("_CoreColor", core);
+            material.SetColor("_HeadColor", head);
+            material.SetFloat("_Intensity", intensity);
+            material.SetFloat("_CoreWidth", coreWidth);
+            material.SetFloat("_HeadSize", headSize);
+            material.SetFloat("_FlareStrength", flareStrength);
+            material.SetFloat("_Afterglow", afterglow);
+            EditorUtility.SetDirty(material);
         }
 
         private static void ConfigureTexturedMaterial(
@@ -1069,7 +1150,7 @@ namespace StargazingHill.Editor
         }
 
         private static void CreateMeteorSystem(
-            Transform world, Mesh meteorMesh, Material meteorMaterial, ObservatoryProfile observatory,
+            Transform world, Mesh meteorMesh, Material[] meteorMaterials, ObservatoryProfile observatory,
             MeteorShowerCatalog catalog)
         {
             GameObject system = CreateChild(world, "MeteorShowerSystem");
@@ -1079,14 +1160,8 @@ namespace StargazingHill.Editor
             controller.observatoryProfileId = observatory.profileId;
             controller.latitudeDegrees = observatory.latitudeDegrees;
             controller.longitudeDegreesEast = observatory.longitudeDegreesEast;
-            controller.showerIds = (string[])catalog.ids.Clone();
-            controller.showerNamesJa = (string[])catalog.namesJa.Clone();
-            controller.activeStartMonthDay = (int[])catalog.activeStartMonthDay.Clone();
-            controller.activeEndMonthDay = (int[])catalog.activeEndMonthDay.Clone();
-            controller.peakMonthDay = (int[])catalog.peakMonthDay.Clone();
-            controller.radiantRightAscensionDegrees = (float[])catalog.radiantRightAscensionDegrees.Clone();
-            controller.radiantDeclinationDegrees = (float[])catalog.radiantDeclinationDegrees.Clone();
-            controller.zenithalHourlyRates = (int[])catalog.zenithalHourlyRates.Clone();
+            CopyMeteorCatalog(controller, catalog);
+            controller.meteorMaterials = meteorMaterials;
 
             const int poolSize = 4;
             controller.meteorTransforms = new Transform[poolSize];
@@ -1095,7 +1170,7 @@ namespace StargazingHill.Editor
             for (int index = 0; index < poolSize; index++)
             {
                 GameObject meteor = CreateMeshObject(
-                    visuals.transform, "Meteor_" + (index + 1), meteorMesh, meteorMaterial, Vector3.zero);
+                    visuals.transform, "Meteor_" + (index + 1), meteorMesh, meteorMaterials[0], Vector3.zero);
                 MeshRenderer renderer = meteor.GetComponent<MeshRenderer>();
                 renderer.enabled = false;
                 controller.meteorTransforms[index] = meteor.transform;
@@ -1104,6 +1179,21 @@ namespace StargazingHill.Editor
 
             UdonSharpEditorUtility.CopyProxyToUdon(controller);
             EditorUtility.SetDirty(controller);
+        }
+
+        private static void CopyMeteorCatalog(MeteorController controller, MeteorShowerCatalog catalog)
+        {
+            controller.showerIds = (string[])catalog.ids.Clone();
+            controller.showerNamesJa = (string[])catalog.namesJa.Clone();
+            controller.activeStartMonthDay = (int[])catalog.activeStartMonthDay.Clone();
+            controller.activeEndMonthDay = (int[])catalog.activeEndMonthDay.Clone();
+            controller.peakMonthDay = (int[])catalog.peakMonthDay.Clone();
+            controller.radiantRightAscensionDegrees = (float[])catalog.radiantRightAscensionDegrees.Clone();
+            controller.radiantDeclinationDegrees = (float[])catalog.radiantDeclinationDegrees.Clone();
+            controller.zenithalHourlyRates = (int[])catalog.zenithalHourlyRates.Clone();
+            controller.geocentricVelocityKilometersPerSecond =
+                (float[])catalog.geocentricVelocityKilometersPerSecond.Clone();
+            controller.populationIndices = (float[])catalog.populationIndices.Clone();
         }
 
         private static void CreateYamaPlayer(Transform world)
@@ -1298,13 +1388,23 @@ namespace StargazingHill.Editor
                 meteorControllers[0].meteorRenderers == null ||
                 meteorControllers[0].meteorTransforms.Length != 4 ||
                 meteorControllers[0].meteorRenderers.Length != 4 ||
+                meteorControllers[0].meteorMaterials == null || meteorControllers[0].meteorMaterials.Length != 3 ||
                 meteorControllers[0].showerIds == null || meteorControllers[0].showerIds.Length != 11 ||
+                meteorControllers[0].geocentricVelocityKilometersPerSecond == null ||
+                meteorControllers[0].geocentricVelocityKilometersPerSecond.Length != 11 ||
+                meteorControllers[0].populationIndices == null || meteorControllers[0].populationIndices.Length != 11 ||
                 meteorControllers[0].observatoryProfileId != skyControllers[0].observatoryProfileId ||
                 !Mathf.Approximately(meteorControllers[0].latitudeDegrees, skyControllers[0].latitudeDegrees) ||
                 !Mathf.Approximately(meteorControllers[0].longitudeDegreesEast, skyControllers[0].longitudeDegreesEast) ||
                 !Mathf.Approximately(meteorControllers[0].eventDurationSeconds, 25f) ||
                 meteorControllers[0].GetComponentsInChildren<Collider>(true).Length != 0)
                 throw new InvalidOperationException("Hourly meteor/debug system validation failed.");
+            for (int materialIndex = 0; materialIndex < meteorControllers[0].meteorMaterials.Length; materialIndex++)
+            {
+                Material material = meteorControllers[0].meteorMaterials[materialIndex];
+                if (material == null || material.shader.name != "StargazingHill/Meteor")
+                    throw new InvalidOperationException("Meteor material tier validation failed.");
+            }
             for (int meteorIndex = 0; meteorIndex < meteorControllers[0].meteorRenderers.Length; meteorIndex++)
             {
                 Renderer meteorRenderer = meteorControllers[0].meteorRenderers[meteorIndex];

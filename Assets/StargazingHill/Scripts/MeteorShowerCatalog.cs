@@ -16,5 +16,7 @@ namespace StargazingHill
         public float[] radiantRightAscensionDegrees;
         public float[] radiantDeclinationDegrees;
         public int[] zenithalHourlyRates;
+        public float[] geocentricVelocityKilometersPerSecond;
+        public float[] populationIndices;
     }
 }

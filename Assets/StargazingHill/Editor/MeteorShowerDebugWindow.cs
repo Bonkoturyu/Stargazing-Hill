@@ -47,7 +47,8 @@ namespace StargazingHill.Editor
             EditorGUILayout.LabelField("流星群 強制プレビュー", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Play Mode中に、選んだ流星群を季節と放射点高度に関係なくローカル再生します。" +
-                "25秒間に20本（5秒ごとに4本）を生成し、各波の1本目を現在の視線正面へ配置します。",
+                "25秒間に20本（5秒ごとに4本）を生成し、各波の1本目を現在の視線正面へ配置します。" +
+                "開始時の1本だけはFireball表示を確実に検査できる階級へ固定します。",
                 MessageType.Info);
 
             string[] names = GetShowerDisplayNames();

@@ -112,7 +112,7 @@
 | 毎時Event ID | Pass | `year/month/day/hour`から連続hourで異なるID `18094356` / `18094357` を生成 |
 | 決定的パラメータ | Pass | 同一Event ID / wave / slot / channelのsample一致、次hourで不一致 |
 | 任意発火入口 | Pass | Play Modeメニューと `DebugTriggerHourlyEvent()` を実装。UdonSharp 92 scripts変換、Scene生成・再読込検証Pass |
-| 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。強制経路の1.1秒地点をDirect3D描画し、加算発光軌跡を目視確認 |
+| 流星描画 | Pass | 4 Quad pool、25秒、5秒waveを実装。強制経路の0.75秒地点をDirect3D描画し、加算発光軌跡を目視確認 |
 | VRChat Client | Open | 毎時00分、途中参加、任意発火、星+1時間/resetをBuild & Testで確認する |
 
 ## 2026-08-12 流星群強制プレビュー試験
@@ -122,7 +122,7 @@
 | 主要11群の選択 | Confirmed | `MeteorShowerDebugWindow` が正本catalogの日本語名・IDを列挙し、backing `UdonBehaviour` の入力変数へ選択indexを渡してCustomEventを送る |
 | 活動期・高度の無視 | Confirmed | 強制経路は選択indexを直接採用し、自然発生の活動日・放射点高度選択を通らない |
 | 20本固定 | Pass | 4本pool × 5wave、`DebugForcedMeteorCount = 20`。静的検査とUnity batch testで確認 |
-| 視線正面の保証 | Pass | 各waveのslot 0を開始時のcamera forwardへ配置し、地形回避の最低高度を約13°に設定。強制時だけ幅2.4倍・長さ1.6倍。Unity batch testで先頭Renderer有効かつ方向dot >= 0.98を確認 |
+| 視線正面の保証 | Pass | 各waveのslot 0を開始時のcamera forwardへ配置し、地形回避の最低高度を約13°に設定。寸法は自然発生と同じで、開始時の1本だけFireball階級に固定。Unity batch testで先頭Renderer有効かつ方向dot >= 0.98を確認 |
 | Direct3D描画 | Pass | 1280×720画像を生成し、丘と木の上に強制流星の発光軌跡が出ることを目視確認 |
 | Udon VM発火経路 | Pass | proxy直接呼出しでは次のUdon Updateに表示を消される不具合を再現。backing `UdonBehaviour.SetProgramVariable` + `SendCustomEvent` へ修正し、ClientSim Play ModeでPERSEIDS、debug active、表示Renderer 1本以上を自動確認 |
 | ペルセウス座短縮入口 | Pass | `Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` がcatalog index 4を起動 |
@@ -160,3 +160,21 @@
 | VRChat SDK Windows bundle | Pass | SDK 3.10.4公開World Builder APIで `.vrcw` を生成。C# error 0、exception 0、build failure 0 |
 | Libraryなしcloneからの復元 | Pass | ローカルclone、固定VPM package、購入済みUnyStylusのみから新規Libraryを構築。初回import完了後にUnityを再起動し、Scene生成、C#、Udon、参照検証がPass。初回importと同時のbatch実行ではYamaPlayer extensionの一時的な二重登録が出たため復元手順へ再起動を明記 |
 | ClientSim / PC / Quest / iOS | Open | 利用者方針により後続。途中参加・複数人同期はClientSimで確認する |
+
+## 2026-08-12 流星ビジュアルprofile試験
+
+- 対象ブランチ: `agent/improve-meteor-visuals`
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、Direct3D 11
+- 外部基準: IMO Meteor Shower Calendar 2026 Table 5と [ADR 0007](adr/0007-data-driven-meteor-visual-profiles.md) 記載の4映像（確認日2026-08-12）
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| IMO速度・光度分布 | Pass | 主要11群の `V∞=[41,49,66,41,59,20,66,27,29,71,35]`、`r=[2.1,2.1,2.4,2.5,2.2,2.6,2.5,2.3,2.3,2.5,2.6]` をcatalog、静的fixture、Sceneへ反映 |
+| 共通速度式 | Pass | 20 km/sの表示時間が71 km/sより長くなること、同じEvent IDで結果が決定的になることをUnity試験で確認 |
+| 光度階級 | Pass | Normal / Bright / Fireballの境界sampleと3 Material参照を静的検査・Unity試験で確認。確率対応は実機調整前の `Provisional` |
+| 強制表示 | Pass | 0.75秒地点で先頭Renderer有効、視線方向dot >= 0.98、先頭だけFireball階級、デバッグ専用寸法倍率なし |
+| Direct3D描画 | Pass | 1280×720を描画し、青い均一線ではなく斜めの暖白色軌跡、明るい先頭、先細りの尾を目視確認 |
+| UdonSharp | Pass | 92 scripts compile、Material配列とruntime `sharedMaterial` 切替を含めerror 0 |
+| ClientSim単一クライアント | Pass | backing Udon VM経由でPERSEIDSを強制し、preview active、表示Renderer 1本、networking初期化例外0件 |
+| 保存シーン非破壊更新 | Pass | `UpgradeMeteorVisualsForBatchMode` でMeteorShowerSystemのcatalog / Material参照だけを更新。Respawn、YamaPlayer、QvPen、UnyStylus配置差分なし |
+| PC / Quest / iOS実機 | Open | 明暗、尾の連続性、3階級比率、GPU時間を実機Build & Testで確認する |

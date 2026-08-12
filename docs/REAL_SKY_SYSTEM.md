@@ -10,8 +10,8 @@
 - `ObservatoryProfile` が観測地ID、表示名、緯度、東経を一元管理する。初期assetはTokyo 35.68°N / 139.76°E。
 - `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、profileの緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
 - 月は主要摂動と扁平地球上のtopocentric parallaxを含む低コスト計算で位置を求める。東京のUSNO基準5日時で高度・方位とも0.10°以内。
-- `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHRを保持する。
-- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、活動群がなければ散在流星へfallbackする。5秒waveを5回使い、1イベント最大20本とする。
+- `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHR、対地速度 `V∞`、光度分布指標 `r` を保持する。
+- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、`V∞` と `r` から速度・尾・Normal / Bright / Fireball階級を共通式で決める。活動群がなければ散在流星へfallbackする。5秒waveを5回使い、1イベント最大20本とする。
 - Play Mode中の `Stargazing Hill/Debug/Meteor Shower Preview...` で主要11群を選択し、活動期と放射点高度に関係なく20本をローカル強制再生できる。`Force Perseids Preview (20 Meteors)` はペルセウス座流星群の短縮入口。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
 - データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、月のUSNO基準、5観測地parameterization、11群catalog、ClientSim単一クライアントでの強制流星Udon VM発火はPass。ClientSim複数人・途中参加と実機確認はOpen。
@@ -227,11 +227,11 @@ YYYYMMDDHH
 
 ### 9.3 デバッグ発火
 
-生成SceneをPlay Modeで開き、`Stargazing Hill/Debug/Meteor Shower Preview...` を開く。主要11群から選択して `選択した流星群を正面へ強制表示` を押すと、選択群を25秒間・20本（5秒ごとに4本）でローカル再生する。活動期間、実際の放射点高度、ZHRはこの強制プレビューに限り無視する。各waveの1本目はボタン押下時のGame camera正面へ配置し、地形に隠れないよう高度が約13°未満の視線だけ画角内で上方補正するため、最初の流星は即時確認できる。他3本は選択群の収束する軌跡を保ったまま視界周辺へ配置する。
+生成SceneをPlay Modeで開き、`Stargazing Hill/Debug/Meteor Shower Preview...` を開く。主要11群から選択して `選択した流星群を正面へ強制表示` を押すと、選択群を25秒間・20本（5秒ごとに4本）でローカル再生する。活動期間、実際の放射点高度、ZHRはこの強制プレビューに限り無視する。各waveの1本目はボタン押下時のGame camera正面へ配置し、地形に隠れないよう高度が約13°未満の視線だけ画角内で上方補正するため、最初の流星は即時確認できる。他3本は選択群の収束する軌跡を保ったまま視界周辺へ配置する。開始時のslot 0だけはFireball Materialへ固定し、白い核、淡い緑白色の先頭フレア、長い残光を確実に検査できるようにする。
 
 `Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` はペルセウス座流星群を直接開始する。`Stargazing Hill/Debug/Trigger Hourly Meteor Shower` は現在hourの自然条件を経過0秒から再生する旧経路であり、活動群がない日時には散在流星だけになる。
 
-いずれもネットワークイベントは送らず、他プレイヤーの状態を変更しない。Editorウィンドウは編集用UdonSharp proxyを直接呼ばず、backing `UdonBehaviour` の `debugRequestedShowerIndex` / `debugRequestedViewForward` を設定して引数なしの `DebugTriggerSelectedShower()` CustomEventを送る。停止、現在条件の毎時イベント、天球+1時間/resetも同じbacking Udon経路を使う。強制プレビューは観測方向へ演出を回し、見落とし防止のため軌跡の幅を2.4倍、長さを1.6倍にする視認性試験であり、自然発生側のUTC、活動度、実放射点計算と表示寸法は変更しない。
+いずれもネットワークイベントは送らず、他プレイヤーの状態を変更しない。Editorウィンドウは編集用UdonSharp proxyを直接呼ばず、backing `UdonBehaviour` の `debugRequestedShowerIndex` / `debugRequestedViewForward` を設定して引数なしの `DebugTriggerSelectedShower()` CustomEventを送る。停止、現在条件の毎時イベント、天球+1時間/resetも同じbacking Udon経路を使う。強制プレビューは観測方向へ演出を回すが、軌跡の寸法と速度は自然発生と同じ式を使う。階級だけは開始時の1本をFireballへ固定し、残り19本は自然発生と同じ分布式を使う。デバッグ専用の太さ・長さ補正は行わない。
 
 天球は `Stargazing Hill/Debug/Advance Sky +1 Hour` でローカル時刻offsetを1時間進め、`Reset Sky Time Offset` で現在UTCへ戻す。自動試験では同一時刻の回転一致、+1時間で約15.04°、+24時間で約0.985°の恒星日差を確認する。
 
@@ -239,7 +239,7 @@ YYYYMMDDHH
 
 大量Particleは使用しない。
 
-初期案:
+実装:
 
 - 細長いQuadまたは少数の再利用Mesh
 - Unlit
@@ -247,15 +247,17 @@ YYYYMMDDHH
 - Shadowなし
 - Colliderなし
 - Lightなし
-- 共通Material
+- Normal / Bright / Fireballの3 Material
 
-Shader側で尾の減衰、フェード、移動を行える構造を優先する。
+同じtextureless shaderで、先細りの尾、細い白色核、先頭フレア、残光を合成する。通常流星は暖白色を主体とし、Brightは核と残光を強め、Fireballだけ淡い緑白色を含める。タイムラプスの長時間露光線は再現せず、リアルタイム映像の短い継続時間を基準にする。
+
+IMO Table 5の対地速度 `V∞` を20〜71 km/sの共通範囲へ正規化し、速い群ほど表示時間を短く、移動距離と尾を長くする。光度分布指標 `r` とEvent ID由来の決定的sampleから3階級を選ぶ。`r` から階級確率への変換は `Provisional` な演出近似であり、低い `r` ほどBright / Fireballをやや増やす。詳細な判断と映像参照は [ADR 0007](adr/0007-data-driven-meteor-visual-profiles.md) を正本とする。
 
 流星Transformを大量にUdonで毎フレーム更新しない。
 
 ## 11. 対応する主な流星群
 
-IMO `Meteor Shower Calendar 2026` Table 5を基準に、以下11群をデータとして持つ。日付と放射点は2026版、ZHRは同表のrecent observed returnsに基づく値であり、年次更新時はcatalogと検証値を同時更新する。
+IMO `Meteor Shower Calendar 2026` Table 5を基準に、以下11群をデータとして持つ。日付と放射点は2026版、ZHRは同表のrecent observed returns、速度と光度分布は同表の `V∞` / `r` に基づく値であり、年次更新時はcatalogと検証値を同時更新する。
 
 | ID | 流星群 | 活動期間の目安 | 極大の目安 | 初期演出強度 |
 |---|---|---|---|---|
@@ -298,6 +300,8 @@ MeteorShowerData
 - strengthClass
 - activityCurve
 - visualProfile
+- geocentricVelocityKilometersPerSecond
+- populationIndex
 ```
 
 必要に応じて年別補正を追加可能な構造にする。
