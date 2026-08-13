@@ -47,7 +47,8 @@ namespace StargazingHill.Editor
             EditorGUILayout.LabelField("流星群 強制プレビュー", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Play Mode中に、選んだ流星群を季節と放射点高度に関係なくローカル再生します。" +
-                "25秒間に20本（5秒ごとに4本）を生成し、各波の1本目を現在の視線正面へ配置します。" +
+                MeteorController.DebugForcedPreviewDurationSeconds + "秒間に20本（5秒ごとに4本）を生成し、" +
+                "各波の1本目を現在の視線正面へ配置します。" +
                 "開始時の1本だけはFireball表示を確実に検査できる階級へ固定します。",
                 MessageType.Info);
 
@@ -147,7 +148,8 @@ namespace StargazingHill.Editor
             object visibleValue = backing.GetProgramVariable(nameof(MeteorController.debugVisibleMeteorCount));
             float elapsed = elapsedValue is float ? (float)elapsedValue : -1f;
             int visible = visibleValue is int ? (int)visibleValue : -1;
-            return "再生中: " + showerId + "  " + elapsed.ToString("F1") + " / 25.0秒  表示中 " + visible + "本";
+            return "再生中: " + showerId + "  " + elapsed.ToString("F1") + " / " +
+                   MeteorController.DebugForcedPreviewDurationSeconds.ToString("F1") + "秒  表示中 " + visible + "本";
         }
 
         private static string[] GetShowerDisplayNames()

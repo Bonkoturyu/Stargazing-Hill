@@ -1243,7 +1243,6 @@ namespace StargazingHill.Editor
         {
             GameObject system = CreateChild(world, "MeteorShowerSystem");
             MeteorController controller = UdonSharpUndo.AddComponent<MeteorController>(system);
-            controller.eventDurationSeconds = 25f;
             controller.skyRadius = 65f;
             controller.observatoryProfileId = observatory.profileId;
             controller.latitudeDegrees = observatory.latitudeDegrees;
@@ -1484,7 +1483,6 @@ namespace StargazingHill.Editor
                 meteorControllers[0].observatoryProfileId != skyControllers[0].observatoryProfileId ||
                 !Mathf.Approximately(meteorControllers[0].latitudeDegrees, skyControllers[0].latitudeDegrees) ||
                 !Mathf.Approximately(meteorControllers[0].longitudeDegreesEast, skyControllers[0].longitudeDegreesEast) ||
-                !Mathf.Approximately(meteorControllers[0].eventDurationSeconds, 25f) ||
                 meteorControllers[0].GetComponentsInChildren<Collider>(true).Length != 0)
                 throw new InvalidOperationException("Hourly meteor/debug system validation failed.");
             for (int materialIndex = 0; materialIndex < meteorControllers[0].meteorMaterials.Length; materialIndex++)

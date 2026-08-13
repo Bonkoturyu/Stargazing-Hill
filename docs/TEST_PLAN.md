@@ -258,3 +258,14 @@
 | 目視確認 | Pass | `RenderDebugPanelPreviewForBatchMode`（`-nographics` を付けずに実行）で正面・グリッド近接・広角の3枚を出力し、数値だけで判断しない |
 | 板下端の地面クリアランス | Pass | 0.35m。広角で下部に重なって見えるのはQvPenパレットの手前遮蔽であり、正面からは干渉しない |
 | 実機でのVR可読性・押しやすさ | Open | 描画では確認済みだが、Quest実機での文字可読性とコライダーの押しやすさは未評価 |
+
+## 2026-08-13 流星イベント時間の正本統合
+
+- 要求: 自然イベントの180秒と強制デバッグプレビューの25秒を別々に調整可能にし、コード上の変更箇所を一つへ集約する
+- 実装: `MeteorController.NaturalEventDurationSeconds` / `DebugForcedPreviewDurationSeconds` を唯一の調整値とし、BuilderとSceneの旧 `eventDurationSeconds` 複製、migration guard、デバッグUIの時間ハードコードを除去
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`。時間定数が各1定義で、旧 `eventDurationSeconds` がControllerにないことを確認 |
+| Runtime / Editor C# | Pass | Unity 2022.3.22f1の既存Bee response fileと同梱Roslynで `Assembly-CSharp` / `Assembly-CSharp-Editor` をコンパイル |
+| Unity Scene生成・UdonSharp変換 | Pass | 通常環境で `Tools/Run-LocalChecks.ps1` を再実行し、program asset確認、Scene生成、Scene検証、天球・流星数値試験の全段階がPass |

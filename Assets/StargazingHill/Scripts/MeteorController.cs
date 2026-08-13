@@ -8,13 +8,16 @@ namespace StargazingHill
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class MeteorController : UdonSharpBehaviour
     {
+        // Single source of truth for meteor event timing. Change these two values when tuning durations.
+        public const float NaturalEventDurationSeconds = 180f;
+        public const float DebugForcedPreviewDurationSeconds = 25f;
+
         [Header("Visual Pool")]
         public Transform[] meteorTransforms;
         public Renderer[] meteorRenderers;
         public Material[] meteorMaterials;
 
         [Header("Hourly Event")]
-        [Range(60f, 300f)] public float eventDurationSeconds = 180f;
         public float skyRadius = 65f;
 
         [Header("Observatory (same profile as RealSkyController)")]
@@ -49,20 +52,12 @@ namespace StargazingHill
         private int _debugForcedShowerIndex = -1;
         private Vector3 _debugViewForward = Vector3.forward;
 
-        // The natural hourly event represents one hour of expected activity compressed into three minutes.
-        // The forced preview intentionally stays short and dense so VR/Editor visual QA does not take three minutes.
-        private const float NaturalEventDurationSeconds = 180f;
-        private const float DebugForcedPreviewDurationSeconds = 25f;
         private const int DebugForcedMeteorCount = 20;
         private const float DebugImmediatePreviewElapsed = 0.75f;
 
         private void Start()
         {
             _localPlayer = Networking.LocalPlayer;
-
-            // Migration guard for generated scenes made before ADR 0008. The old builder serialized
-            // eventDurationSeconds = 25f; until the scene is regenerated, so normalize that legacy value at runtime.
-            if (eventDurationSeconds <= 30f) eventDurationSeconds = NaturalEventDurationSeconds;
             SetAllVisible(false);
         }
 
@@ -80,13 +75,13 @@ namespace StargazingHill
                 utc = _debugUtc;
                 float debugDuration = _debugForcedShowerIndex >= 0
                     ? DebugForcedPreviewDurationSeconds
-                    : eventDurationSeconds;
+                    : NaturalEventDurationSeconds;
                 if (elapsed >= debugDuration) { _debugEventActive = false; elapsed = -1f; }
             }
             else
             {
                 float secondsIntoHour = utc.Minute * 60f + utc.Second + utc.Millisecond / 1000f;
-                if (secondsIntoHour < eventDurationSeconds)
+                if (secondsIntoHour < NaturalEventDurationSeconds)
                 {
                     elapsed = secondsIntoHour;
                     eventId = GetHourlyEventId(utc.Year, utc.Month, utc.Day, utc.Hour);
@@ -136,7 +131,8 @@ namespace StargazingHill
                 _debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour, _debugUtc.Minute,
                 _debugUtc.Second + _debugUtc.Millisecond / 1000.0, showerIndex, _debugViewForward);
             Debug.Log("[Stargazing Hill] Forced meteor shower preview: " + showerNamesJa[showerIndex] +
-                      " / " + showerIds[showerIndex] + " (20 meteors over 25 seconds, local-only accelerated QA).");
+                      " / " + showerIds[showerIndex] + " (" + DebugForcedMeteorCount + " meteors over " +
+                      DebugForcedPreviewDurationSeconds + " seconds, local-only accelerated QA).");
         }
 
         public void DebugStopHourlyEvent()
@@ -153,7 +149,7 @@ namespace StargazingHill
         public void DebugPreviewEventAtSecond(float elapsed)
         {
             int eventId = GetHourlyEventId(2026, 8, 13, 0);
-            UpdateMeteorVisuals(eventId, Mathf.Clamp(elapsed, 0f, eventDurationSeconds - 0.001f),
+            UpdateMeteorVisuals(eventId, Mathf.Clamp(elapsed, 0f, NaturalEventDurationSeconds - 0.001f),
                 2026, 8, 13, 0, 0, 0.0, -1, Vector3.forward);
         }
 
@@ -321,7 +317,7 @@ namespace StargazingHill
 
             float scheduleDuration = forcedPreview
                 ? DebugForcedPreviewDurationSeconds
-                : eventDurationSeconds;
+                : NaturalEventDurationSeconds;
             int waveCount = Mathf.Max(1, Mathf.CeilToInt((float)targetCount / count));
 
             // Forced QA remains the historic 5-second wave so the first meteor appears immediately.
