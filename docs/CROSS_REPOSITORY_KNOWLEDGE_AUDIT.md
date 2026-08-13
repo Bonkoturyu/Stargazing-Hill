@@ -1,12 +1,12 @@
 # Cross-Repository Knowledge Audit
 
-確認日: 2026-08-11
+確認日: 2026-08-13
 
 ## 調査対象
 
 | リポジトリ | 確認commit | 主な参照領域 |
 |---|---|---|
-| `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` | `11a52acb00a9579178ee678a6d5d1ba1f327eb7e` | VRChat運用、星空実装、ADR、AI設定 |
+| `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` | `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` | VRChat運用、星空実装、ADR、AI設定、手持ちリモコン |
 | `Dungeon-Architect-AI-Preproduction` | `749759bd398858035fd1e8d196b6b398f225c843` | 状態ラベル、証拠管理、文書ルーティング、Skills |
 | `Pocket-Dragon-Dungeon` | `7346ced89b7da7d62ca4a8fdc05e45f2fce69d12` | AI協業、ライセンス証拠、仕様書構成 |
 | `BYTE_DUEL_BAD_SECTOR` | `929518e9ed586cbfdb0fd27114506e8dcc109b40` | 番号付き仕様、検証ラダー、横断監査 |
@@ -22,6 +22,7 @@
 - `Confirmed`: カタログ座標の全天球Meshと、観測時刻・地点によるランタイム回転を分離する。
 - `Provisional`: Udonの時刻差は直接減算せず、SDKが提供する差分計算APIを優先する。実装時に現行SDKで再確認する。
 - `Provisional`: 2D AudioSource、Station、World-space Canvas、TMP、モバイルShaderの既知注意点を実装ガイドへ移す。導入時に現行SDKと実機で再確認する。
+- `Confirmed`: 参照ワールドでPCVR / Quest実機確認済みのローカルPickup・ドロップ後遅延復帰パターンを、流星デバッグパネルへ採用する。再取得時の古い復帰要求を無効化する。参照ワールド固有の両手拡縮と同期は採用しない。
 
 ## 見送り・保留
 

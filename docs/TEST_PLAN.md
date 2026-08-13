@@ -221,7 +221,7 @@
 | 確認 | 結果 | 証拠・残課題 |
 |---|---|---|
 | 全検査の通過 | Pass | 5検査すべてPass。`-SkipBuild` で段階3を省略可 |
-| program asset検査の範囲 | Pass | `Assembly-CSharp` かつ名前空間 `StargazingHill` の4 behaviour（MeteorController / RealSkyController / WorldDebugPanelButton / WorldPlayerSettings）を対象。YamaPlayer同梱のTAC UI 7 behaviourは自プロジェクト外として除外 |
+| program asset検査の範囲 | Pass | `Assembly-CSharp` かつ名前空間 `StargazingHill` の5 behaviour（MeteorController / RealSkyController / WorldDebugPanelButton / WorldDebugPanelPickup / WorldPlayerSettings）を対象。YamaPlayer同梱のTAC UI 7 behaviourは自プロジェクト外として除外 |
 | 強制プレビューの退行検出 | Pass | 導入直後に `TestSkyAndMeteorForBatchMode` の失敗を検出（`visible=False`）。PR #16 がonset式を `0.35+slot*0.88` から `(slot+0.5)*slotSpacing+jitter` へ変更した結果、slot 0のonsetが0.625±0.28秒となり、強制プレビュー開始点0.75秒より後になる場合に流星が1本も出なかった。強制プレビューのみ旧onset式へ戻し、自然イベントのPR #16 スケジューリングは維持 |
 | Test Runner統合 | Open | テスト用asmdefから `Assembly-CSharp-Editor` を参照できないため、EditModeテスト化にはプロジェクトのasmdef分割が要る。BACKLOG `Later` へ記録 |
 | CI側でのUnity実行 | Open | ライセンスと実行時間の都合で未導入。実行枠が使えるときは現行のPython検証がCIで走る |
@@ -269,3 +269,19 @@
 | 静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`。時間定数が各1定義で、旧 `eventDurationSeconds` がControllerにないことを確認 |
 | Runtime / Editor C# | Pass | Unity 2022.3.22f1の既存Bee response fileと同梱Roslynで `Assembly-CSharp` / `Assembly-CSharp-Editor` をコンパイル |
 | Unity Scene生成・UdonSharp変換 | Pass | 通常環境で `Tools/Run-LocalChecks.ps1` を再実行し、program asset確認、Scene生成、Scene検証、天球・流星数値試験の全段階がPass |
+
+## 2026-08-13 再配布用unitypackageと手持ちデバッグパネル
+
+- 要求: YamaPlayer、QvPen、UnyStylusをunitypackageへ同梱せず、デバッグパネルを手持ちサイズ・Pickup対応・ドロップ約10秒後の初期位置復帰にする
+- 参考: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` のローカルPickup復帰パターン
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、Direct3D 11
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 静的検査 | Pass | 所有root、依存を含めないExport option、外部3パスとベイク原本の除外、10秒定数、ローカルUdon、再取得キャンセル経路を検査 |
+| Runtime / Editor C#・UdonSharp | Pass | `WorldDebugPanelPickup.asset` を生成し、5 behaviourのprogram asset検査がPass |
+| Scene生成・構造検査 | Pass | Pickup layer、trigger BoxCollider、重力なしRigidbody、VRCPickup、参照、root scale 0.20、約0.47 × 0.41mの寸法を保存Sceneで検査 |
+| Scene・天球・流星の退行 | Pass | `Tools/Run-LocalChecks.ps1 -SkipBuild` の全段階がPass。直前のScene再生成もPass |
+| パネル描画 | Pass | 正面・近接・周辺配置の3枚を1280 × 720で描画。ラベル欠け・重なり・鏡文字なし、小型化後もボタンを識別可能 |
+| unitypackage実物 | Pass | `Build/StargazingHill-redistributable.unitypackage`、11,353,339 bytes、80 pathname。全て `Assets/StargazingHill` 配下で、YamaPlayer / QvPen / UnyStylus / `SourceDownloads` の混入なし |
+| 実機Pickup・10秒復帰 | Open | 本ワールドのPCVR / Questで片手保持、別手操作、ドロップ10秒後復帰、待機中再取得によるキャンセルを確認する |

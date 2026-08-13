@@ -35,4 +35,6 @@ CC0テクスチャの草原、単一Colliderの小丘、Poly Haven `Jacaranda Tr
 
 Unityライセンスが有効なEditorでプロジェクトを開き、メニュー `Stargazing Hill/Build Complete World` を実行すると、Mesh・Materialと `Assets/StargazingHill/Scenes/StargazingHill.unity` を生成する。生成後はConsoleとUdon変換結果を確認する。
 
+配布用unitypackageは `Stargazing Hill/Export/Redistributable UnityPackage...` から生成する。この経路はYamaPlayer、QvPen、購入品UnyStylusを同梱しない。
+
 クリーン環境からの依存・購入品復元は [docs/SETUP_AND_RESTORE.md](docs/SETUP_AND_RESTORE.md) を参照する。

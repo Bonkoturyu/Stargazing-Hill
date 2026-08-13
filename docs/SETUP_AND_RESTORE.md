@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-12
+確認日: 2026-08-13
 
 ## 前提
 
@@ -29,6 +29,15 @@
 - 購入品UnyStylusのpackageと展開本体
 
 UnyStylusが未導入ならビルダーは意図的に停止する。購入品を代替ファイルで埋めたり、Gitへ再配布したりしない。Libraryなしの初回importと同時にbatchビルダーを呼ぶと、YamaPlayerのUdon extension登録が一時的に二重化することがある。import完了後の再起動で解消し、以後のbuildでは再現しない。
+
+## 再配布用unitypackage
+
+1. 上記手順で外部依存を復元し、`Stargazing Hill/Build Complete World` と保存Scene検証を通す。
+2. Unityメニュー `Stargazing Hill/Export/Redistributable UnityPackage...` を実行する。
+3. 出力されたpackageには `Assets/StargazingHill` だけが含まれ、YamaPlayer、QvPen、UnyStylus本体は含まれない。
+4. 配布先ではVCC/VPMでYamaPlayerとQvPenを復元し、正規購入済みUnyStylus v1.3をImportしてからpackageを利用する。
+
+自動生成はUnityのbatch modeで `StargazingHill.Editor.StargazingUnityPackageExporter.ExportForBatchMode` を呼び、`Build/StargazingHill-redistributable.unitypackage` を `python Tools/Validate-UnityPackage.py Build/StargazingHill-redistributable.unitypackage` で検査する。Unity標準の **Include dependencies** を使った書き出しは、外部packageを混入させるため再配布経路に使用しない。設計判断は [ADR 0010](adr/0010-redistributable-unitypackage-boundary.md) を正本とする。
 
 ## 検証境界
 

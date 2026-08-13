@@ -13,3 +13,5 @@
 | [0007](0007-data-driven-meteor-visual-profiles.md) | Accepted | IMO速度・光度分布を使うNormal / Bright / Fireball描画profile |
 | [0008](0008-three-minute-hourly-meteor-compression.md) | Accepted | 1時間相当の期待流星活動を毎時3分へ圧縮し、固定20本上限を廃止 |
 | [0009](0009-quest-frond-card-canopy.md) | Accepted | Jacaranda樹冠のフロンドカード化（位置は枝・向きは葉）とQuest向け19,507 triangles |
+| [0010](0010-redistributable-unitypackage-boundary.md) | Accepted | `Assets/StargazingHill` のみを含む再配布用unitypackageと第三者依存の除外 |
+| [0011](0011-local-handheld-debug-panel.md) | Accepted | ローカル手持ちデバッグパネル、10秒遅延復帰、再取得時キャンセル |

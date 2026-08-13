@@ -1,6 +1,6 @@
 # リスクと未解決事項
 
-確認日: 2026-08-12
+確認日: 2026-08-13
 
 | 状態 | 項目 | 解決条件 |
 |---|---|---|
@@ -11,6 +11,7 @@
 | Provisional | QvPen 3.3.15 | 公式VPM依存として導入済み。上流packageに明示ライセンスファイルがないため、package本体は追跡せず公式配布から復元する |
 | Confirmed | UnyStylus v1.3の復元手順 | 購入済みVN3素材としてローカル導入。本体は再配布せず、`SETUP_AND_RESTORE.md` に期待Prefabと手順を記録済み。実機動作は別項目 |
 | Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |
+| Open | 手持ちデバッグパネルの実機操作 | 約0.47 × 0.41mの文字可読性、片手保持中の別手ボタン操作、ドロップ10秒後のdock復帰、復帰待ち中の再取得キャンセルをPCVR / Questで確認する。iOSは画面操作と負荷を確認する |
 | Open | iOSで利用可能なShaderと動画経路 | 対象Unity/SDK版でBuild & Test |
 | Confirmed | 月位置の許容誤差 | USNO APIの東京5日時を基準に、高度・方位とも0.10°以内（実測最大0.0495°）。静的CIとUnity試験でPass |
 | Confirmed | 流星群データの一次出典 | IMO Meteor Shower Calendar 2026 Table 5、確認日2026-08-12。主要11群をcatalog化 |

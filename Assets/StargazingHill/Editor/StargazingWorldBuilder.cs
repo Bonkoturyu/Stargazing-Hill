@@ -12,6 +12,7 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using VRC.Core;
 using VRC.SDK3.Components;
+using VRC.SDKBase;
 using VRC.Udon;
 using Yamadev.YamaStream;
 using Object = UnityEngine.Object;
@@ -35,6 +36,8 @@ namespace StargazingHill.Editor
         private const string MeteorControllerProgramPath = Root + "/Scripts/MeteorController.asset";
         private const string DebugPanelButtonScriptPath = Root + "/Scripts/WorldDebugPanelButton.cs";
         private const string DebugPanelButtonProgramPath = Root + "/Scripts/WorldDebugPanelButton.asset";
+        private const string DebugPanelPickupScriptPath = Root + "/Scripts/WorldDebugPanelPickup.cs";
+        private const string DebugPanelPickupProgramPath = Root + "/Scripts/WorldDebugPanelPickup.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -88,7 +91,7 @@ namespace StargazingHill.Editor
             EnsureProgramAsset(typeof(RealSkyController), SkyControllerScriptPath, SkyControllerProgramPath);
             EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
-            EnsureDebugPanelButtonProgramAsset();
+            EnsureDebugPanelProgramAssets();
             // Source edits do not always lower CompiledVersion before a batch build. Compile explicitly so
             // newly added serialized fields exist before proxies are copied into generated scene objects.
             UdonSharpCompilerV1.CompileSync();
@@ -468,18 +471,18 @@ namespace StargazingHill.Editor
             // Labels face the panel's -Z, so a reader stands on that side of the board.
             Vector3 viewing = -panel.transform.forward;
 
-            camera.transform.position = panel.transform.position + viewing * 2.05f;
+            camera.transform.position = panel.transform.position + viewing * 0.75f;
             camera.transform.LookAt(panel.transform.position);
             RenderCameraToPng(camera, "stargazing-hill-debug-panel.png");
 
-            Vector3 gridCentre = panel.transform.position + panel.transform.up * 0.32f;
-            camera.transform.position = gridCentre + viewing * 0.95f;
+            Vector3 gridCentre = panel.transform.TransformPoint(new Vector3(0f, 0.32f, 0f));
+            camera.transform.position = gridCentre + viewing * 0.42f;
             camera.transform.LookAt(gridCentre);
             RenderCameraToPng(camera, "stargazing-hill-debug-panel-grid.png");
 
             // Wide enough to include the toggle and the drawing tools it sits among.
-            Vector3 surroundings = panel.transform.position + panel.transform.right * 0.85f;
-            camera.transform.position = surroundings + viewing * 4.2f + Vector3.up * 0.6f;
+            Vector3 surroundings = panel.transform.TransformPoint(new Vector3(0.85f, 0f, 0f));
+            camera.transform.position = surroundings + viewing * 1.8f + Vector3.up * 0.35f;
             camera.transform.LookAt(surroundings);
             RenderCameraToPng(camera, "stargazing-hill-debug-panel-wide.png");
 
@@ -622,10 +625,12 @@ namespace StargazingHill.Editor
         /// the build having run. Without a U# program asset, adding the behaviour throws inside UdonSharp and
         /// leaves a half-built panel in the scene, so the installer ensures the asset through here first.
         /// </summary>
-        internal static void EnsureDebugPanelButtonProgramAsset()
+        internal static void EnsureDebugPanelProgramAssets()
         {
             EnsureProgramAsset(typeof(WorldDebugPanelButton), DebugPanelButtonScriptPath,
                 DebugPanelButtonProgramPath);
+            EnsureProgramAsset(typeof(WorldDebugPanelPickup), DebugPanelPickupScriptPath,
+                DebugPanelPickupProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -1555,6 +1560,11 @@ namespace StargazingHill.Editor
                     throw new InvalidOperationException(
                         "VR debug panel button has no backing Udon behaviour: " + debugButtons[index].name);
             }
+            WorldDebugPanelPickup[] debugPickups =
+                Object.FindObjectsOfType<WorldDebugPanelPickup>(true);
+            if (debugPickups.Length != 1 ||
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(debugPickups[0]) == null)
+                throw new InvalidOperationException("VR debug panel pickup behaviour validation failed.");
             ValidateDebugPanelLayout(scene);
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
             GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
@@ -1644,6 +1654,25 @@ namespace StargazingHill.Editor
                 if (roots[index].name == "VRDebugPanel") panel = roots[index];
             if (panel == null)
                 throw new InvalidOperationException("VR debug panel root is missing from the scene.");
+
+            float expectedPanelScale = WorldDebugPanelInstaller.PanelScale;
+            if (!Approximately(panel.transform.localScale, Vector3.one * expectedPanelScale, 0.0001f))
+                throw new InvalidOperationException("VR debug panel root is not at the handheld scale.");
+
+            BoxCollider pickupCollider = panel.GetComponent<BoxCollider>();
+            Rigidbody pickupRigidbody = panel.GetComponent<Rigidbody>();
+            VRCPickup pickup = panel.GetComponent<VRCPickup>();
+            WorldDebugPanelPickup pickupReturn = panel.GetComponent<WorldDebugPanelPickup>();
+            if (panel.layer != LayerMask.NameToLayer("Pickup") ||
+                pickupCollider == null || !pickupCollider.isTrigger ||
+                pickupRigidbody == null || pickupRigidbody.useGravity ||
+                pickup == null || !pickup.pickupable ||
+                pickup.orientation != VRC_Pickup.PickupOrientation.Any ||
+                pickup.AutoHold != VRC_Pickup.AutoHoldMode.No ||
+                pickupReturn == null || pickupReturn.pickupCollider != pickupCollider ||
+                pickupReturn.pickupRigidbody != pickupRigidbody ||
+                !Mathf.Approximately(WorldDebugPanelPickup.ReturnDelaySeconds, 10f))
+                throw new InvalidOperationException("VR debug panel handheld pickup configuration failed.");
 
             Transform sheet = panel.transform.Find("PanelSheet");
             if (sheet == null)
@@ -1777,10 +1806,17 @@ namespace StargazingHill.Editor
                     (halfWidth + toggleHalf.x).ToString("F3") + " in x or +/-" +
                     (halfHeight + toggleHalf.y).ToString("F3") + " in y.");
 
-            // The board hangs from a hand-picked world position, so nothing otherwise stops its lowest row
-            // of buttons from sitting in the grass where they cannot be read or pressed.
-            float ground = EvaluateTerrainHeight(panel.transform.position.x, panel.transform.position.z);
-            float boardBottom = panel.transform.position.y - halfHeight;
+            float worldWidth = sheet.lossyScale.x;
+            float worldHeight = sheet.lossyScale.y;
+            if (worldWidth < 0.40f || worldWidth > 0.55f || worldHeight < 0.35f || worldHeight > 0.48f)
+                throw new InvalidOperationException(
+                    "VR debug panel is outside the handheld size envelope: " +
+                    worldWidth.ToString("F3") + " x " + worldHeight.ToString("F3") + "m.");
+
+            // The dock is hand-picked, so verify the scaled board does not sit in the grass.
+            Vector3 boardBottomPoint = panel.transform.TransformPoint(new Vector3(0f, -halfHeight, 0f));
+            float ground = EvaluateTerrainHeight(boardBottomPoint.x, boardBottomPoint.z);
+            float boardBottom = boardBottomPoint.y;
             if (boardBottom < ground + 0.05f)
                 throw new InvalidOperationException(
                     "VR debug panel board reaches the ground: bottom edge at y=" + boardBottom.ToString("F3") +
@@ -1790,7 +1826,8 @@ namespace StargazingHill.Editor
                       (measuredFromMesh ? "measured from generated meshes" : "derived from serialized TextMesh fields") +
                       ", tightest fit \"" + tightestLabel + "\" at " +
                       (tightestFace * 100f).ToString("F0") + "% of its button face, board bottom " +
-                      (boardBottom - ground).ToString("F2") + "m above ground.");
+                      (boardBottom - ground).ToString("F2") + "m above ground, handheld size " +
+                      worldWidth.ToString("F2") + " x " + worldHeight.ToString("F2") + "m.");
         }
 
         private static void ValidateWalkableSurface(Transform spawn)

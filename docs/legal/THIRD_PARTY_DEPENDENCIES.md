@@ -13,3 +13,7 @@
 | QvPen (`net.ureishi.qvpen`) | 3.3.15 | 描画 | 公式GitHub `ureishi/QvPen` / 公式VPM `https://vpm.ureishi.net/repos.json`。Unity 2022.3、`com.vrchat.worlds ^3.5.0`。取得ZIP SHA-256 `220df71a5fb5540ac7c9d75a7f40b57d69aa6aa432db3ddbc7563e0d60606537`。上流packageに明示ライセンスファイルがないため本体は追跡せず公式VPMから復元 | Provisional |
 | UnyStylus | 1.3 | 描画 | 購入済みUnityPackage。VN3利用条件に従いワールドへ組込み、packageと展開本体はGitへ再配布しない。シーン参照の復元には購入済みv1.3のローカルimportが必要 | Confirmed |
 | YamaPlayer (`net.kwxxw.yama-stream`) | 2.0.0-beta.7 | 動画・音声再生 | 公式VPM `https://vpm.kwxxw.net/index.json` / 公式GitHub `koorimizuw/YamaPlayer`。READMEの利用条件に従い、VRChatワールドへの改変・組込み可。取得日 2026-08-11、package ZIP SHA-256 `fcf94198526e63319ebde966a479f4be7179c58d22f7e54493d9e75034ae2e9d`。VPM依存として解決しpackage本体は追跡しない | Confirmed |
+
+## 再配布境界
+
+`Confirmed`（2026-08-13）: 再配布用unitypackageは `Assets/StargazingHill` のみを明示列挙し、依存関係を含めずに生成する。YamaPlayer、QvPen、UnyStylusのpackage本体は同梱しない。archive内pathnameの自動検査までを [ADR 0010](../adr/0010-redistributable-unitypackage-boundary.md) に定義する。

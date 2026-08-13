@@ -4,6 +4,8 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using VRC.SDK3.Components;
+using VRC.SDKBase;
 using VRC.Udon;
 
 namespace StargazingHill.Editor
@@ -19,6 +21,7 @@ namespace StargazingHill.Editor
         private const string ScenePath = "Assets/StargazingHill/Scenes/StargazingHill.unity";
         private const string PanelObjectName = "VRDebugPanel";
         private const string ToggleObjectName = "VRDebugPanelToggle";
+        internal const float PanelScale = 0.20f;
 
         // TextMesh renders a line at characterSize * fontSize / 10 world units, so a metre-based layout has
         // to convert rather than assign metres straight to characterSize. The first version did not, and
@@ -29,18 +32,18 @@ namespace StargazingHill.Editor
         // label before its mesh exists; StargazingWorldBuilder re-checks the generated mesh for real.
         private const float AdvancePerCharacter = 0.68f;
 
+        // Layout stays in authoring units and the pickup root scales it to a 0.47 x 0.41m handheld tablet.
         // Panel face is 2.35 x 2.05, so usable half-extents are 1.175 / 1.025 minus a small margin.
         private const float ButtonWidth = 1.02f;
         private const float ButtonHeight = 0.15f;
         private const float ColumnOffset = 0.545f;
 
-        // Temporary placement near YamaPlayer / QvPen / UnyStylus. Keep these as the only placement knobs.
+        // Dock placement near YamaPlayer / QvPen / UnyStylus. Keep these as the only placement knobs.
         private static readonly Vector3 PanelPosition = new Vector3(-9.65f, 1.42f, -22.05f);
         private static readonly Vector3 PanelEuler = new Vector3(0f, 230f, 0f);
-        // Beside the board rather than in front of it. The toggle used to float 0.85m off the panel's
-        // reading face and inside its silhouette, which hid the STOP button whenever the panel was shown.
-        private static readonly Vector3 TogglePosition = new Vector3(-10.743f, 1.12f, -20.748f);
-        private static readonly Vector3 ToggleEuler = new Vector3(0f, 230f, 0f);
+        private static readonly Vector3 ToggleEuler = PanelEuler;
+        private static readonly Vector3 TogglePosition = PanelPosition +
+            Quaternion.Euler(PanelEuler) * new Vector3(-0.42f, -0.16f, 0f);
 
         private static bool _installing;
 
@@ -113,7 +116,7 @@ namespace StargazingHill.Editor
             // UdonSharpUndo.AddComponent throws a NullReferenceException when the behaviour has no compiled
             // U# program asset, and it throws after the panel root already exists, which strands a partial
             // panel in the open scene. Ensure the asset before anything is created.
-            StargazingWorldBuilder.EnsureDebugPanelButtonProgramAsset();
+            StargazingWorldBuilder.EnsureDebugPanelProgramAssets();
 
             Material boardMaterial = EnsureColorMaterial(
                 "Assets/StargazingHill/Generated/Materials/VRDebugPanel.mat",
@@ -128,11 +131,14 @@ namespace StargazingHill.Editor
             GameObject panel = new GameObject(PanelObjectName);
             panel.transform.position = PanelPosition;
             panel.transform.rotation = Quaternion.Euler(PanelEuler);
+            panel.transform.localScale = Vector3.one * PanelScale;
             SceneManager.MoveGameObjectToScene(panel, scene);
 
             CreateThinBoard(panel.transform, boardMaterial);
+            ConfigurePickup(panel);
             CreateText(panel.transform, "METEOR DEBUG", new Vector3(0f, 0.885f, -0.022f), 0.100f, TextAnchor.MiddleCenter);
-            CreateText(panel.transform, "FORCED 25s / REPLAY CURRENT 3min / LOCAL ONLY",
+            CreateText(panel.transform, "FORCED " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+                "s / REPLAY CURRENT " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "s / LOCAL ONLY",
                 new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter);
 
             string[] labels =
@@ -157,7 +163,7 @@ namespace StargazingHill.Editor
             }
 
             const float controlY = -0.585f;
-            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(ColumnOffset, controlY, -0.012f),
+            CreateActionButton(panel.transform, FormatNaturalReplayLabel(), new Vector3(ColumnOffset, controlY, -0.012f),
                 wideButton, buttonMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
             CreateActionButton(panel.transform, "STOP", new Vector3(-ColumnOffset, controlY, -0.012f),
@@ -178,17 +184,57 @@ namespace StargazingHill.Editor
 
             // Toggle stays outside panelRoot so it remains usable while the panel is hidden.
             GameObject toggle = CreatePrimitive(ToggleObjectName, null, buttonMaterial,
-                TogglePosition, Quaternion.Euler(ToggleEuler), new Vector3(0.78f, 0.22f, 0.018f));
+                TogglePosition, Quaternion.Euler(ToggleEuler), new Vector3(0.30f, 0.10f, 0.018f));
             SceneManager.MoveGameObjectToScene(toggle, scene);
             ConfigureButton(toggle, WorldDebugPanelButton.ActionTogglePanel, 0, panel, meteor, sky,
                 "Toggle meteor debug panel");
             CreateText(toggle.transform, "DEBUG ON / OFF", new Vector3(0f, 0f, -0.53f),
-                FitLabelHeight("DEBUG ON / OFF", 0.78f * 0.88f, 0.22f * 0.52f),
+                FitLabelHeight("DEBUG ON / OFF", 0.30f * 0.88f, 0.10f * 0.52f),
                 TextAnchor.MiddleCenter, true);
 
             panel.SetActive(false);
             EditorSceneManager.MarkSceneDirty(scene);
-            Debug.Log("[Stargazing Hill] Installed flat local VR debug panel near the amenity cluster (default OFF, color feedback enabled).");
+            Debug.Log("[Stargazing Hill] Installed handheld local VR debug panel near the amenity cluster " +
+                      "(default OFF, pickup enabled, 10 second return).");
+        }
+
+        private static string FormatNaturalReplayLabel()
+        {
+            float seconds = MeteorController.NaturalEventDurationSeconds;
+            if (Mathf.Approximately(seconds % 60f, 0f))
+                return "REPLAY CURRENT " + (seconds / 60f).ToString("0") + " MIN";
+            return "REPLAY CURRENT " + seconds.ToString("0") + " SEC";
+        }
+
+        private static void ConfigurePickup(GameObject panel)
+        {
+            int pickupLayer = LayerMask.NameToLayer("Pickup");
+            if (pickupLayer < 0) throw new InvalidOperationException("VRChat Pickup layer is missing.");
+            panel.layer = pickupLayer;
+
+            BoxCollider collider = panel.AddComponent<BoxCollider>();
+            collider.size = new Vector3(2.35f, 2.05f, 0.12f);
+            collider.center = new Vector3(0f, 0f, 0.08f);
+            collider.isTrigger = true;
+
+            Rigidbody body = panel.AddComponent<Rigidbody>();
+            body.useGravity = false;
+            body.drag = 8f;
+            body.angularDrag = 8f;
+
+            VRCPickup pickup = panel.AddComponent<VRCPickup>();
+            pickup.pickupable = true;
+            pickup.proximity = 0.75f;
+            pickup.InteractionText = "Grab Meteor Debug Panel";
+            pickup.UseText = "Use Debug Controls";
+            pickup.orientation = VRC_Pickup.PickupOrientation.Any;
+            pickup.AutoHold = VRC_Pickup.AutoHoldMode.No;
+
+            WorldDebugPanelPickup pickupReturn = UdonSharpUndo.AddComponent<WorldDebugPanelPickup>(panel);
+            pickupReturn.pickupCollider = collider;
+            pickupReturn.pickupRigidbody = body;
+            UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
+            EditorUtility.SetDirty(pickupReturn);
         }
 
         private static void CreateThinBoard(Transform parent, Material material)
