@@ -2,8 +2,9 @@
 
 ## Ready
 
-- ClientSimと実機でYamaPlayer再生・同期・距離減衰を確認する。
+- ClientSimとQuest実機で、保存済みruntime Playlistの4リスト15曲表示、AutoPlay開始、同期、距離減衰を再確認する。旧uploadではリスト空・自動再生なしを確認済みのため、新buildでのPass証拠が必要。
 - PC / Quest(Android) / iOSで月、11流星群、描画負荷を確認する。
+- Quest / iOSでNightSkyGradientの黒階調・banding、±250m地面端、説明パネルの可読性、入退室履歴、デバッグPickupと10秒復帰を確認する。
 - 毎時3分の流星イベントをBuild & Testで確認し、弱い群〜ふたご座極大相当まで出現間隔と同時4 Quad上限を実機評価する。
 - 流星群ごとの実際のピーク幅をcatalog化し、開始→極大→終了の三角形近似を置き換える。
 - 次年のIMO calendar採用時にcatalogと検証fixtureを更新する。

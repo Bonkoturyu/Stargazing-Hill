@@ -15,4 +15,5 @@
 | [0009](0009-quest-frond-card-canopy.md) | Accepted | Jacaranda樹冠のフロンドカード化（位置は枝・向きは葉）とQuest向け19,507 triangles |
 | [0010](0010-redistributable-unitypackage-boundary.md) | Accepted | `Assets/StargazingHill` のみを含む再配布用unitypackageと第三者依存の除外 |
 | [0011](0011-local-handheld-debug-panel.md) | Accepted | ローカル手持ちデバッグパネル、10秒遅延復帰、再取得時キャンセル |
-| [0012](0012-yamaplayer-editor-update-check-patch.md) | Accepted | YamaPlayer Editor自動更新確認の版限定ローカルパッチと再適用手順 |
+| [0012](0012-yamaplayer-editor-update-check-patch.md) | Accepted | YamaPlayer Editor更新競合とruntime Playlist欠落の版限定ローカルパッチ |
+| [0013](0013-night-sky-atmospheric-gradient.md) | Accepted | 常夜の暗さを保つ三色skybox、地平線の青い空気遠近、遠端fog |

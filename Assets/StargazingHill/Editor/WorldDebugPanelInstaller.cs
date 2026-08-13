@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon;
+using UnityEngine.UI;
 
 namespace StargazingHill.Editor
 {
@@ -127,6 +128,8 @@ namespace StargazingHill.Editor
             Material dangerMaterial = EnsureColorMaterial(
                 "Assets/StargazingHill/Generated/Materials/VRDebugStop.mat",
                 new Color(0.28f, 0.08f, 0.08f, 1f));
+            Font dynamicFont = WorldInformationPanelInstaller.EnsureFont();
+            Material dynamicTextMaterial = WorldInformationPanelInstaller.EnsureTextMaterial();
 
             GameObject panel = new GameObject(PanelObjectName);
             panel.transform.position = PanelPosition;
@@ -140,6 +143,10 @@ namespace StargazingHill.Editor
             CreateText(panel.transform, "FORCED " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
                 "s / REPLAY CURRENT " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "s / LOCAL ONLY",
                 new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter);
+            Text statusText = WorldInformationPanelInstaller.CreateText(panel.transform,
+                "EVENT: IDLE   SHOWER: -\nVISIBLE: 0",
+                new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
 
             string[] labels =
             {
@@ -150,7 +157,7 @@ namespace StargazingHill.Editor
 
             // Eleven showers over six two-column rows. The last row is half empty on purpose: it separates
             // the shower grid from the control rows below, which must not share a slot with a shower.
-            const float startY = 0.605f;
+            const float startY = 0.505f;
             const float rowStep = 0.19f;
             Vector3 wideButton = new Vector3(ButtonWidth, ButtonHeight, 0.006f);
             for (int index = 0; index < labels.Length; index++)
@@ -162,15 +169,24 @@ namespace StargazingHill.Editor
                     WorldDebugPanelButton.ActionForcedShower, index, panel, meteor, sky);
             }
 
-            const float controlY = -0.585f;
-            CreateActionButton(panel.transform, FormatNaturalReplayLabel(), new Vector3(ColumnOffset, controlY, -0.012f),
-                wideButton, buttonMaterial,
+            const float controlY = -0.675f;
+            GameObject playStop = CreateActionButton(panel.transform, "PLAY CURRENT",
+                new Vector3(0f, controlY, -0.012f), new Vector3(2.11f, ButtonHeight, 0.006f), dangerMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "STOP", new Vector3(-ColumnOffset, controlY, -0.012f),
-                wideButton, dangerMaterial,
-                WorldDebugPanelButton.ActionStopMeteor, 0, panel, meteor, sky);
+            Transform staticPlayStopLabel = playStop.transform.Find("Label");
+            if (staticPlayStopLabel != null) UnityEngine.Object.DestroyImmediate(staticPlayStopLabel.gameObject);
+            Text playStopLabel = WorldInformationPanelInstaller.CreateText(playStop.transform,
+                "PLAY CURRENT", new Vector3(0f, 0f, -0.53f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, Color.white, true);
 
-            const float skyY = -0.795f;
+            WorldDebugPanelStatus status = UdonSharpUndo.AddComponent<WorldDebugPanelStatus>(panel);
+            status.meteorController = meteor;
+            status.statusText = statusText;
+            status.playStopLabel = playStopLabel;
+            UdonSharpEditorUtility.CopyProxyToUdon(status);
+            EditorUtility.SetDirty(status);
+
+            const float skyY = -0.865f;
             Vector3 skyButton = new Vector3(0.66f, ButtonHeight, 0.006f);
             CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.72f, skyY, -0.012f),
                 skyButton, buttonMaterial,
@@ -245,7 +261,7 @@ namespace StargazingHill.Editor
             if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
         }
 
-        private static void CreateActionButton(
+        private static GameObject CreateActionButton(
             Transform parent, string label, Vector3 localPosition, Vector3 localScale, Material material,
             int action, int showerIndex, GameObject panelRoot, MeteorController meteor, RealSkyController sky)
         {
@@ -255,6 +271,7 @@ namespace StargazingHill.Editor
             CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f),
                 FitLabelHeight(label, localScale.x * 0.88f, localScale.y * 0.52f),
                 TextAnchor.MiddleCenter, true);
+            return button;
         }
 
         /// <summary>

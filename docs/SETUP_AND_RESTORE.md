@@ -16,11 +16,12 @@
 2. VCCのManage Projectで、`Packages/vpm-manifest.json` の固定版を使ってVRChat SDK、AudioLink、YamaPlayer、QvPen、VRWorld Toolkitを復元する。
 3. Unityを起動する前に、リポジトリrootで `powershell -ExecutionPolicy Bypass -File Tools/Apply-YamaPlayerPatches.ps1` を実行する。YamaPlayerをVCCで復元・更新した場合も同じコマンドを再実行する。
 4. VCCからプロジェクトを開き、購入済み `UnyStylus_v1.3.unitypackage` をImportする。ビルダーが参照するPrefabは `Assets/Rasta/UnyStylus/UnyStylus.prefab` とする。
-5. 初回importとUdonSharp compileが静止するまで待ち、一度Unityを終了して開き直す。初回import中にビルダーを実行しない。
-6. 再起動後、Consoleのcompile errorが0件であることを確認する。
-7. `python Tools/Validate-StargazingImplementation.py` を実行する。
-8. Unityメニュー `Stargazing Hill/Build Complete World` を実行し、`Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。
-9. `Stargazing Hill/Validate Saved Scene` を実行する。
+5. Unityを閉じ、`powershell -ExecutionPolicy Bypass -File Tools/Apply-UnyStylusPatches.ps1` を実行する。UnyStylusを再importした場合も再実行する。
+6. 初回importとUdonSharp compileが静止するまで待ち、一度Unityを終了して開き直す。初回import中にビルダーを実行しない。
+7. 再起動後、Consoleのcompile errorが0件であることを確認する。
+8. `python Tools/Validate-StargazingImplementation.py` を実行する。
+9. Unityメニュー `Stargazing Hill/Build Complete World` を実行し、`Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。
+10. `Stargazing Hill/Validate Saved Scene` を実行する。
 
 ## Gitへ入れないもの
 
@@ -32,6 +33,8 @@
 UnyStylusが未導入ならビルダーは意図的に停止する。購入品を代替ファイルで埋めたり、Gitへ再配布したりしない。Libraryなしの初回importと同時にbatchビルダーを呼ぶと、YamaPlayerのUdon extension登録が一時的に二重化することがある。import完了後の再起動で解消し、以後のbuildでは再現しない。
 
 YamaPlayer 2.0.0-beta.7には、Editor起動時のVPM自動更新確認がPlay Mode移行と競合し、VCC `settings.json` 読込threadのabortを赤エラーとして出す場合がある。ローカルパッチは自動確認の起動だけを止め、VCC更新と手動確認は残す。適用・確認・復元・新版対応は [`Tools/YamaPlayerPatches/README.md`](../Tools/YamaPlayerPatches/README.md) を参照する。
+
+UnyStylus v1.3の2 shaderはAndroid / iOSのGLES3で `unityFogFactor` を同じgeometry関数内に再定義する。ローカルパッチは各fog macro呼出しにblock scopeを付けるだけで、色・形状・描画式は変えない。SHA-256照合、適用、確認、復元は [`Tools/UnyStylusPatches/README.md`](../Tools/UnyStylusPatches/README.md) を正規手順とする。
 
 ## 再配布用unitypackage
 

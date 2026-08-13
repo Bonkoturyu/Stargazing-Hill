@@ -1,4 +1,4 @@
-# ADR-0012: YamaPlayer Editor自動更新確認を版限定パッチで停止する
+# ADR-0012: YamaPlayerの局所互換修正を版限定パッチで管理する
 
 - 状態: Accepted
 - 決定日: 2026-08-13
@@ -9,15 +9,19 @@ YamaPlayer 2.0.0-beta.7はEditor初期化時にVPM Resolverの更新確認をthr
 
 YamaPlayerはVPM管理packageであり、本体をGitへ格納しない。直接修正だけではVCCの復元・更新で失われる。2026-08-13に公式VPM indexと公式GitHub releaseを確認し、公開最新版は2.0.0-beta.7だった。release後のdevelop 3 commitはRuntime/UI変更で、対象Editor更新確認コードの修正を含まない。
 
+さらに、YamaPlayerのSDK build hookはEditor用 `PlaylistItem` をruntime `Playlist` Udonへbuild時だけ変換する。保存Sceneを使うClientSimでは変換前のためリストが空になり、Quest uploadでもbuild hookの実行順・Scene clone状態によってruntimeデータが欠けた。ワールド側でruntime Playlistを先に保存すると、上流hookが同じGameObjectへ二重追加するため、再利用処理も必要になった。
+
 ## Options
 
 - エラーを無視する: Consoleの赤エラーを残し、ClientSim回帰判定を曖昧にするため不採用。
 - YamaPlayer package全体をforkまたはGit管理する: 更新・差分・再配布境界が大きくなるため不採用。
 - 自動更新確認だけを止める版限定patchを保持する: RuntimeとVCC更新を維持したまま、競合する非必須処理だけを除外できるため採用。
+- runtime Playlistをワールド側で保存し、上流build hookは既存componentを再利用する: ClientSimとupload buildの入力を同一にできるため採用。
 
 ## Decision
 
 - `PackageManager`のstatic constructorからEditor起動時の`CheckUpdate().Forget()`登録だけを除去する。
+- ワールドの同期処理で4 Playlist / 15 Trackをruntime `Playlist`へ保存し、`PlaylistBuildProcess`は同じGameObjectの既存 `Playlist` を再利用する。
 - `CheckUpdate()`、`UpdatePackage()`、VCCによるpackage管理、Runtime、Prefabは変更しない。
 - 差分は`Tools/YamaPlayerPatches`、適用器は`Tools/Apply-YamaPlayerPatches.ps1`を正規経路とする。
 - package版を厳密に2.0.0-beta.7へ限定し、元断片にも適用済み断片にも一致しない場合は書き換えず停止する。
@@ -27,6 +31,7 @@ YamaPlayerはVPM管理packageであり、本体をGitへ格納しない。直接
 
 - Editor起動直後の自動最新版確認は行われない。更新はVCCで管理し、必要ならYamaPlayerの手動確認を使う。
 - package本体と修正版はGitおよび再配布unitypackageへ含めない。
+- Playlistデータは保存Sceneへ含まれるため、ClientSimとPC / Android / iOS buildが同じ値を読む。SDK hookの二重component生成は避けられる。
 - YamaPlayer更新時にはパッチが意図的に停止する。上流に同等修正があれば撤去し、未修正なら新版の元ソースを確認して新しい最小patchを追加する。
 
 ## Evidence

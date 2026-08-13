@@ -56,7 +56,7 @@ namespace StargazingHill
 
             if (action == ActionNaturalEvent)
             {
-                if (meteorController != null) meteorController.DebugTriggerHourlyEvent();
+                if (meteorController != null) meteorController.DebugToggleHourlyEvent();
                 return;
             }
 

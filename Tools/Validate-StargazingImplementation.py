@@ -26,6 +26,14 @@ PACKAGE_README = ROOT / "Assets/StargazingHill/README_UNITYPACKAGE.md"
 YAMA_PLAYLIST_SYNC = ROOT / "Assets/StargazingHill/Editor/YamaPlayerPlaylistSync.cs"
 YAMA_PATCH_SCRIPT = ROOT / "Tools/Apply-YamaPlayerPatches.ps1"
 YAMA_PATCH = ROOT / "Tools/YamaPlayerPatches/2.0.0-beta.7-disable-editor-auto-update.patch"
+UNYSTYLUS_PATCH_SCRIPT = ROOT / "Tools/Apply-UnyStylusPatches.ps1"
+UNYSTYLUS_PATCH_README = ROOT / "Tools/UnyStylusPatches/README.md"
+NIGHT_SKY_SHADER = ROOT / "Assets/StargazingHill/Shaders/NightSkyGradient.shader"
+DEBUG_PANEL_STATUS = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelStatus.cs"
+INFO_LANGUAGE_TOGGLE = ROOT / "Assets/StargazingHill/Scripts/WorldInfoLanguageToggle.cs"
+PRESENCE_BOARD = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceBoard.cs"
+INFO_PANEL_INSTALLER = ROOT / "Assets/StargazingHill/Editor/WorldInformationPanelInstaller.cs"
+QUALITY_SETTINGS = ROOT / "ProjectSettings/QualitySettings.asset"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
@@ -142,20 +150,29 @@ def validate_yama_dependency_and_rolloff() -> None:
     assert 'SerializedProperty controllerReference = serialized.FindProperty("_controller");' in playlist_sync
     assert "controllerReference.objectReferenceValue = controller;" in playlist_sync
     assert "UdonSharpEditorUtility.CopyProxyToUdon(autoPlay);" in playlist_sync
+    assert "Playlist runtimePlaylist = go.AddUdonSharpComponent<Playlist>();" in playlist_sync
+    assert 'runtimePlaylist.SetProgramVariable("_urls", urls);' in playlist_sync
+    assert "UdonSharpEditorUtility.CopyProxyToUdon(runtimePlaylist);" in playlist_sync
+    assert 'Regex.IsMatch(line, @"^[│\\s]+$")' in playlist_sync
     assert "YamaPlayerPlaylistSync.SyncForWorldBuild(scene);" in builder
     assert "autoPlayBacking.publicVariables.TryGetVariableValue(" in builder
-    assert "if (!hasSerializedController || autoPlayController != controllerBacking)" in builder
+    assert "if (!hasSerializedController || autoPlayController as UdonBehaviour != controllerBacking)" in builder
+    assert "playlistItems.Length != 4 || runtimePlaylists.Length != 4 || playlistTrackCount != 15" in builder
 
     patch_script = YAMA_PATCH_SCRIPT.read_text(encoding="utf-8")
     patch = YAMA_PATCH.read_text(encoding="utf-8")
     assert "'2.0.0-beta.7' = " in patch_script
     assert "package.version" in patch_script
     assert "git apply --reverse --check" not in patch_script
-    assert "$arguments += '--reverse'" in patch_script
-    assert "source matches neither the verified original nor patched form" in patch_script
+    assert "$transforms = @(" in patch_script
+    assert "Original = @'" in patch_script
+    assert "Patched = @'" in patch_script
+    assert "source matches neither or both verified fragments" in patch_script
     assert "Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs" in patch
     assert "-      EditorApplication.delayCall += () =>" in patch
     assert "+      // Stargazing Hill: package updates are managed through VCC." in patch
+    assert "var udonPlaylist = item.GetComponent<Playlist>();" in patch
+    assert "if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();" in patch
 
 
 def validate_environment_and_drawing() -> None:
@@ -173,7 +190,8 @@ def validate_environment_and_drawing() -> None:
     assert manifest["locked"]["net.ureishi.qvpen"]["dependencies"]["com.vrchat.worlds"] == "^3.5.0"
 
     builder = BUILDER.read_text(encoding="utf-8")
-    assert "const int tuftCount = 9000;" in builder
+    assert "const int tuftCount = 15000;" in builder
+    assert "const float outer = 250f;" in builder
     assert "private const float HillHeight = 2.3f;" in builder
     assert "private const float HillRadius = 10f;" in builder
     assert 'QvPenPrefabPath = "Packages/net.ureishi.qvpen/QvPen(grad).prefab"' in builder
@@ -191,6 +209,17 @@ def validate_environment_and_drawing() -> None:
     assert "private static readonly Vector3 UnyStylusPosition = new Vector3(-8.668f, 0.858f, -20.672f);" in builder
     assert "ValidateAmenityPlacement" in builder
     assert 'material.SetTexture("_AlphaMap", alpha);' in builder
+
+    unystylus_patch = UNYSTYLUS_PATCH_SCRIPT.read_text(encoding="utf-8")
+    unystylus_readme = UNYSTYLUS_PATCH_README.read_text(encoding="utf-8")
+    assert "rounded_trail_for_uny_stylus.shader" in unystylus_patch
+    assert "rounded_trail_for_uny_stylus_selected.shader" in unystylus_patch
+    assert "{ UNITY_TRANSFER_FOG(o, o.vertex); }" in unystylus_patch
+    assert "GLES3" in unystylus_readme
+
+    quality_settings = QUALITY_SETTINGS.read_text(encoding="utf-8")
+    assert "Android: 3" in quality_settings
+    assert "iPhone: 3" in quality_settings
 
     player_settings = PLAYER_SETTINGS.read_text(encoding="utf-8")
     for expected_call in (
@@ -244,8 +273,23 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "panel.AddComponent<VRCPickup>()" in installer
     assert "WorldDebugPanelPickup.ReturnDelaySeconds" in builder
 
+    debug_status = DEBUG_PANEL_STATUS.read_text(encoding="utf-8")
+    info_toggle = INFO_LANGUAGE_TOGGLE.read_text(encoding="utf-8")
+    presence_board = PRESENCE_BOARD.read_text(encoding="utf-8")
+    info_installer = INFO_PANEL_INSTALLER.read_text(encoding="utf-8")
+    assert "debugEventPlaying" in debug_status
+    assert "PLAY CURRENT" in debug_status and "STOP EVENT" in debug_status
+    assert "private void ApplyLanguage()" in info_toggle
+    assert "_english = !_english;" in info_toggle
+    assert "VRCPlayerApi.GetPlayerCount()" in presence_board
+    assert "public override void OnPlayerJoined" in presence_board
+    assert "public override void OnPlayerLeft" in presence_board
+    assert 'PanelName = "WorldInformationPanel"' in info_installer
+    assert "DestroyImmediate(sheet.GetComponent<Collider>())" in info_installer
+
 
 def validate_sky_reference() -> None:
+    builder = BUILDER.read_text(encoding="utf-8")
     # J2000.0 is JD 2451545.0; the controller's GMST polynomial starts at
     # 280.46061837 degrees there. Tokyo longitude gives the expected LST below.
     j2000_jd = 2451545.0
@@ -308,6 +352,9 @@ def validate_sky_reference() -> None:
     assert "CalculateMeteorDuration(" in meteor
     assert "debugWidthScale" not in meteor
     assert "debugLengthScale" not in meteor
+    assert "DebugToggleHourlyEvent()" in meteor
+    assert "_suppressedNaturalEventId" in meteor
+    assert "debugCurrentShowerId" in meteor
 
     meteor_shader = METEOR_SHADER.read_text(encoding="utf-8")
     assert 'Shader "StargazingHill/Meteor"' in meteor_shader
@@ -320,6 +367,14 @@ def validate_sky_reference() -> None:
     moon_shader = MOON_SHADER.read_text(encoding="utf-8")
     assert 'Shader "StargazingHill/Moon"' in moon_shader
 
+    night_sky_shader = NIGHT_SKY_SHADER.read_text(encoding="utf-8")
+    assert 'Shader "StargazingHill/NightSkyGradient"' in night_sky_shader
+    assert "_HorizonColor" in night_sky_shader
+    assert "_ZenithColor" in night_sky_shader
+    assert "_GroundColor" in night_sky_shader
+    assert "RenderSettings.ambientMode = AmbientMode.Flat;" in builder
+    assert "RenderSettings.fog = true;" in builder
+
     catalog = SHOWER_CATALOG.read_text(encoding="utf-8")
     assert "sourceUrl: https://imo.net/files/meteor-shower/cal2026.pdf" in catalog
     assert "verifiedDate: 2026-08-12" in catalog
@@ -330,7 +385,6 @@ def validate_sky_reference() -> None:
         actual = values if field == "ids" else [float(value) for value in values]
         assert actual == expected, f"unexpected IMO 2026 {field}: {actual}"
 
-    builder = BUILDER.read_text(encoding="utf-8")
     assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
     assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
     assert "TestSkyAndMeteorForBatchMode" in builder

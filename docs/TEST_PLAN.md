@@ -221,7 +221,7 @@
 | 確認 | 結果 | 証拠・残課題 |
 |---|---|---|
 | 全検査の通過 | Pass | 5検査すべてPass。`-SkipBuild` で段階3を省略可 |
-| program asset検査の範囲 | Pass | `Assembly-CSharp` かつ名前空間 `StargazingHill` の5 behaviour（MeteorController / RealSkyController / WorldDebugPanelButton / WorldDebugPanelPickup / WorldPlayerSettings）を対象。YamaPlayer同梱のTAC UI 7 behaviourは自プロジェクト外として除外 |
+| program asset検査の範囲 | Pass | `Assembly-CSharp` かつ名前空間 `StargazingHill` の8 behaviour（MeteorController / RealSkyController / WorldDebugPanelButton / WorldDebugPanelPickup / WorldDebugPanelStatus / WorldInfoLanguageToggle / WorldPlayerSettings / WorldPresenceBoard）を対象。YamaPlayer同梱のTAC UI 7 behaviourは自プロジェクト外として除外 |
 | 強制プレビューの退行検出 | Pass | 導入直後に `TestSkyAndMeteorForBatchMode` の失敗を検出（`visible=False`）。PR #16 がonset式を `0.35+slot*0.88` から `(slot+0.5)*slotSpacing+jitter` へ変更した結果、slot 0のonsetが0.625±0.28秒となり、強制プレビュー開始点0.75秒より後になる場合に流星が1本も出なかった。強制プレビューのみ旧onset式へ戻し、自然イベントのPR #16 スケジューリングは維持 |
 | Test Runner統合 | Open | テスト用asmdefから `Assembly-CSharp-Editor` を参照できないため、EditModeテスト化にはプロジェクトのasmdef分割が要る。BACKLOG `Later` へ記録 |
 | CI側でのUnity実行 | Open | ライセンスと実行時間の都合で未導入。実行枠が使えるときは現行のPython検証がCIで走る |
@@ -309,5 +309,27 @@
 | 対象版・上流確認 | Pass | 公式VPMとGitHub releaseの公開最新版は2.0.0-beta.7。developのrelease後3 commitに対象Editorファイル変更なし |
 | パッチ適用器 | Pass | 2.0.0-beta.7で適用済み確認、復元、未適用検出、再適用、二重適用の各経路を実行。未対応版・ソース不一致は書換え前に停止する実装を静的確認 |
 | 追跡対象の静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`と`git diff --check`がPass。版対応、対象ファイル、削除断片、停止条件を検査 |
-| Unity batch回帰 | Pending Evidence | 2026-08-13の実行環境ではheadless Unity licenseが非activeとなり、Editor起動前に終了。C#変更はpackageのstatic constructor内をコメントだけにする差分だが、再ライセンス後に`Tools/Run-LocalChecks.ps1 -SkipBuild`を再実行する |
+| Unity batch回帰 | Pass | Unity 2022.3.22f1で局所feature upgrade、UdonSharp 97 scripts compile、保存Scene検証、説明パネル・デバッグパネル描画が終了コード0 |
 | ClientSim再確認 | Open | Unity再compile後にClientSimへ入り、VCC settings / `CheckUpdate failed`の赤エラーが再発しないことを確認する |
+
+## 2026-08-13 Quest Playlist欠落・ワールド品質更新
+
+- 発端: QuestへuploadしたWorldでもYamaPlayerのリストが空で、AutoPlayが開始されなかった。併せて流星状態、STOPボタン、地面端、入退室表示、日英説明、mobile shader error、夜空の空気感を改善する
+- 参考: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae`。夜空gradientはClaude Opus 5の2026-08-13設計レビューも使用
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、YamaPlayer 2.0.0-beta.7、UnyStylus v1.3、Direct3D 11
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| runtime Playlist保存 | Pass | 保存Sceneに4 `PlaylistItem`、4 runtime `Playlist`、合計15 trackを保持。`_playlistName` / `_videoPlayerTypes` / `_titles` / `_urls`をUdon backingへcopyし、空のtree spacerをPlaylist名として扱わない |
+| YamaPlayer build hook互換 | Pass | `PlaylistBuildProcess`が既存runtime `Playlist`を再利用する版限定patchを追加。2対象ファイルでRestore→Apply→Checkを実行し、版・元断片・修正断片の停止条件を確認 |
+| AutoPlay保存参照 | Pass | Controller proxy / backing参照とFromPlaylist設定を保存Sceneで検証。実際のQuest自動再生は新upload待ち |
+| 流星debug状態 | Pass | EVENT状態、群ID、visible数を0.2秒ごとに表示。`PLAY CURRENT` / `STOP EVENT`を動的切替し、自然イベント停止hourの再発火を抑止 |
+| 説明・在室パネル | Pass | 日本語初期表示、英語ローカル切替、現在人数、直近7件のローカル入退室履歴を実装。パネル本体Colliderなし、言語ボタンのみtrigger。1280×720正面描画で左右反転を検出・修正後、全項目を目視確認 |
+| 草原範囲 | Pass | 中央±40mの詳細格子を維持し、粗い連続地形を±250mへ延長。立体草9,000→15,000株。Scene validationで地面boundsと草vertex数を確認 |
+| 夜空の空気遠近 | Pass | 三色gradient skybox、Flat ambient、linear fogを実装。Direct3D 11のpanel背景描画で暗い天頂、淡い青の地平線、星contrastを目視確認 |
+| UnyStylus GLES3 patch | Pass | 2 shaderの各`UNITY_TRANSFER_FOG`をblock scope化。v1.3のoriginal / patched SHA-256を照合し、Restore→Apply→Checkを実行。Restore時のUTF-8 BOM復元も原本hashで確認。Unity再import logに`unityFogFactor` shader errorなし |
+| mobile Quality | Pass | Android / iPhoneの既定QualityをVRC Mobileへ変更し、pixel lightを1へ制限。AudioLink / AVPro / QvPenの未使用field warningは第三者package由来で機能errorではない |
+| C# / UdonSharp / Scene | Pass | feature upgradeでUdonSharp 97 scripts compile、保存Scene validation、終了コード0。Python静的検証と2種patch checkもPass |
+| Debug panel描画 | Pass | 正面・近接・広角の3枚を1280×720描画。状態表示、11群、単一再生／停止ボタン、sky操作に欠け・重なり・鏡文字なし |
+| Quest / Android再upload | Open | 新しいbuildで4リスト15曲、AutoPlay、UnyStylus線、説明UI、地面端、夜空階調を実機確認する |
+| iOS再upload | Open | GLES3/Metal shader、説明UI、動画/音声、夜空階調を実機確認する |
