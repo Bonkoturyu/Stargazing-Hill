@@ -1,0 +1,16 @@
+diff --git a/Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs b/Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs
+--- a/Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs
++++ b/Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs
+@@ -19,10 +19,5 @@ namespace Yamadev.YamaStream.Editor
+     static PackageManager()
+     {
+-      EditorApplication.delayCall += () =>
+-      {
+-        if (!EditorApplication.isCompiling && !EditorApplication.isUpdating)
+-        {
+-          CheckUpdate().Forget();
+-        }
+-      };
++      // Stargazing Hill: package updates are managed through VCC. Starting the VPM resolver
++      // automatically can race with Play Mode/domain shutdown while VCC settings are being read.
+     }

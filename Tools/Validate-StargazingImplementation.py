@@ -23,6 +23,9 @@ PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 DEBUG_PANEL_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelPickup.cs"
 PACKAGE_EXPORTER = ROOT / "Assets/StargazingHill/Editor/StargazingUnityPackageExporter.cs"
 PACKAGE_README = ROOT / "Assets/StargazingHill/README_UNITYPACKAGE.md"
+YAMA_PLAYLIST_SYNC = ROOT / "Assets/StargazingHill/Editor/YamaPlayerPlaylistSync.cs"
+YAMA_PATCH_SCRIPT = ROOT / "Tools/Apply-YamaPlayerPatches.ps1"
+YAMA_PATCH = ROOT / "Tools/YamaPlayerPatches/2.0.0-beta.7-disable-editor-auto-update.patch"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
@@ -134,6 +137,25 @@ def validate_yama_dependency_and_rolloff() -> None:
     assert points == EXPECTED_ROLLOFF, f"unexpected YamaPlayer rolloff: {points}"
     assert "source.maxDistance = 45f;" in builder
     assert 'SetSerializedFloat(spatial, "Far", 45f);' in builder
+
+    playlist_sync = YAMA_PLAYLIST_SYNC.read_text(encoding="utf-8")
+    assert 'SerializedProperty controllerReference = serialized.FindProperty("_controller");' in playlist_sync
+    assert "controllerReference.objectReferenceValue = controller;" in playlist_sync
+    assert "UdonSharpEditorUtility.CopyProxyToUdon(autoPlay);" in playlist_sync
+    assert "YamaPlayerPlaylistSync.SyncForWorldBuild(scene);" in builder
+    assert "autoPlayBacking.publicVariables.TryGetVariableValue(" in builder
+    assert "if (!hasSerializedController || autoPlayController != controllerBacking)" in builder
+
+    patch_script = YAMA_PATCH_SCRIPT.read_text(encoding="utf-8")
+    patch = YAMA_PATCH.read_text(encoding="utf-8")
+    assert "'2.0.0-beta.7' = " in patch_script
+    assert "package.version" in patch_script
+    assert "git apply --reverse --check" not in patch_script
+    assert "$arguments += '--reverse'" in patch_script
+    assert "source matches neither the verified original nor patched form" in patch_script
+    assert "Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs" in patch
+    assert "-      EditorApplication.delayCall += () =>" in patch
+    assert "+      // Stargazing Hill: package updates are managed through VCC." in patch
 
 
 def validate_environment_and_drawing() -> None:
@@ -479,7 +501,8 @@ def main() -> None:
     print(
         f"OK: {EXPECTED_STAR_COUNT} HYG stars, parameterized observatory, five USNO Moon "
         "references, 11 IMO showers, YamaPlayer, CC0 environment, locomotion, QvPen, "
-        "UnyStylus references, redistributable package boundary, and debug pickup validated"
+        "UnyStylus references, YamaPlayer patch workflow, redistributable package boundary, "
+        "and debug pickup validated"
     )
 
 

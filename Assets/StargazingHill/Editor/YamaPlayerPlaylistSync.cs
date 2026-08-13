@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -55,6 +56,13 @@ namespace StargazingHill.Editor
             if (scene.path != ScenePath || Application.isPlaying) return;
             Sync(scene, true);
             EditorSceneManager.SaveScene(scene);
+        }
+
+        internal static void SyncForWorldBuild(Scene scene)
+        {
+            if (!scene.IsValid())
+                throw new InvalidOperationException("Cannot sync YamaPlayer playlists into an invalid scene.");
+            Sync(scene, false);
         }
 
         private static void OnSceneSaved(Scene scene)
@@ -176,18 +184,37 @@ namespace StargazingHill.Editor
                 autoPlay = instance.GetComponent<AutoPlay>();
             }
 
+            Controller controller = playerRoot.GetComponentInChildren<Controller>(true);
+            if (controller == null)
+                throw new InvalidOperationException("YamaPlayer Controller is missing; AutoPlay cannot be configured.");
+
             autoPlay.gameObject.SetActive(true);
+            // YamaPlayer's SDK build hook normally injects this reference into modules, but ClientSim starts
+            // the saved scene without running that hook. Persist it on the proxy and its backing Udon now so
+            // AutoPlay works in ClientSim as well as an uploaded world.
             SerializedObject serialized = new SerializedObject(autoPlay);
+            SerializedProperty controllerReference = serialized.FindProperty("_controller");
             SerializedProperty mode = serialized.FindProperty("_autoPlayMode");
             SerializedProperty delay = serialized.FindProperty("_delay");
             SerializedProperty playlist = serialized.FindProperty("_playlistIndex");
             SerializedProperty track = serialized.FindProperty("_playlistTrackIndex");
+            if (controllerReference == null)
+                throw new InvalidOperationException("YamaPlayer AutoPlay Controller property is missing.");
+            controllerReference.objectReferenceValue = controller;
             if (mode != null) mode.enumValueIndex = (int)AutoPlayMode.FromPlaylist;
             if (delay != null) delay.floatValue = DefaultAutoPlayDelaySeconds;
             if (playlist != null) playlist.intValue = playlistIndex;
             if (track != null) track.intValue = trackIndex;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            UdonSharpEditorUtility.CopyProxyToUdon(autoPlay);
+            var backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(autoPlay);
+            if (backing == null)
+                throw new InvalidOperationException("YamaPlayer AutoPlay has no backing Udon behaviour.");
+            var controllerBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(controller);
+            if (controllerBacking == null)
+                throw new InvalidOperationException("YamaPlayer Controller has no backing Udon behaviour.");
             EditorUtility.SetDirty(autoPlay);
+            EditorUtility.SetDirty(backing);
         }
 
         private static List<ParsedPlaylist> Parse(string[] lines)

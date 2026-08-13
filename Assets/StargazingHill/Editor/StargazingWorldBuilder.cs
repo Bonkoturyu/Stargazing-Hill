@@ -15,6 +15,7 @@ using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon;
 using Yamadev.YamaStream;
+using Yamadev.YamaStream.Modules.AutoPlay;
 using Object = UnityEngine.Object;
 
 namespace StargazingHill.Editor
@@ -173,6 +174,9 @@ namespace StargazingHill.Editor
             CreateRealSky(world.transform, starMesh, starMaterial, moonMesh, moonMaterial, observatory);
             CreateMeteorSystem(world.transform, meteorMesh, meteorMaterials, observatory, showerCatalog);
             CreateYamaPlayer(world.transform);
+            // Do not defer this to sceneSaved: validation runs before the first save, and ClientSim needs
+            // AutoPlay's Controller reference serialized into both its proxy and backing Udon.
+            YamaPlayerPlaylistSync.SyncForWorldBuild(scene);
             CreateDrawingSystems(world.transform);
             // Install explicitly rather than relying on the installer's sceneSaved hook: validation below
             // runs before the save, so a save-triggered install would never be present for it to check.
@@ -1593,16 +1597,43 @@ namespace StargazingHill.Editor
             YamaPlayerModuleDefinition[] definitions = yamaPlayer == null
                 ? Array.Empty<YamaPlayerModuleDefinition>()
                 : yamaPlayer.GetComponentsInChildren<YamaPlayerModuleDefinition>(true);
+            Controller yamaController = yamaPlayer == null
+                ? null
+                : yamaPlayer.GetComponentInChildren<Controller>(true);
+            AutoPlay[] autoPlays = yamaPlayer == null
+                ? Array.Empty<AutoPlay>()
+                : yamaPlayer.GetComponentsInChildren<AutoPlay>(true);
             int downloaderCount = 0;
             for (int definitionIndex = 0; definitionIndex < definitions.Length; definitionIndex++)
             {
                 if (definitions[definitionIndex].gameObject.name == "VideoInfoDownloader") downloaderCount++;
             }
+            SerializedProperty autoPlayControllerProperty = autoPlays.Length == 1
+                ? new SerializedObject(autoPlays[0]).FindProperty("_controller")
+                : null;
             if (yamaPlayer == null || yamaPlayer.transform.localScale != Vector3.one * 2.20f ||
-                downloaderCount != 1)
+                downloaderCount != 1 || yamaController == null || autoPlays.Length != 1 ||
+                !autoPlays[0].gameObject.activeSelf ||
+                autoPlayControllerProperty == null ||
+                autoPlayControllerProperty.objectReferenceValue != yamaController)
             {
                 throw new InvalidOperationException("YamaPlayer placement/module validation failed.");
             }
+            UdonBehaviour autoPlayBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(autoPlays[0]);
+            UdonBehaviour controllerBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(yamaController);
+            if (autoPlayBacking == null)
+                throw new InvalidOperationException("YamaPlayer AutoPlay backing Udon validation failed.");
+            if (controllerBacking == null)
+                throw new InvalidOperationException("YamaPlayer Controller backing Udon validation failed.");
+            object autoPlayController;
+            bool hasSerializedController = autoPlayBacking.publicVariables.TryGetVariableValue(
+                "_controller", out autoPlayController);
+            if (!hasSerializedController || autoPlayController != controllerBacking)
+                throw new InvalidOperationException(
+                    "YamaPlayer AutoPlay Controller validation failed: expected " + controllerBacking +
+                    ", actual " + (autoPlayController == null
+                        ? "null"
+                        : autoPlayController + " (" + autoPlayController.GetType().FullName + ")."));
             ValidateAmenityPlacement(descriptors[0].spawns[0], yamaPlayer, qvPen, unyStylus);
 
             Keyframe[] expectedKeys = CreateYamaRolloffCurve().keys;
