@@ -16,6 +16,7 @@ VRChat向けの静かな星空・草原ワールド。
 - 動画プレイヤー
 - QvPen
 - PC / Quest(Android) / iOS対応を前提とした軽量設計
+- 日英切替のワールド説明、現在人数、ローカル入退室履歴パネル
 
 ## ドキュメント
 
@@ -31,7 +32,7 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ステータス
 
-CC0テクスチャの草原、単一Colliderの小丘、Poly Haven `Jacaranda Tree` のCC0一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、差替可能な観測地、topocentric月位置、IMO 2026主要11流星群、決定的な毎時流星イベントとデバッグ発火、YamaPlayer 2.0.0-beta.7と距離減衰、QvPen 3.3.15、購入済みUnyStylus v1.3まで実装済み。月位置は東京のUSNO基準5日時で高度・方位とも0.10°以内。ClientSimとPC / Quest / iOS実機検証は未実施。
+CC0テクスチャの±250m草原、単一Colliderの小丘、Poly Haven `Jacaranda Tree` のCC0一本木、明示的なジャンプ設定、HYG v4.1の全天球星空、地平線の空気遠近、差替可能な観測地、topocentric月位置、IMO 2026主要11流星群、状態表示付き毎時流星イベント、runtime Playlistを保存するYamaPlayer 2.0.0-beta.7、QvPen 3.3.15、購入済みUnyStylus v1.3、日英説明・人数・入退室履歴まで実装済み。月位置は東京のUSNO基準5日時で高度・方位とも0.10°以内。ClientSimとPC / Quest / iOS実機の最終検証は未完了。
 
 Unityライセンスが有効なEditorでプロジェクトを開き、メニュー `Stargazing Hill/Build Complete World` を実行すると、Mesh・Materialと `Assets/StargazingHill/Scenes/StargazingHill.unity` を生成する。生成後はConsoleとUdon変換結果を確認する。
 

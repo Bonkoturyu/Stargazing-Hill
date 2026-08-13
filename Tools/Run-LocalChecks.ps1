@@ -42,9 +42,9 @@ function Add-Result([string]$name, [bool]$ok, [string]$detail) {
 }
 
 # 1. The package is VPM-managed, so verify its required local compatibility patch before Unity starts.
-Write-Host '[1/5] YamaPlayer local patch...' -ForegroundColor Cyan
+Write-Host '[1/6] YamaPlayer local patch...' -ForegroundColor Cyan
 $patchOutput = & (Join-Path $projectPath 'Tools/Apply-YamaPlayerPatches.ps1') -Mode Check 2>&1
-if ($LASTEXITCODE -eq 0) {
+if ($?) {
     Add-Result 'YamaPlayer local patch' $true ($patchOutput | Select-Object -Last 1)
 } else {
     Add-Result 'YamaPlayer local patch' $false ($patchOutput | Select-Object -Last 3 | Out-String).Trim()
@@ -52,8 +52,17 @@ if ($LASTEXITCODE -eq 0) {
     exit 1
 }
 
+$unyOutput = & (Join-Path $projectPath 'Tools/Apply-UnyStylusPatches.ps1') -Mode Check 2>&1
+if ($?) {
+    Add-Result 'UnyStylus mobile shader patch' $true ($unyOutput | Select-Object -Last 1)
+} else {
+    Add-Result 'UnyStylus mobile shader patch' $false ($unyOutput | Select-Object -Last 3 | Out-String).Trim()
+    $results | Format-Table -AutoSize
+    exit 1
+}
+
 # 2. Static validation. Seconds, no Unity, so it runs before the Editor checks.
-Write-Host '[2/5] Static validation (Python)...' -ForegroundColor Cyan
+Write-Host '[2/6] Static validation (Python)...' -ForegroundColor Cyan
 $pythonOutput = & python (Join-Path $projectPath 'Tools/Validate-StargazingImplementation.py') 2>&1
 if ($LASTEXITCODE -eq 0) {
     Add-Result 'Static validation' $true 'Tools/Validate-StargazingImplementation.py'
@@ -90,22 +99,23 @@ function Invoke-UnityCheck([string]$label, [string]$method, [string]$logName) {
 
 # 3. Compilation and UdonSharp program assets. A missing program asset only throws at scene-build time,
 #    so this is checked directly rather than inferred.
-Write-Host '[3/5] UdonSharp program assets (Unity)...' -ForegroundColor Cyan
+Write-Host '[3/6] UdonSharp program assets (Unity)...' -ForegroundColor Cyan
 Invoke-UnityCheck 'UdonSharp program assets' 'StargazingHill.Editor.StargazingChecks.CheckUdonSharpProgramAssetsForBatchMode' 'LocalCheck-UdonSharp.log'
 
 # 4. Scene generation. Catches a builder that produces an invalid world, which validation alone would miss
 #    because it would happily validate the previously committed scene.
 if ($SkipBuild) {
-    Write-Host '[4/5] Scene build... skipped (-SkipBuild)' -ForegroundColor DarkYellow
+    Write-Host '[4/6] Scene build... skipped (-SkipBuild)' -ForegroundColor DarkYellow
     Add-Result 'Scene build' $true 'skipped (-SkipBuild)'
 } else {
-    Write-Host '[4/5] Scene build (Unity)...' -ForegroundColor Cyan
+    Write-Host '[4/6] Scene build (Unity)...' -ForegroundColor Cyan
     Invoke-UnityCheck 'Scene build' 'StargazingHill.Editor.StargazingWorldBuilder.BuildForBatchMode' 'LocalCheck-Build.log'
 }
 
 # 5. Scene validation and the sky/meteor numeric tests against the scene on disk.
-Write-Host '[5/5] Scene validation and sky/meteor tests (Unity)...' -ForegroundColor Cyan
+Write-Host '[5/6] Scene validation and sky/meteor tests (Unity)...' -ForegroundColor Cyan
 Invoke-UnityCheck 'Scene validation' 'StargazingHill.Editor.StargazingWorldBuilder.ValidateForBatchMode' 'LocalCheck-Validate.log'
+Write-Host '[6/6] Sky and meteor numeric tests (Unity)...' -ForegroundColor Cyan
 Invoke-UnityCheck 'Sky and meteor tests' 'StargazingHill.Editor.StargazingWorldBuilder.TestSkyAndMeteorForBatchMode' 'LocalCheck-SkyMeteor.log'
 
 Write-Host ''

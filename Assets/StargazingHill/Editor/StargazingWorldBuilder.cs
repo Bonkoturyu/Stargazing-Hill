@@ -39,6 +39,12 @@ namespace StargazingHill.Editor
         private const string DebugPanelButtonProgramPath = Root + "/Scripts/WorldDebugPanelButton.asset";
         private const string DebugPanelPickupScriptPath = Root + "/Scripts/WorldDebugPanelPickup.cs";
         private const string DebugPanelPickupProgramPath = Root + "/Scripts/WorldDebugPanelPickup.asset";
+        private const string DebugPanelStatusScriptPath = Root + "/Scripts/WorldDebugPanelStatus.cs";
+        private const string DebugPanelStatusProgramPath = Root + "/Scripts/WorldDebugPanelStatus.asset";
+        private const string InfoLanguageScriptPath = Root + "/Scripts/WorldInfoLanguageToggle.cs";
+        private const string InfoLanguageProgramPath = Root + "/Scripts/WorldInfoLanguageToggle.asset";
+        private const string PresenceBoardScriptPath = Root + "/Scripts/WorldPresenceBoard.cs";
+        private const string PresenceBoardProgramPath = Root + "/Scripts/WorldPresenceBoard.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -181,6 +187,7 @@ namespace StargazingHill.Editor
             // Install explicitly rather than relying on the installer's sceneSaved hook: validation below
             // runs before the save, so a save-triggered install would never be present for it to check.
             WorldDebugPanelInstaller.InstallForBuild(scene);
+            WorldInformationPanelInstaller.InstallForBuild(scene);
 
             ValidateScene(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -493,6 +500,25 @@ namespace StargazingHill.Editor
             panel.SetActive(wasActive);
         }
 
+        /// <summary>
+        /// Renders the world information panel head on so the bilingual copy, presence display,
+        /// and flush language button can be reviewed without entering Play Mode.
+        /// </summary>
+        public static void RenderInformationPanelPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            GameObject panel = GameObject.Find("World/InformationSystem/WorldInformationPanel");
+            if (panel == null)
+                throw new InvalidOperationException("World information panel is missing from the scene.");
+
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
+            Vector3 viewing = -panel.transform.forward;
+            camera.transform.position = panel.transform.position + viewing * 5.0f;
+            camera.transform.LookAt(panel.transform.position);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel.png");
+        }
+
         public static void RenderMeteorDebugPreviewForBatchMode()
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -635,6 +661,52 @@ namespace StargazingHill.Editor
                 DebugPanelButtonProgramPath);
             EnsureProgramAsset(typeof(WorldDebugPanelPickup), DebugPanelPickupScriptPath,
                 DebugPanelPickupProgramPath);
+            EnsureProgramAsset(typeof(WorldDebugPanelStatus), DebugPanelStatusScriptPath,
+                DebugPanelStatusProgramPath);
+        }
+
+        [MenuItem("Stargazing Hill/Upgrade Current Scene Features", false, 12)]
+        public static void UpgradeCurrentSceneFeaturesForBatchMode()
+        {
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
+            EnsureDebugPanelProgramAssets();
+            EnsureInformationPanelProgramAssets();
+            EnsureInformationPanelProgramAssets();
+            UdonSharpCompilerV1.CompileSync();
+
+            Mesh groundMesh = SaveMesh(MeshRoot + "/GrassGround.asset", BuildGroundMesh());
+            Mesh grassMesh = SaveMesh(MeshRoot + "/GrassClusters.asset", BuildGrassMesh());
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject ground = GameObject.Find("World/Environment/GrassGround");
+            GameObject grass = GameObject.Find("World/Environment/GrassClusters");
+            if (ground == null || grass == null)
+                throw new InvalidOperationException("Ground objects are missing from the saved scene.");
+            ground.GetComponent<MeshFilter>().sharedMesh = groundMesh;
+            ground.GetComponent<MeshCollider>().sharedMesh = groundMesh;
+            grass.GetComponent<MeshFilter>().sharedMesh = grassMesh;
+            ConfigureRenderSettings();
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (camera == null) throw new InvalidOperationException("ReferenceCamera is missing.");
+            camera.clearFlags = CameraClearFlags.Skybox;
+            EditorUtility.SetDirty(camera);
+            YamaPlayerPlaylistSync.SyncForWorldBuild(scene);
+            WorldDebugPanelInstaller.InstallForBuild(scene);
+            WorldInformationPanelInstaller.InstallForBuild(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+            ValidateScene(scene);
+            Debug.Log("[Stargazing Hill] Upgraded playlists, panels, extended grassland, and night-sky atmosphere without rebuilding unrelated scene objects.");
+        }
+
+        internal static void EnsureInformationPanelProgramAssets()
+        {
+            EnsureProgramAsset(typeof(WorldInfoLanguageToggle), InfoLanguageScriptPath,
+                InfoLanguageProgramPath);
+            EnsureProgramAsset(typeof(WorldPresenceBoard), PresenceBoardScriptPath,
+                PresenceBoardProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -812,10 +884,10 @@ namespace StargazingHill.Editor
             const int cells = 80;
             const float size = 80f;
             int side = cells + 1;
-            var vertices = new Vector3[side * side];
-            var colors = new Color[vertices.Length];
-            var uvs = new Vector2[vertices.Length];
-            var triangles = new int[cells * cells * 6];
+            var vertices = new List<Vector3>(side * side + (cells + 1) * 8);
+            var colors = new List<Color>(vertices.Capacity);
+            var uvs = new List<Vector2>(vertices.Capacity);
+            var triangles = new List<int>(cells * cells * 6 + cells * 24);
 
             for (int z = 0; z < side; z++)
             {
@@ -824,38 +896,85 @@ namespace StargazingHill.Editor
                     float px = (x / (float)cells - 0.5f) * size;
                     float pz = (z / (float)cells - 0.5f) * size;
                     float y = EvaluateTerrainHeight(px, pz);
-                    int index = z * side + x;
-                    vertices[index] = new Vector3(px, y, pz);
-                    uvs[index] = new Vector2(x / (float)cells, z / (float)cells);
+                    vertices.Add(new Vector3(px, y, pz));
+                    uvs.Add(new Vector2(x / (float)cells, z / (float)cells));
                     float variation = 0.86f + Mathf.PerlinNoise(px * 0.08f + 31f, pz * 0.08f + 17f) * 0.22f;
-                    colors[index] = new Color(variation, variation, variation, 1f);
+                    colors.Add(new Color(variation, variation, variation, 1f));
                 }
             }
 
-            int triangle = 0;
             for (int z = 0; z < cells; z++)
             {
                 for (int x = 0; x < cells; x++)
                 {
                     int i = z * side + x;
-                    triangles[triangle++] = i;
-                    triangles[triangle++] = i + side;
-                    triangles[triangle++] = i + 1;
-                    triangles[triangle++] = i + 1;
-                    triangles[triangle++] = i + side;
-                    triangles[triangle++] = i + side + 1;
+                    triangles.Add(i);
+                    triangles.Add(i + side);
+                    triangles.Add(i + 1);
+                    triangles.Add(i + 1);
+                    triangles.Add(i + side);
+                    triangles.Add(i + side + 1);
                 }
             }
 
+            // Keep the detailed 1m grid around the hill, then extend four low-cost walkable strips to
+            // +/-250m. The previous +/-40m edge was visible and reachable from spawn in a few seconds.
+            const float inner = 40f;
+            const float outer = 250f;
+            AddGroundStrip(vertices, colors, uvs, triangles,
+                new Vector2(-inner, inner), new Vector2(inner, inner),
+                new Vector2(-outer, outer), new Vector2(outer, outer), cells, inner);
+            AddGroundStrip(vertices, colors, uvs, triangles,
+                new Vector2(inner, -inner), new Vector2(-inner, -inner),
+                new Vector2(outer, -outer), new Vector2(-outer, -outer), cells, inner);
+            AddGroundStrip(vertices, colors, uvs, triangles,
+                new Vector2(inner, inner), new Vector2(inner, -inner),
+                new Vector2(outer, outer), new Vector2(outer, -outer), cells, inner);
+            AddGroundStrip(vertices, colors, uvs, triangles,
+                new Vector2(-inner, -inner), new Vector2(-inner, inner),
+                new Vector2(-outer, -outer), new Vector2(-outer, outer), cells, inner);
+
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
-            mesh.vertices = vertices;
-            mesh.colors = colors;
-            mesh.uv = uvs;
-            mesh.triangles = triangles;
+            mesh.SetVertices(vertices);
+            mesh.SetColors(colors);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        private static void AddGroundStrip(List<Vector3> vertices, List<Color> colors, List<Vector2> uvs,
+            List<int> triangles, Vector2 innerA, Vector2 innerB, Vector2 outerA, Vector2 outerB,
+            int segments, float uvExtent)
+        {
+            int first = vertices.Count;
+            for (int segment = 0; segment <= segments; segment++)
+            {
+                float t = segment / (float)segments;
+                Vector2 inner = Vector2.Lerp(innerA, innerB, t);
+                Vector2 outer = Vector2.Lerp(outerA, outerB, t);
+                float innerY = EvaluateTerrainHeight(inner.x, inner.y);
+                vertices.Add(new Vector3(inner.x, innerY, inner.y));
+                vertices.Add(new Vector3(outer.x, EvaluateBaseHeight(outer.x, outer.y), outer.y));
+                float innerShade = 0.90f + Mathf.PerlinNoise(inner.x * 0.08f + 31f, inner.y * 0.08f + 17f) * 0.16f;
+                float outerShade = 0.90f + Mathf.PerlinNoise(outer.x * 0.02f + 31f, outer.y * 0.02f + 17f) * 0.16f;
+                colors.Add(new Color(innerShade, innerShade, innerShade, 1f));
+                colors.Add(new Color(outerShade, outerShade, outerShade, 1f));
+                uvs.Add(new Vector2(inner.x / (uvExtent * 2f) + 0.5f, inner.y / (uvExtent * 2f) + 0.5f));
+                uvs.Add(new Vector2(outer.x / (uvExtent * 2f) + 0.5f, outer.y / (uvExtent * 2f) + 0.5f));
+            }
+            for (int segment = 0; segment < segments; segment++)
+            {
+                int i = first + segment * 2;
+                triangles.Add(i);
+                triangles.Add(i + 1);
+                triangles.Add(i + 2);
+                triangles.Add(i + 2);
+                triangles.Add(i + 1);
+                triangles.Add(i + 3);
+            }
         }
 
         private static Mesh BuildHillMesh()
@@ -925,7 +1044,7 @@ namespace StargazingHill.Editor
 
         private static Mesh BuildGrassMesh()
         {
-            const int tuftCount = 9000;
+            const int tuftCount = 15000;
             var random = new System.Random(20260811);
             var vertices = new List<Vector3>(tuftCount * 12);
             var colors = new List<Color>(tuftCount * 12);
@@ -933,8 +1052,8 @@ namespace StargazingHill.Editor
 
             for (int tuft = 0; tuft < tuftCount; tuft++)
             {
-                float x = (float)(random.NextDouble() * 76.0 - 38.0);
-                float z = (float)(random.NextDouble() * 76.0 - 38.0);
+                float x = (float)(random.NextDouble() * 120.0 - 60.0);
+                float z = (float)(random.NextDouble() * 120.0 - 60.0);
                 if (IsGrassExclusion(x, z))
                 {
                     tuft--;
@@ -1103,13 +1222,24 @@ namespace StargazingHill.Editor
 
         private static void ConfigureRenderSettings()
         {
-            RenderSettings.skybox = null;
+            Material sky = CreateOrUpdateMaterial(
+                MaterialRoot + "/NightSkyGradient.mat", "StargazingHill/NightSkyGradient", Color.white, 0f);
+            sky.SetColor("_ZenithColor", new Color(0.006f, 0.009f, 0.020f));
+            sky.SetColor("_HorizonColor", new Color(0.020f, 0.050f, 0.095f));
+            sky.SetColor("_GroundColor", new Color(0.004f, 0.006f, 0.012f));
+            sky.SetFloat("_HorizonStrength", 1f);
+            sky.SetFloat("_HorizonFalloff", 3f);
+            sky.SetFloat("_GroundFade", 0.12f);
+            sky.SetFloat("_DitherStrength", 0.00035f);
+            EditorUtility.SetDirty(sky);
+            RenderSettings.skybox = sky;
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.035f, 0.045f, 0.075f);
             RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.012f, 0.017f, 0.030f);
-            RenderSettings.fogDensity = 0.0022f;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = new Color(0.014f, 0.032f, 0.060f);
+            RenderSettings.fogStartDistance = 70f;
+            RenderSettings.fogEndDistance = 210f;
         }
 
         private static void CreateEnvironment(Transform parent, Mesh groundMesh, Mesh hillMesh, Mesh grassMesh,
@@ -1192,7 +1322,7 @@ namespace StargazingHill.Editor
                 (HillPosition + Vector3.up * 4.2f - cameraObject.transform.position).normalized,
                 Vector3.up);
             Camera camera = cameraObject.AddComponent<Camera>();
-            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.clearFlags = CameraClearFlags.Skybox;
             camera.backgroundColor = new Color(0.006f, 0.009f, 0.020f);
             camera.farClipPlane = 500f;
             camera.nearClipPlane = 0.03f;
@@ -1509,6 +1639,13 @@ namespace StargazingHill.Editor
             }
             if (descriptors.Length != 1 || descriptors[0].spawns == null || descriptors[0].spawns.Length != 1)
                 throw new InvalidOperationException("VRCSceneDescriptor validation failed.");
+            Camera referenceCamera = descriptors.Length == 1 && descriptors[0].ReferenceCamera != null
+                ? descriptors[0].ReferenceCamera.GetComponent<Camera>() : null;
+            if (RenderSettings.skybox == null || RenderSettings.skybox.shader == null ||
+                RenderSettings.skybox.shader.name != "StargazingHill/NightSkyGradient" ||
+                referenceCamera == null || referenceCamera.clearFlags != CameraClearFlags.Skybox ||
+                !RenderSettings.fog || RenderSettings.fogMode != FogMode.Linear)
+                throw new InvalidOperationException("Night-sky atmosphere validation failed.");
             if (pipelineManagers.Length != 1 || pipelineManagers[0].gameObject != descriptors[0].gameObject)
                 throw new InvalidOperationException("VRC PipelineManager validation failed.");
             if (playerSettings.Length != 1 || !Mathf.Approximately(playerSettings[0].jumpImpulse, 3.2f) ||
@@ -1569,6 +1706,10 @@ namespace StargazingHill.Editor
             if (debugPickups.Length != 1 ||
                 UdonSharpEditorUtility.GetBackingUdonBehaviour(debugPickups[0]) == null)
                 throw new InvalidOperationException("VR debug panel pickup behaviour validation failed.");
+            WorldDebugPanelStatus[] debugStatuses = Object.FindObjectsOfType<WorldDebugPanelStatus>(true);
+            if (debugStatuses.Length != 1 || debugStatuses[0].statusText == null ||
+                debugStatuses[0].playStopLabel == null)
+                throw new InvalidOperationException("VR debug panel status validation failed.");
             ValidateDebugPanelLayout(scene);
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
             GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
@@ -1580,6 +1721,9 @@ namespace StargazingHill.Editor
             MeshCollider groundCollider = ground == null ? null : ground.GetComponent<MeshCollider>();
             if (groundCollider == null || hill == null || hill.GetComponent<Collider>() != null)
                 throw new InvalidOperationException("Walkable terrain must use one non-overlapping collider.");
+            if (ground.GetComponent<MeshFilter>()?.sharedMesh == null ||
+                ground.GetComponent<MeshFilter>().sharedMesh.bounds.extents.x < 240f)
+                throw new InvalidOperationException("Extended grassland validation failed.");
             MeshFilter grassFilter = GameObject.Find("World/Environment/GrassClusters")?.GetComponent<MeshFilter>();
             if (grassFilter == null || grassFilter.sharedMesh == null || grassFilter.sharedMesh.vertexCount < 100000)
                 throw new InvalidOperationException("Volumetric grass density validation failed.");
@@ -1603,6 +1747,15 @@ namespace StargazingHill.Editor
             AutoPlay[] autoPlays = yamaPlayer == null
                 ? Array.Empty<AutoPlay>()
                 : yamaPlayer.GetComponentsInChildren<AutoPlay>(true);
+            PlaylistItem[] playlistItems = yamaPlayer == null
+                ? Array.Empty<PlaylistItem>()
+                : yamaPlayer.GetComponentsInChildren<PlaylistItem>(true);
+            Playlist[] runtimePlaylists = yamaPlayer == null
+                ? Array.Empty<Playlist>()
+                : yamaPlayer.GetComponentsInChildren<Playlist>(true);
+            int playlistTrackCount = 0;
+            for (int playlistIndex = 0; playlistIndex < runtimePlaylists.Length; playlistIndex++)
+                playlistTrackCount += runtimePlaylists[playlistIndex].TrackCount;
             int downloaderCount = 0;
             for (int definitionIndex = 0; definitionIndex < definitions.Length; definitionIndex++)
             {
@@ -1615,7 +1768,8 @@ namespace StargazingHill.Editor
                 downloaderCount != 1 || yamaController == null || autoPlays.Length != 1 ||
                 !autoPlays[0].gameObject.activeSelf ||
                 autoPlayControllerProperty == null ||
-                autoPlayControllerProperty.objectReferenceValue != yamaController)
+                autoPlayControllerProperty.objectReferenceValue != yamaController ||
+                playlistItems.Length != 4 || runtimePlaylists.Length != 4 || playlistTrackCount != 15)
             {
                 throw new InvalidOperationException("YamaPlayer placement/module validation failed.");
             }
@@ -1628,13 +1782,22 @@ namespace StargazingHill.Editor
             object autoPlayController;
             bool hasSerializedController = autoPlayBacking.publicVariables.TryGetVariableValue(
                 "_controller", out autoPlayController);
-            if (!hasSerializedController || autoPlayController != controllerBacking)
+            if (!hasSerializedController || autoPlayController as UdonBehaviour != controllerBacking)
                 throw new InvalidOperationException(
                     "YamaPlayer AutoPlay Controller validation failed: expected " + controllerBacking +
                     ", actual " + (autoPlayController == null
                         ? "null"
                         : autoPlayController + " (" + autoPlayController.GetType().FullName + ")."));
             ValidateAmenityPlacement(descriptors[0].spawns[0], yamaPlayer, qvPen, unyStylus);
+
+            WorldInfoLanguageToggle[] languageToggles = Object.FindObjectsOfType<WorldInfoLanguageToggle>(true);
+            WorldPresenceBoard[] presenceBoards = Object.FindObjectsOfType<WorldPresenceBoard>(true);
+            GameObject informationPanel = GameObject.Find("World/InformationSystem/WorldInformationPanel");
+            if (informationPanel == null || informationPanel.GetComponent<Collider>() != null ||
+                languageToggles.Length != 1 || presenceBoards.Length != 1 ||
+                languageToggles[0].japaneseText == null || languageToggles[0].englishText == null ||
+                presenceBoards[0].playerCountText == null || presenceBoards[0].historyText == null)
+                throw new InvalidOperationException("World information/presence panel validation failed.");
 
             Keyframe[] expectedKeys = CreateYamaRolloffCurve().keys;
             if (sources.Length == 0) throw new InvalidOperationException("YamaPlayer audio validation failed.");
@@ -1756,9 +1919,12 @@ namespace StargazingHill.Editor
                 else
                 {
                     float nominal = label.characterSize * label.fontSize / 10f;
-                    int characters = label.text == null ? 0 : label.text.Length;
+                    string[] lines = (label.text ?? string.Empty).Split('\n');
+                    int characters = 0;
+                    for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                        characters = Mathf.Max(characters, lines[lineIndex].Length);
                     mesh = new Bounds(Vector3.zero,
-                        new Vector3(characters * 0.68f * nominal, nominal * 1.2f, 0f));
+                        new Vector3(characters * 0.68f * nominal, nominal * 1.2f * lines.Length, 0f));
                 }
 
                 float minX = float.MaxValue, maxX = float.MinValue;

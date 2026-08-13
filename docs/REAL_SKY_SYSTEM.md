@@ -7,12 +7,14 @@
 - HYG Stellar Database v4.1から `mag <= 6.8` の12,495星を抽出し、赤経・赤緯・等級・色指数だけを追跡する。
 - `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。
 - `Starfield.shader` がAdditive Unlit描画と地平線フェードを担当する。
+- `NightSkyGradient.shader` が暗い天頂、淡い青の地平線、ほぼ黒い地面側をtextureなしで補間する。Flat ambientとlinear fogを同系色に揃え、星のcontrastを保ちながら空気遠近と遠い地面端を表現する。設計値と根拠は [ADR 0013](adr/0013-night-sky-atmospheric-gradient.md) を正本とする。
 - `ObservatoryProfile` が観測地ID、表示名、緯度、東経を一元管理する。初期assetはTokyo 35.68°N / 139.76°E。
 - `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、profileの緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
 - 月は主要摂動と扁平地球上のtopocentric parallaxを含む低コスト計算で位置を求める。東京のUSNO基準5日時で高度・方位とも0.10°以内。
 - `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHR、対地速度 `V∞`、光度分布指標 `r` を保持する。
 - `MeteorController` が毎時00分から180秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、`V∞` と `r` から速度・尾・Normal / Bright / Fireball階級を共通式で決める。活動群がなければ散在流星へfallbackする。総本数は1時間相当の期待数から決め、固定20本上限は設けない。
 - Play Mode中の `Stargazing Hill/Debug/Meteor Shower Preview...` で主要11群を選択し、活動期と放射点高度に関係なく20本をローカル強制再生できる。`Force Perseids Preview (20 Meteors)` はペルセウス座流星群の短縮入口。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
+- ワールド内デバッグパネルは現在のevent mode、群ID、表示Renderer数を表示し、現在条件の再生／停止を1ボタンで切り替える。自然イベントを停止したhourは同じEvent IDを再発火しない。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
 - データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、月のUSNO基準、5観測地parameterization、11群catalog、ClientSim単一クライアントでの強制流星Udon VM発火はPass。ClientSim複数人・途中参加と実機確認はOpen。
 

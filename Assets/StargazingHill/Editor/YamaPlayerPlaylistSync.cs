@@ -129,6 +129,27 @@ namespace StargazingHill.Editor
                         autoTrackIndex = trackIndex;
                     }
                 }
+
+                // YamaPlayer normally creates this UdonSharp component only in its SDK scene build hook.
+                // ClientSim does not run that path consistently, and a failed/partial platform build can
+                // leave the uploaded clone with PlaylistItem authoring data but no runtime Playlist. Keep
+                // both representations in the saved scene so Play Mode and every upload read identical data.
+                Playlist runtimePlaylist = go.AddUdonSharpComponent<Playlist>();
+                runtimePlaylist.SetProgramVariable("_playlistName", source.name);
+                var playerTypes = new VideoPlayerType[source.tracks.Count];
+                var titles = new string[source.tracks.Count];
+                var urls = new VRC.SDKBase.VRCUrl[source.tracks.Count];
+                for (int trackIndex = 0; trackIndex < source.tracks.Count; trackIndex++)
+                {
+                    playerTypes[trackIndex] = VideoPlayerType.AVProVideoPlayer;
+                    titles[trackIndex] = source.tracks[trackIndex].title ?? string.Empty;
+                    urls[trackIndex] = new VRC.SDKBase.VRCUrl(source.tracks[trackIndex].url ?? string.Empty);
+                }
+                runtimePlaylist.SetProgramVariable("_videoPlayerTypes", playerTypes);
+                runtimePlaylist.SetProgramVariable("_titles", titles);
+                runtimePlaylist.SetProgramVariable("_urls", urls);
+                UdonSharpEditorUtility.CopyProxyToUdon(runtimePlaylist);
+                EditorUtility.SetDirty(runtimePlaylist);
             }
 
             if (autoCount > 1)
@@ -227,7 +248,7 @@ namespace StargazingHill.Editor
             {
                 if (string.IsNullOrWhiteSpace(raw)) continue;
                 string line = raw.Trim();
-                if (line == "Playlist") continue;
+                if (line == "Playlist" || Regex.IsMatch(line, @"^[│\s]+$")) continue;
 
                 Match urlMatch = urlRegex.Match(line);
                 if (!urlMatch.Success)

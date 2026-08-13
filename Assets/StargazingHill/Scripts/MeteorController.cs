@@ -43,6 +43,11 @@ namespace StargazingHill
         [HideInInspector] public float debugPreviewElapsedSeconds = -1f;
         [HideInInspector] public int debugVisibleMeteorCount;
         [HideInInspector] public string debugPreviewShowerId = "";
+        [HideInInspector] public bool debugEventPlaying;
+        [HideInInspector] public string debugEventMode = "IDLE";
+        [HideInInspector] public string debugCurrentShowerId = "";
+        [HideInInspector] public float debugEventElapsedSeconds = -1f;
+        [HideInInspector] public float debugEventDurationSeconds;
 
         private VRCPlayerApi _localPlayer;
         private bool _debugEventActive;
@@ -51,6 +56,7 @@ namespace StargazingHill
         private DateTime _debugUtc;
         private int _debugForcedShowerIndex = -1;
         private Vector3 _debugViewForward = Vector3.forward;
+        private int _suppressedNaturalEventId = int.MinValue;
 
         private const int DebugForcedMeteorCount = 20;
         private const float DebugImmediatePreviewElapsed = 0.75f;
@@ -68,6 +74,7 @@ namespace StargazingHill
             float elapsed = -1f;
             int eventId = 0;
             DateTime utc = Networking.GetNetworkDateTime();
+            bool forcedDebugEvent = _debugEventActive;
             if (_debugEventActive)
             {
                 elapsed = Time.time - _debugStartTime;
@@ -76,15 +83,21 @@ namespace StargazingHill
                 float debugDuration = _debugForcedShowerIndex >= 0
                     ? DebugForcedPreviewDurationSeconds
                     : NaturalEventDurationSeconds;
-                if (elapsed >= debugDuration) { _debugEventActive = false; elapsed = -1f; }
+                if (elapsed >= debugDuration)
+                {
+                    _debugEventActive = false;
+                    forcedDebugEvent = false;
+                    elapsed = -1f;
+                }
             }
-            else
+            if (!_debugEventActive)
             {
                 float secondsIntoHour = utc.Minute * 60f + utc.Second + utc.Millisecond / 1000f;
-                if (secondsIntoHour < NaturalEventDurationSeconds)
+                int naturalEventId = GetHourlyEventId(utc.Year, utc.Month, utc.Day, utc.Hour);
+                if (secondsIntoHour < NaturalEventDurationSeconds && naturalEventId != _suppressedNaturalEventId)
                 {
                     elapsed = secondsIntoHour;
-                    eventId = GetHourlyEventId(utc.Year, utc.Month, utc.Day, utc.Hour);
+                    eventId = naturalEventId;
                 }
             }
 
@@ -93,6 +106,13 @@ namespace StargazingHill
                 _debugViewForward);
             debugPreviewActive = _debugEventActive;
             debugPreviewElapsedSeconds = _debugEventActive ? elapsed : -1f;
+            debugEventPlaying = elapsed >= 0f;
+            debugEventMode = !debugEventPlaying ? "IDLE" : forcedDebugEvent && _debugForcedShowerIndex >= 0
+                ? "FORCED" : "NATURAL";
+            debugEventElapsedSeconds = debugEventPlaying ? elapsed : -1f;
+            debugEventDurationSeconds = forcedDebugEvent && _debugForcedShowerIndex >= 0
+                ? DebugForcedPreviewDurationSeconds : NaturalEventDurationSeconds;
+            if (!debugEventPlaying) debugCurrentShowerId = "";
         }
 
         public void DebugTriggerHourlyEvent()
@@ -101,6 +121,7 @@ namespace StargazingHill
             _debugEventId = GetHourlyEventId(_debugUtc.Year, _debugUtc.Month, _debugUtc.Day, _debugUtc.Hour);
             _debugStartTime = Time.time;
             _debugForcedShowerIndex = -1;
+            _suppressedNaturalEventId = int.MinValue;
             _debugEventActive = true;
             UpdateMeteorVisuals(_debugEventId, 0f, _debugUtc.Year, _debugUtc.Month, _debugUtc.Day,
                 _debugUtc.Hour, _debugUtc.Minute, _debugUtc.Second + _debugUtc.Millisecond / 1000.0,
@@ -122,6 +143,7 @@ namespace StargazingHill
                             showerIndex * 104729;
             _debugViewForward = NormalizeViewForward(viewForward);
             _debugForcedShowerIndex = showerIndex;
+            _suppressedNaturalEventId = int.MinValue;
             _debugStartTime = Time.time - DebugImmediatePreviewElapsed;
             _debugEventActive = true;
             debugPreviewActive = true;
@@ -137,6 +159,8 @@ namespace StargazingHill
 
         public void DebugStopHourlyEvent()
         {
+            DateTime now = Networking.GetNetworkDateTime();
+            _suppressedNaturalEventId = GetHourlyEventId(now.Year, now.Month, now.Day, now.Hour);
             _debugEventActive = false;
             _debugForcedShowerIndex = -1;
             debugPreviewActive = false;
@@ -144,6 +168,12 @@ namespace StargazingHill
             debugVisibleMeteorCount = 0;
             debugPreviewShowerId = "";
             SetAllVisible(false);
+        }
+
+        public void DebugToggleHourlyEvent()
+        {
+            if (debugEventPlaying || _debugEventActive) DebugStopHourlyEvent();
+            else DebugTriggerHourlyEvent();
         }
 
         public void DebugPreviewEventAtSecond(float elapsed)
@@ -277,6 +307,7 @@ namespace StargazingHill
             bool forcedPreview = forcedShowerIndex >= 0 && forcedShowerIndex < showerIds.Length;
             int showerIndex = forcedPreview ? forcedShowerIndex :
                 GetStrongestShowerIndex(year, month, day, hour, minute, second);
+            debugCurrentShowerId = showerIndex < 0 ? "SPORADIC" : showerIds[showerIndex];
             Vector3 radiant = showerIndex < 0 ? Vector3.zero :
                 RealSkyController.EquatorialDirectionToHorizontal(
                     radiantRightAscensionDegrees[showerIndex], radiantDeclinationDegrees[showerIndex],

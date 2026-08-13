@@ -14,3 +14,14 @@ diff --git a/Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs b/P
 +      // Stargazing Hill: package updates are managed through VCC. Starting the VPM resolver
 +      // automatically can race with Play Mode/domain shutdown while VCC settings are being read.
      }
+
+diff --git a/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs b/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs
+--- a/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs
++++ b/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs
+@@ -41,2 +41,5 @@ namespace Yamadev.YamaStream.Editor
+         {
+-          var udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();
++          // Stargazing Hill persists runtime Playlists so ClientSim and uploaded builds use the same data.
++          // Reuse that component when present instead of creating a duplicate during the SDK build hook.
++          var udonPlaylist = item.GetComponent<Playlist>();
++          if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();

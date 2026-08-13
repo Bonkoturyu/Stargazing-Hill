@@ -43,68 +43,62 @@ if (-not $patchRelativePath) {
 }
 
 $patchPath = Join-Path $projectPath $patchRelativePath
-if (-not (Test-Path -LiteralPath $patchPath)) {
-    throw "Patch file is missing: $patchRelativePath"
-}
+if (-not (Test-Path -LiteralPath $patchPath)) { throw "Patch file is missing: $patchRelativePath" }
 
-function Test-GitPatch([switch]$Reverse) {
-    $arguments = @('apply')
-    if ($Reverse) { $arguments += '--reverse' }
-    $arguments += @('--check', '--', $patchPath)
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    & git @arguments 2>$null
-    $succeeded = $LASTEXITCODE -eq 0
-    $ErrorActionPreference = $previousErrorActionPreference
-    return $succeeded
-}
-
-Push-Location $projectPath
-try {
-    $isApplied = Test-GitPatch -Reverse
-    $canApply = Test-GitPatch
-
-    if ($isApplied -and $canApply) {
-        throw 'Patch state is ambiguous: both forward and reverse checks succeeded.'
+$transforms = @(
+    @{
+        Path = 'Packages/net.kwxxw.yama-stream/Editor/Package/PackageManager.cs'
+        Original = @'
+      EditorApplication.delayCall += () =>
+      {
+        if (!EditorApplication.isCompiling && !EditorApplication.isUpdating)
+        {
+          CheckUpdate().Forget();
+        }
+      };
+'@
+        Patched = @'
+      // Stargazing Hill: package updates are managed through VCC. Starting the VPM resolver
+      // automatically can race with Play Mode/domain shutdown while VCC settings are being read.
+'@
+    },
+    @{
+        Path = 'Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs'
+        Original = @'
+          var udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();
+'@
+        Patched = @'
+          // Stargazing Hill persists runtime Playlists so ClientSim and uploaded builds use the same data.
+          // Reuse that component when present instead of creating a duplicate during the SDK build hook.
+          var udonPlaylist = item.GetComponent<Playlist>();
+          if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();
+'@
     }
+)
 
+foreach ($transform in $transforms) {
+    $sourcePath = Join-Path $projectPath $transform.Path
+    if (-not (Test-Path -LiteralPath $sourcePath)) { throw "YamaPlayer source is missing: $($transform.Path)" }
+    $raw = [IO.File]::ReadAllText($sourcePath)
+    $usesCrLf = $raw.Contains("`r`n")
+    $text = $raw.Replace("`r`n", "`n")
+    $original = $transform.Original.Replace("`r`n", "`n").Trim("`r", "`n")
+    $patched = $transform.Patched.Replace("`r`n", "`n").Trim("`r", "`n")
+    $hasOriginal = $text.Contains($original)
+    $hasPatched = $text.Contains($patched)
+    if ($hasOriginal -eq $hasPatched) {
+        throw "YamaPlayer source matches neither or both verified fragments: $($transform.Path)"
+    }
     if ($Mode -eq 'Check') {
-        if (-not $isApplied) {
-            if ($canApply) {
-                throw "YamaPlayer $($package.version) patch is not applied. Run: powershell -ExecutionPolicy Bypass -File Tools/Apply-YamaPlayerPatches.ps1"
-            }
-            throw 'YamaPlayer source matches neither the verified original nor patched form.'
-        }
-        Write-Output "YamaPlayer $($package.version) patch is applied."
-        exit 0
+        if (-not $hasPatched) { throw "YamaPlayer $($package.version) patch is not applied: $($transform.Path)" }
+        continue
     }
-
-    if ($Mode -eq 'Restore') {
-        if (-not $isApplied) {
-            if ($canApply) {
-                Write-Output "YamaPlayer $($package.version) is already in its upstream form."
-                exit 0
-            }
-            throw 'YamaPlayer source matches neither the verified original nor patched form.'
-        }
-        & git apply --reverse -- $patchPath
-        if ($LASTEXITCODE -ne 0) { throw 'Failed to restore the YamaPlayer source.' }
-        Write-Output "Restored YamaPlayer $($package.version) to its upstream form."
-        exit 0
-    }
-
-    if ($isApplied) {
-        Write-Output "YamaPlayer $($package.version) patch is already applied."
-        exit 0
-    }
-    if (-not $canApply) {
-        throw 'YamaPlayer source matches neither the verified original nor patched form.'
-    }
-
-    & git apply -- $patchPath
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to apply the YamaPlayer patch.' }
-    Write-Output "Applied the YamaPlayer $($package.version) editor update-check patch."
+    $from = if ($Mode -eq 'Apply') { $original } else { $patched }
+    $to = if ($Mode -eq 'Apply') { $patched } else { $original }
+    if (-not $text.Contains($from)) { continue }
+    $text = $text.Replace($from, $to)
+    if ($usesCrLf) { $text = $text.Replace("`n", "`r`n") }
+    [IO.File]::WriteAllText($sourcePath, $text, [Text.UTF8Encoding]::new($false))
 }
-finally {
-    Pop-Location
-}
+
+Write-Output "YamaPlayer $($package.version) compatibility patch state: $Mode."
