@@ -43,6 +43,8 @@ namespace StargazingHill.Editor
                 new Color(0.018f, 0.028f, 0.050f, 1f));
             Material buttonMaterial = EnsureColorMaterial(RootPath + "/Generated/Materials/WorldInfoButton.mat",
                 new Color(0.08f, 0.17f, 0.28f, 1f));
+            Material accentMaterial = EnsureColorMaterial(RootPath + "/Generated/Materials/WorldInfoAccent.mat",
+                new Color(0.58f, 0.90f, 1f, 1f));
 
             GameObject system = new GameObject("InformationSystem");
             system.transform.SetParent(world.transform, false);
@@ -72,23 +74,35 @@ namespace StargazingHill.Editor
             english.gameObject.transform.parent.name = "EnglishDescription";
             english.gameObject.transform.parent.gameObject.SetActive(false);
 
-            Text count = CreateText(panel.transform, "ONLINE  0 / 32", new Vector3(0.73f, 0.50f, -0.027f),
-                0.115f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
-            Text history = CreateText(panel.transform, "JOIN / LEAVE HISTORY", new Vector3(0.73f, 0.18f, -0.027f),
-                0.085f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.76f, 0.86f, 0.96f));
+            Text count = CreateText(panel.transform,
+                "ONLINE  0 / 80\nRECOMMENDED  40\n       PC  0\n       MOBILE  0",
+                new Vector3(0.73f, 0.55f, -0.027f),
+                0.082f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
+            CreatePlatformIcons(panel.transform, accentMaterial);
+            Text history = CreateText(panel.transform, "JOIN / LEAVE  0-0 / 0", new Vector3(0.73f, -0.02f, -0.027f),
+                0.050f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.76f, 0.86f, 0.96f));
             WorldPresenceBoard presence = UdonSharpUndo.AddComponent<WorldPresenceBoard>(panel);
             presence.playerCountText = count;
             presence.historyText = history;
-            presence.maximumCapacity = 32;
-            presence.historyCapacity = 7;
+            presence.maximumCapacity = WorldPresenceBoard.DefaultMaximumCapacity;
+            presence.recommendedCapacity = WorldPresenceBoard.DefaultRecommendedCapacity;
+            presence.historyCapacity = WorldPresenceBoard.DefaultHistoryCapacity;
+            presence.visibleHistoryCount = WorldPresenceBoard.DefaultVisibleHistoryCount;
             UdonSharpEditorUtility.CopyProxyToUdon(presence);
             EditorUtility.SetDirty(presence);
+
+            CreateHistoryScrollButton(panel.transform, "HistoryNewer", new Vector3(2.03f, -0.70f, -0.0125f),
+                "▲", false, presence, font, textMaterial, buttonMaterial);
+            CreateHistoryScrollButton(panel.transform, "HistoryOlder", new Vector3(2.03f, -1.00f, -0.0125f),
+                "▼", true, presence, font, textMaterial, buttonMaterial);
 
             GameObject button = GameObject.CreatePrimitive(PrimitiveType.Cube);
             button.name = "LanguageToggle";
             button.transform.SetParent(panel.transform, false);
             // The visible face is flush with the board's -Z face; only this intentional button has a collider.
-            button.transform.localPosition = new Vector3(1.72f, 0.98f, -0.0105f);
+            // Leave the button visually flush, but move its readable face 2 mm toward the user.
+            // At exactly -0.020 m it was coplanar with the panel face and flickered from z-fighting.
+            button.transform.localPosition = new Vector3(1.72f, 0.98f, -0.0125f);
             button.transform.localScale = new Vector3(0.72f, 0.22f, 0.019f);
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
@@ -108,6 +122,77 @@ namespace StargazingHill.Editor
             }
             EditorUtility.SetDirty(toggle);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private static void CreateHistoryScrollButton(Transform parent, string name, Vector3 position,
+            string label, bool scrollOlder, WorldPresenceBoard presence, Font font,
+            Material textMaterial, Material buttonMaterial)
+        {
+            GameObject button = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            button.name = name;
+            button.transform.SetParent(parent, false);
+            button.transform.localPosition = position;
+            button.transform.localScale = new Vector3(0.25f, 0.20f, 0.019f);
+            button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
+            button.GetComponent<BoxCollider>().isTrigger = true;
+            CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f),
+                0.11f, TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
+
+            WorldPresenceHistoryScrollButton scrollButton =
+                UdonSharpUndo.AddComponent<WorldPresenceHistoryScrollButton>(button);
+            scrollButton.presenceBoard = presence;
+            scrollButton.scrollOlder = scrollOlder;
+            UdonSharpEditorUtility.CopyProxyToUdon(scrollButton);
+            UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(scrollButton);
+            if (backing != null)
+            {
+                backing.InteractionText = scrollOlder ? "Older history" : "Newer history";
+                backing.proximity = 2.5f;
+                EditorUtility.SetDirty(backing);
+            }
+            EditorUtility.SetDirty(scrollButton);
+        }
+
+        private static void CreatePlatformIcons(Transform parent, Material material)
+        {
+            GameObject laptop = new GameObject("PlatformLaptopIcon");
+            laptop.transform.SetParent(parent, false);
+            laptop.transform.localPosition = new Vector3(0.79f, 0.32f, -0.023f);
+            CreateIconOutline(laptop.transform, 0.12f, 0.075f, 0.012f, material);
+            CreateIconPart(laptop.transform, "Base", new Vector3(0f, -0.050f, 0f),
+                new Vector3(0.16f, 0.014f, 0.004f), material);
+
+            GameObject mobile = new GameObject("PlatformMobileIcon");
+            mobile.transform.SetParent(parent, false);
+            mobile.transform.localPosition = new Vector3(0.79f, 0.22f, -0.023f);
+            CreateIconOutline(mobile.transform, 0.065f, 0.105f, 0.010f, material);
+        }
+
+        private static void CreateIconOutline(Transform parent, float width, float height,
+            float thickness, Material material)
+        {
+            float halfWidth = width * 0.5f;
+            float halfHeight = height * 0.5f;
+            CreateIconPart(parent, "Top", new Vector3(0f, halfHeight, 0f),
+                new Vector3(width, thickness, 0.004f), material);
+            CreateIconPart(parent, "Bottom", new Vector3(0f, -halfHeight, 0f),
+                new Vector3(width, thickness, 0.004f), material);
+            CreateIconPart(parent, "Left", new Vector3(-halfWidth, 0f, 0f),
+                new Vector3(thickness, height, 0.004f), material);
+            CreateIconPart(parent, "Right", new Vector3(halfWidth, 0f, 0f),
+                new Vector3(thickness, height, 0.004f), material);
+        }
+
+        private static void CreateIconPart(Transform parent, string name, Vector3 position,
+            Vector3 scale, Material material)
+        {
+            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            part.name = name;
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = position;
+            part.transform.localScale = scale;
+            part.GetComponent<Renderer>().sharedMaterial = material;
+            UnityEngine.Object.DestroyImmediate(part.GetComponent<Collider>());
         }
 
         internal static Font EnsureFont()

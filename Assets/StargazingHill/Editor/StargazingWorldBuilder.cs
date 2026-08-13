@@ -45,6 +45,8 @@ namespace StargazingHill.Editor
         private const string InfoLanguageProgramPath = Root + "/Scripts/WorldInfoLanguageToggle.asset";
         private const string PresenceBoardScriptPath = Root + "/Scripts/WorldPresenceBoard.cs";
         private const string PresenceBoardProgramPath = Root + "/Scripts/WorldPresenceBoard.asset";
+        private const string PresenceScrollScriptPath = Root + "/Scripts/WorldPresenceHistoryScrollButton.cs";
+        private const string PresenceScrollProgramPath = Root + "/Scripts/WorldPresenceHistoryScrollButton.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -497,6 +499,16 @@ namespace StargazingHill.Editor
             camera.transform.LookAt(surroundings);
             RenderCameraToPng(camera, "stargazing-hill-debug-panel-wide.png");
 
+            Transform japaneseLabels = panel.transform.Find("JapaneseLabels");
+            Transform englishLabels = panel.transform.Find("EnglishLabels");
+            if (japaneseLabels == null || englishLabels == null)
+                throw new InvalidOperationException("VR debug panel language groups are missing.");
+            japaneseLabels.gameObject.SetActive(false);
+            englishLabels.gameObject.SetActive(true);
+            camera.transform.position = panel.transform.position + viewing * 0.75f;
+            camera.transform.LookAt(panel.transform.position);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-english.png");
+
             panel.SetActive(wasActive);
         }
 
@@ -591,6 +603,8 @@ namespace StargazingHill.Editor
         {
             var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
             var image = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            Canvas.ForceUpdateCanvases();
+            Physics.SyncTransforms();
             camera.targetTexture = target;
             camera.Render();
             RenderTexture previous = RenderTexture.active;
@@ -707,6 +721,8 @@ namespace StargazingHill.Editor
                 InfoLanguageProgramPath);
             EnsureProgramAsset(typeof(WorldPresenceBoard), PresenceBoardScriptPath,
                 PresenceBoardProgramPath);
+            EnsureProgramAsset(typeof(WorldPresenceHistoryScrollButton), PresenceScrollScriptPath,
+                PresenceScrollProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -1707,8 +1723,17 @@ namespace StargazingHill.Editor
                 UdonSharpEditorUtility.GetBackingUdonBehaviour(debugPickups[0]) == null)
                 throw new InvalidOperationException("VR debug panel pickup behaviour validation failed.");
             WorldDebugPanelStatus[] debugStatuses = Object.FindObjectsOfType<WorldDebugPanelStatus>(true);
-            if (debugStatuses.Length != 1 || debugStatuses[0].statusText == null ||
-                debugStatuses[0].playStopLabel == null)
+            WorldInfoLanguageToggle[] debugLanguageToggles = debugStatuses.Length == 1
+                ? debugStatuses[0].GetComponentsInChildren<WorldInfoLanguageToggle>(true)
+                : new WorldInfoLanguageToggle[0];
+            if (debugStatuses.Length != 1 || debugStatuses[0].japaneseStatusText == null ||
+                debugStatuses[0].englishStatusText == null ||
+                debugStatuses[0].japanesePlayStopLabel == null ||
+                debugStatuses[0].englishPlayStopLabel == null ||
+                debugLanguageToggles.Length != 1 ||
+                debugLanguageToggles[0].japaneseText == null ||
+                debugLanguageToggles[0].englishText == null ||
+                debugLanguageToggles[0].buttonLabel == null)
                 throw new InvalidOperationException("VR debug panel status validation failed.");
             ValidateDebugPanelLayout(scene);
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
@@ -1790,13 +1815,28 @@ namespace StargazingHill.Editor
                         : autoPlayController + " (" + autoPlayController.GetType().FullName + ")."));
             ValidateAmenityPlacement(descriptors[0].spawns[0], yamaPlayer, qvPen, unyStylus);
 
-            WorldInfoLanguageToggle[] languageToggles = Object.FindObjectsOfType<WorldInfoLanguageToggle>(true);
             WorldPresenceBoard[] presenceBoards = Object.FindObjectsOfType<WorldPresenceBoard>(true);
+            WorldPresenceHistoryScrollButton[] historyScrollButtons =
+                Object.FindObjectsOfType<WorldPresenceHistoryScrollButton>(true);
             GameObject informationPanel = GameObject.Find("World/InformationSystem/WorldInformationPanel");
+            WorldInfoLanguageToggle informationLanguageToggle = informationPanel != null
+                ? informationPanel.GetComponentInChildren<WorldInfoLanguageToggle>(true)
+                : null;
+            Transform languageButton = informationPanel != null
+                ? informationPanel.transform.Find("LanguageToggle")
+                : null;
             if (informationPanel == null || informationPanel.GetComponent<Collider>() != null ||
-                languageToggles.Length != 1 || presenceBoards.Length != 1 ||
-                languageToggles[0].japaneseText == null || languageToggles[0].englishText == null ||
-                presenceBoards[0].playerCountText == null || presenceBoards[0].historyText == null)
+                informationLanguageToggle == null || presenceBoards.Length != 1 ||
+                informationLanguageToggle.japaneseText == null || informationLanguageToggle.englishText == null ||
+                presenceBoards[0].playerCountText == null || presenceBoards[0].historyText == null ||
+                presenceBoards[0].maximumCapacity != WorldPresenceBoard.DefaultMaximumCapacity ||
+                presenceBoards[0].recommendedCapacity != WorldPresenceBoard.DefaultRecommendedCapacity ||
+                presenceBoards[0].historyCapacity != WorldPresenceBoard.DefaultHistoryCapacity ||
+                presenceBoards[0].visibleHistoryCount != WorldPresenceBoard.DefaultVisibleHistoryCount ||
+                historyScrollButtons.Length != 2 ||
+                historyScrollButtons[0].presenceBoard != presenceBoards[0] ||
+                historyScrollButtons[1].presenceBoard != presenceBoards[0] ||
+                languageButton == null || languageButton.localPosition.z > -0.012f)
                 throw new InvalidOperationException("World information/presence panel validation failed.");
 
             Keyframe[] expectedKeys = CreateYamaRolloffCurve().keys;
