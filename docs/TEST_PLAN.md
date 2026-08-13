@@ -285,3 +285,29 @@
 | パネル描画 | Pass | 正面・近接・周辺配置の3枚を1280 × 720で描画。ラベル欠け・重なり・鏡文字なし、小型化後もボタンを識別可能 |
 | unitypackage実物 | Pass | `Build/StargazingHill-redistributable.unitypackage`、11,353,339 bytes、80 pathname。全て `Assets/StargazingHill` 配下で、YamaPlayer / QvPen / UnyStylus / `SourceDownloads` の混入なし |
 | 実機Pickup・10秒復帰 | Open | 本ワールドのPCVR / Questで片手保持、別手操作、ドロップ10秒後復帰、待機中再取得によるキャンセルを確認する |
+
+## 2026-08-13 YamaPlayer AutoPlayのClientSim参照修正
+
+- 発端: ClientSim起動時に `[YamaStream] Controller is not set in module AutoPlay` が1件発生し、自動再生が開始されなかった
+- 原因: YamaPlayerのSDK build hookはbuild時にmoduleへControllerを注入するが、保存Sceneから直接起動するClientSimより後段である。独自Playlist同期は再生モード・遅延・曲番号だけを保存し、基底moduleの`_controller`を保存していなかった
+- 修正: Playlist同期時にAutoPlayのserialized `_controller`へ親Controllerを設定し、UdonSharp backingへコピーする。World Builderは最初のScene保存後のhookへ委ねず、保存前にPlaylist同期・proxy/backing参照検査を行う
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 静的検査 | Pass | Controller serialized property、proxy-to-Udon copy、Builder内の保存前同期、proxy/backing参照検査が存在することを確認 |
+| C# / UdonSharp / Scene生成 | Pass | Unity 2022.3.22f1で`BuildForBatchMode`を実行。AutoPlay Controller検査とScene生成がPass |
+| 保存Scene再読込 | Pass | `Tools/Run-LocalChecks.ps1 -SkipBuild`のprogram asset、Scene、天球・流星検査が全てPass。AutoPlay proxyの`_controller`とbacking Udonのserialized public variableが同じControllerを参照 |
+| ClientSim再実行 | Pass | ユーザー提供画面でClientSimがInitializedまで到達し、`Controller is not set in module AutoPlay`の再発なしを確認。別途、YamaPlayer Editor更新確認の`Thread was being aborted`が発生したが、VCC `settings.json`は読取・JSON解析とも正常でありワールド実行とは別件 |
+
+## 2026-08-13 YamaPlayer Editor更新確認の再適用可能パッチ
+
+- 発端: ClientSim開始時、YamaPlayer 2.0.0-beta.7がEditor起動時に開始したVPM更新確認とPlay Mode移行が競合し、正常なVCC `settings.json`に対して`Thread was being aborted`を赤エラーとして出した
+- 修正: `PackageManager`の起動時`CheckUpdate().Forget()`登録だけを除去する版限定patchを保存し、適用・確認・復元を`Tools/Apply-YamaPlayerPatches.ps1`へ集約した
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 対象版・上流確認 | Pass | 公式VPMとGitHub releaseの公開最新版は2.0.0-beta.7。developのrelease後3 commitに対象Editorファイル変更なし |
+| パッチ適用器 | Pass | 2.0.0-beta.7で適用済み確認、復元、未適用検出、再適用、二重適用の各経路を実行。未対応版・ソース不一致は書換え前に停止する実装を静的確認 |
+| 追跡対象の静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`と`git diff --check`がPass。版対応、対象ファイル、削除断片、停止条件を検査 |
+| Unity batch回帰 | Pending Evidence | 2026-08-13の実行環境ではheadless Unity licenseが非activeとなり、Editor起動前に終了。C#変更はpackageのstatic constructor内をコメントだけにする差分だが、再ライセンス後に`Tools/Run-LocalChecks.ps1 -SkipBuild`を再実行する |
+| ClientSim再確認 | Open | Unity再compile後にClientSimへ入り、VCC settings / `CheckUpdate failed`の赤エラーが再発しないことを確認する |
