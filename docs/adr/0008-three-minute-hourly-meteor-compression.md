@@ -73,7 +73,7 @@ IMO 2026のZHRをそのまま3分間の本数には使わない。ZHRは理想�
 - 弱い流星群では3分間に数本だけとなり、流星群ごとの個性が明確になる。
 - Rendererは最大4個のままで、総本数増加によるGPU draw対象の増加を避ける。
 - 毎時イベントは花火のような短時間集中演出ではなく、3分間に散らした観察体験になる。
-- 既存生成Sceneが `eventDurationSeconds=25` を保持していても、`MeteorController.Start()` が旧値を180秒へ移行する。Builder側のserialized defaultは後続整理で180秒へ統一する。
+- 自然イベントと強制QAの時間は `MeteorController.NaturalEventDurationSeconds` / `DebugForcedPreviewDurationSeconds` の2定数を唯一の調整箇所とし、Sceneへ重複してserializeしない。
 
 ## Evidence
 

@@ -11,7 +11,7 @@
 - `RealSkyController` がVRChatのネットワークUTC、Julian Date、恒星時、profileの緯度経度から天球回転を15秒ごとに更新し、全天球の中心をローカルプレイヤーへ追従させる。
 - 月は主要摂動と扁平地球上のtopocentric parallaxを含む低コスト計算で位置を求める。東京のUSNO基準5日時で高度・方位とも0.10°以内。
 - `MeteorShowerCatalog` がIMO Meteor Shower Calendar 2026 Table 5から主要11群の活動期間、極大日、放射点、ZHR、対地速度 `V∞`、光度分布指標 `r` を保持する。
-- `MeteorController` が毎時00分から25秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、`V∞` と `r` から速度・尾・Normal / Bright / Fireball階級を共通式で決める。活動群がなければ散在流星へfallbackする。5秒waveを5回使い、1イベント最大20本とする。
+- `MeteorController` が毎時00分から180秒間、共通UTCのhour Event IDから決定的に最大4本の再利用Quadを描画する。活動日、放射点高度、ZHRから当該hourの群を選び、`V∞` と `r` から速度・尾・Normal / Bright / Fireball階級を共通式で決める。活動群がなければ散在流星へfallbackする。総本数は1時間相当の期待数から決め、固定20本上限は設けない。
 - Play Mode中の `Stargazing Hill/Debug/Meteor Shower Preview...` で主要11群を選択し、活動期と放射点高度に関係なく20本をローカル強制再生できる。`Force Perseids Preview (20 Meteors)` はペルセウス座流星群の短縮入口。`Advance Sky +1 Hour` と `Reset Sky Time Offset` で天球移動を目視比較できる。
 - 原本、ライセンス、SHA-256、加工工程は `Assets/StargazingHill/Editor/Data/NOTICE.md` を正本とする。
 - データ再生成、範囲検査、C#/UdonSharpコンパイル、Unityシーン生成、保存後参照検証、月のUSNO基準、5観測地parameterization、11群catalog、ClientSim単一クライアントでの強制流星Udon VM発火はPass。ClientSim複数人・途中参加と実機確認はOpen。
@@ -180,12 +180,14 @@ Moon Transform
 
 毎時00分を時報相当のイベントとする。
 
-初期仕様:
+現行仕様:
 
 - 開始: 毎時00分
-- 長さ: 約20〜30秒
-- 同時表示: 最大2〜4本程度
+- 長さ: 180秒
+- 同時表示: 最大4本
 - 流星群なし: 散在流星1〜2本
+
+自然イベント時間は `MeteorController.NaturalEventDurationSeconds`、強制QA時間は `MeteorController.DebugForcedPreviewDurationSeconds` を実装上の唯一の調整箇所とする。時間をSceneへ重複してserializeせず、World Builder、保存Scene、ランタイムで値が分岐しないようにする。
 
 演出はネットワークイベントで同期せず、時刻から決定論的に生成する。
 
@@ -334,18 +336,11 @@ MVPでは簡易カーブで実装し、必要なら将来ZHR等を用いた年�
 
 流星は放射点そのものから開始するのではなく、画面上で放射点から離れた場所に生成し、軌跡を逆延長すると放射点へ収束するようにする。
 
-複数群が活動中の場合は、日付活動強度 × 放射点高度factor × ZHRが最大の群を当該hourの代表群とする。これは20〜30秒の圧縮演出で複数の放射点を混在させないMVP上の選択であり、catalog構造は将来の同時描画拡張を妨げない。
+複数群が活動中の場合は、日付活動強度 × 放射点高度factor × ZHRが最大の群を当該hourの代表群とする。これは180秒の圧縮演出で複数の放射点を混在させないMVP上の選択であり、catalog構造は将来の同時描画拡張を妨げない。
 
 ## 15. 演出本数の初期目安
 
-毎時イベント1回あたり:
-
-- Weak: 2〜5本
-- Medium: 5〜10本
-- Strong: 10〜20本
-- Sporadic only: 1〜2本
-
-これは現実の1時間あたり観測数をそのまま再現する値ではなく、20〜30秒の「時報演出」として圧縮した視覚表現である。
+毎時イベント1回あたりの総本数は、[ADR 0008](adr/0008-three-minute-hourly-meteor-compression.md) の流星群別ピーク基準本数へ活動期間内の活動度と放射点高度係数を掛けて決める。固定20本上限は設けず、散在流星だけの場合は1〜2本とする。これは現実の1時間相当の期待流星活動を180秒へ圧縮した視覚表現である。
 
 ## 16. パフォーマンス目標
 

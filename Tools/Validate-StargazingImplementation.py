@@ -225,9 +225,17 @@ def validate_sky_reference() -> None:
     assert "public void DebugTriggerSelectedShower()" in meteor
     assert "DebugPreviewSelectedShowerAtSecond(" in meteor
     assert "DebugForcedMeteorCount = 20" in meteor
+    natural_duration = re.findall(
+        r"public const float NaturalEventDurationSeconds = ([0-9]+(?:\.[0-9]+)?)f;", meteor
+    )
+    debug_duration = re.findall(
+        r"public const float DebugForcedPreviewDurationSeconds = ([0-9]+(?:\.[0-9]+)?)f;", meteor
+    )
+    assert len(natural_duration) == 1 and float(natural_duration[0]) > 0.0
+    assert len(debug_duration) == 1 and float(debug_duration[0]) > 0.0
     assert "forcedPreview && slot == 0" in meteor
     assert "const float waveLength = 5f;" in meteor
-    assert "eventDurationSeconds = 25f" in meteor
+    assert "eventDurationSeconds" not in meteor
     assert "Networking.GetNetworkDateTime()" in meteor
     assert "CalculateVisualTier(" in meteor
     assert "CalculateMeteorDuration(" in meteor
