@@ -8,8 +8,10 @@ namespace StargazingHill
     public class WorldDebugPanelStatus : UdonSharpBehaviour
     {
         public MeteorController meteorController;
-        public Text statusText;
-        public Text playStopLabel;
+        public Text japaneseStatusText;
+        public Text englishStatusText;
+        public Text japanesePlayStopLabel;
+        public Text englishPlayStopLabel;
 
         private float _nextRefresh;
 
@@ -34,13 +36,27 @@ namespace StargazingHill
                 ? Mathf.Max(0f, meteorController.debugEventDurationSeconds -
                     meteorController.debugEventElapsedSeconds)
                 : 0f;
-            if (statusText != null)
-                statusText.text = "EVENT: " + meteorController.debugEventMode +
+            string remainingEnglish = playing ? "   REMAIN: " + Mathf.CeilToInt(remaining) + "s" : "";
+            string remainingJapanese = playing ? "   残り: " + Mathf.CeilToInt(remaining) + "秒" : "";
+            if (englishStatusText != null)
+                englishStatusText.text = "EVENT: " + meteorController.debugEventMode +
                     "   SHOWER: " + shower + "\nVISIBLE: " +
-                    meteorController.debugVisibleMeteorCount +
-                    (playing ? "   REMAIN: " + Mathf.CeilToInt(remaining) + "s" : "");
-            if (playStopLabel != null)
-                playStopLabel.text = playing ? "STOP EVENT" : "PLAY CURRENT";
+                    meteorController.debugVisibleMeteorCount + remainingEnglish;
+            if (japaneseStatusText != null)
+                japaneseStatusText.text = "状態: " + TranslateMode(meteorController.debugEventMode) +
+                    "   流星群: " + shower + "\n表示中: " +
+                    meteorController.debugVisibleMeteorCount + remainingJapanese;
+            if (englishPlayStopLabel != null)
+                englishPlayStopLabel.text = playing ? "STOP EVENT" : "PLAY CURRENT";
+            if (japanesePlayStopLabel != null)
+                japanesePlayStopLabel.text = playing ? "イベント停止" : "現在を再生";
+        }
+
+        private string TranslateMode(string mode)
+        {
+            if (mode == "FORCED") return "強制";
+            if (mode == "NATURAL") return "自然";
+            return "待機";
         }
     }
 }

@@ -32,6 +32,7 @@ NIGHT_SKY_SHADER = ROOT / "Assets/StargazingHill/Shaders/NightSkyGradient.shader
 DEBUG_PANEL_STATUS = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelStatus.cs"
 INFO_LANGUAGE_TOGGLE = ROOT / "Assets/StargazingHill/Scripts/WorldInfoLanguageToggle.cs"
 PRESENCE_BOARD = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceBoard.cs"
+PRESENCE_SCROLL = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceHistoryScrollButton.cs"
 INFO_PANEL_INSTALLER = ROOT / "Assets/StargazingHill/Editor/WorldInformationPanelInstaller.cs"
 QUALITY_SETTINGS = ROOT / "ProjectSettings/QualitySettings.asset"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
@@ -276,16 +277,41 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     debug_status = DEBUG_PANEL_STATUS.read_text(encoding="utf-8")
     info_toggle = INFO_LANGUAGE_TOGGLE.read_text(encoding="utf-8")
     presence_board = PRESENCE_BOARD.read_text(encoding="utf-8")
+    presence_scroll = PRESENCE_SCROLL.read_text(encoding="utf-8")
     info_installer = INFO_PANEL_INSTALLER.read_text(encoding="utf-8")
     assert "debugEventPlaying" in debug_status
     assert "PLAY CURRENT" in debug_status and "STOP EVENT" in debug_status
+    assert "現在を再生" in debug_status and "イベント停止" in debug_status
+    assert "japaneseStatusText" in debug_status and "englishStatusText" in debug_status
+    assert 'new GameObject("JapaneseLabels")' in installer
+    assert 'new GameObject("EnglishLabels")' in installer
+    assert 'UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(languageButton)' in installer
+    assert 'CreateUiText(panel.transform, "ENGLISH"' in installer
     assert "private void ApplyLanguage()" in info_toggle
     assert "_english = !_english;" in info_toggle
     assert "VRCPlayerApi.GetPlayerCount()" in presence_board
+    assert "DefaultMaximumCapacity = 80" in presence_board
+    assert "DefaultRecommendedCapacity = 40" in presence_board
+    assert "DefaultHistoryCapacity = 40" in presence_board
+    assert "DefaultVisibleHistoryCount = 20" in presence_board
+    assert 'PlatformDataKey = "StargazingHill.Platform.v1"' in presence_board
+    assert "PlayerData.SetInt(PlatformDataKey, LocalPlatform)" in presence_board
+    assert "PlayerData.TryGetInt(player, PlatformDataKey" in presence_board
+    assert "#if UNITY_ANDROID || UNITY_IOS" in presence_board
+    assert "#elif UNITY_STANDALONE_WIN" in presence_board
+    assert "public void ScrollHistoryNewer()" in presence_board
+    assert "public void ScrollHistoryOlder()" in presence_board
+    assert "presenceBoard.ScrollHistoryOlder()" in presence_scroll
+    assert '"\\nRECOMMENDED  " + recommendedCapacity' in presence_board
     assert "public override void OnPlayerJoined" in presence_board
     assert "public override void OnPlayerLeft" in presence_board
     assert 'PanelName = "WorldInformationPanel"' in info_installer
     assert "DestroyImmediate(sheet.GetComponent<Collider>())" in info_installer
+    assert "new Vector3(1.72f, 0.98f, -0.0125f)" in info_installer
+    assert "presence.historyCapacity = WorldPresenceBoard.DefaultHistoryCapacity" in info_installer
+    assert "presence.visibleHistoryCount = WorldPresenceBoard.DefaultVisibleHistoryCount" in info_installer
+    assert 'new GameObject("PlatformLaptopIcon")' in info_installer
+    assert 'new GameObject("PlatformMobileIcon")' in info_installer
 
 
 def validate_sky_reference() -> None:

@@ -139,11 +139,31 @@ namespace StargazingHill.Editor
 
             CreateThinBoard(panel.transform, boardMaterial);
             ConfigurePickup(panel);
-            CreateText(panel.transform, "METEOR DEBUG", new Vector3(0f, 0.885f, -0.022f), 0.100f, TextAnchor.MiddleCenter);
-            CreateText(panel.transform, "FORCED " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+            GameObject japaneseLabels = new GameObject("JapaneseLabels");
+            japaneseLabels.transform.SetParent(panel.transform, false);
+            GameObject englishLabels = new GameObject("EnglishLabels");
+            englishLabels.transform.SetParent(panel.transform, false);
+            englishLabels.SetActive(false);
+
+            CreateUiText(japaneseLabels.transform, "流星デバッグ", new Vector3(-0.12f, 0.885f, -0.022f),
+                0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(englishLabels.transform, "METEOR DEBUG", new Vector3(-0.12f, 0.885f, -0.022f),
+                0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(japaneseLabels.transform,
+                "強制 " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+                "秒 / 現在を再生 " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "秒 / ローカルのみ",
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            CreateUiText(englishLabels.transform,
+                "FORCED " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
                 "s / REPLAY CURRENT " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "s / LOCAL ONLY",
-                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter);
-            Text statusText = WorldInformationPanelInstaller.CreateText(panel.transform,
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            Text japaneseStatusText = CreateUiText(japaneseLabels.transform,
+                "状態: 待機   流星群: -\n表示中: 0",
+                new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
+            Text englishStatusText = CreateUiText(englishLabels.transform,
                 "EVENT: IDLE   SHOWER: -\nVISIBLE: 0",
                 new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
                 dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
@@ -153,6 +173,12 @@ namespace StargazingHill.Editor
                 "QUADRANTIDS", "LYRIDS", "ETA AQUARIIDS", "S DELTA AQUARIIDS",
                 "PERSEIDS", "DRACONIDS", "ORIONIDS", "S TAURIDS",
                 "N TAURIDS", "LEONIDS", "GEMINIDS"
+            };
+            string[] japaneseShowerLabels =
+            {
+                "しぶんぎ座", "こと座", "みずがめ座η", "みずがめ座δ南",
+                "ペルセウス座", "りゅう座", "オリオン座", "おうし座南",
+                "おうし座北", "しし座", "ふたご座"
             };
 
             // Eleven showers over six two-column rows. The last row is half empty on purpose: it separates
@@ -164,39 +190,87 @@ namespace StargazingHill.Editor
             {
                 float x = index % 2 == 0 ? -ColumnOffset : ColumnOffset;
                 float y = startY - (index / 2) * rowStep;
-                CreateActionButton(panel.transform, labels[index], new Vector3(x, y, -0.012f),
+                GameObject showerButton = CreateActionButton(panel.transform, labels[index], new Vector3(x, y, -0.012f),
                     wideButton, buttonMaterial,
                     WorldDebugPanelButton.ActionForcedShower, index, panel, meteor, sky);
+                RemoveStaticLabel(showerButton);
+                float labelHeight = FitLabelHeight(labels[index], wideButton.x * 0.88f, wideButton.y * 0.52f);
+                CreateUiText(englishLabels.transform, labels[index], new Vector3(x, y, -0.022f),
+                    labelHeight, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+                CreateUiText(japaneseLabels.transform, japaneseShowerLabels[index], new Vector3(x, y, -0.022f),
+                    labelHeight, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
             }
 
             const float controlY = -0.675f;
             GameObject playStop = CreateActionButton(panel.transform, "PLAY CURRENT",
                 new Vector3(0f, controlY, -0.012f), new Vector3(2.11f, ButtonHeight, 0.006f), dangerMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
-            Transform staticPlayStopLabel = playStop.transform.Find("Label");
-            if (staticPlayStopLabel != null) UnityEngine.Object.DestroyImmediate(staticPlayStopLabel.gameObject);
-            Text playStopLabel = WorldInformationPanelInstaller.CreateText(playStop.transform,
-                "PLAY CURRENT", new Vector3(0f, 0f, -0.53f), 0.070f, TextAnchor.MiddleCenter,
-                dynamicFont, dynamicTextMaterial, Color.white, true);
+            RemoveStaticLabel(playStop);
+            Text japanesePlayStopLabel = CreateUiText(japaneseLabels.transform,
+                "現在を再生", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            Text englishPlayStopLabel = CreateUiText(englishLabels.transform,
+                "PLAY CURRENT", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
 
             WorldDebugPanelStatus status = UdonSharpUndo.AddComponent<WorldDebugPanelStatus>(panel);
             status.meteorController = meteor;
-            status.statusText = statusText;
-            status.playStopLabel = playStopLabel;
-            UdonSharpEditorUtility.CopyProxyToUdon(status);
-            EditorUtility.SetDirty(status);
+            status.japaneseStatusText = japaneseStatusText;
+            status.englishStatusText = englishStatusText;
+            status.japanesePlayStopLabel = japanesePlayStopLabel;
+            status.englishPlayStopLabel = englishPlayStopLabel;
 
             const float skyY = -0.865f;
             Vector3 skyButton = new Vector3(0.66f, ButtonHeight, 0.006f);
-            CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.72f, skyY, -0.012f),
+            GameObject skyMinus = CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.72f, skyY, -0.012f),
                 skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyMinusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, skyY, -0.012f),
+            GameObject skyPlus = CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, skyY, -0.012f),
                 skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyPlusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.72f, skyY, -0.012f),
+            GameObject skyReset = CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.72f, skyY, -0.012f),
                 skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyReset, 0, panel, meteor, sky);
+            RemoveStaticLabel(skyMinus);
+            RemoveStaticLabel(skyPlus);
+            RemoveStaticLabel(skyReset);
+            CreateUiText(englishLabels.transform, "SKY -1H", new Vector3(-0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(englishLabels.transform, "SKY +1H", new Vector3(0f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(englishLabels.transform, "SKY RESET", new Vector3(0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(japaneseLabels.transform, "空 -1時間", new Vector3(-0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(japaneseLabels.transform, "空 +1時間", new Vector3(0f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(japaneseLabels.transform, "空 リセット", new Vector3(0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+
+            GameObject languageButton = CreatePrimitive("LanguageToggle", panel.transform, buttonMaterial,
+                new Vector3(0.94f, 0.89f, -0.012f), Quaternion.identity,
+                new Vector3(0.32f, 0.12f, 0.006f));
+            BoxCollider languageCollider = languageButton.GetComponent<BoxCollider>();
+            if (languageCollider != null) languageCollider.isTrigger = true;
+            Text languageLabel = CreateUiText(panel.transform, "ENGLISH",
+                new Vector3(0.94f, 0.89f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            WorldInfoLanguageToggle languageToggle = UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(languageButton);
+            languageToggle.japaneseText = japaneseLabels;
+            languageToggle.englishText = englishLabels;
+            languageToggle.buttonLabel = languageLabel;
+            UdonSharpEditorUtility.CopyProxyToUdon(languageToggle);
+            UdonBehaviour languageBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(languageToggle);
+            if (languageBacking != null)
+            {
+                languageBacking.InteractionText = "日本語 / English";
+                languageBacking.proximity = 2.5f;
+                EditorUtility.SetDirty(languageBacking);
+            }
+            EditorUtility.SetDirty(languageToggle);
+
+            UdonSharpEditorUtility.CopyProxyToUdon(status);
+            EditorUtility.SetDirty(status);
 
             // Toggle stays outside panelRoot so it remains usable while the panel is hidden.
             GameObject toggle = CreatePrimitive(ToggleObjectName, null, buttonMaterial,
@@ -204,8 +278,8 @@ namespace StargazingHill.Editor
             SceneManager.MoveGameObjectToScene(toggle, scene);
             ConfigureButton(toggle, WorldDebugPanelButton.ActionTogglePanel, 0, panel, meteor, sky,
                 "Toggle meteor debug panel");
-            CreateText(toggle.transform, "DEBUG ON / OFF", new Vector3(0f, 0f, -0.53f),
-                FitLabelHeight("DEBUG ON / OFF", 0.30f * 0.88f, 0.10f * 0.52f),
+            CreateText(toggle.transform, "DEBUG", new Vector3(0f, 0f, -0.53f),
+                FitLabelHeight("DEBUG", 0.30f * 0.88f, 0.10f * 0.52f),
                 TextAnchor.MiddleCenter, true);
 
             panel.SetActive(false);
@@ -272,6 +346,27 @@ namespace StargazingHill.Editor
                 FitLabelHeight(label, localScale.x * 0.88f, localScale.y * 0.52f),
                 TextAnchor.MiddleCenter, true);
             return button;
+        }
+
+        private static void RemoveStaticLabel(GameObject button)
+        {
+            Transform label = button.transform.Find("Label");
+            if (label != null) UnityEngine.Object.DestroyImmediate(label.gameObject);
+        }
+
+        private static Text CreateUiText(Transform parent, string value, Vector3 position, float height,
+            TextAnchor anchor, Font font, Material material)
+        {
+            return CreateUiText(parent, value, position, height, anchor, font, material, Color.white);
+        }
+
+        private static Text CreateUiText(Transform parent, string value, Vector3 position, float height,
+            TextAnchor anchor, Font font, Material material, Color color)
+        {
+            Text text = WorldInformationPanelInstaller.CreateText(parent, value, position, height,
+                anchor, font, material, color);
+            text.raycastTarget = false;
+            return text;
         }
 
         /// <summary>

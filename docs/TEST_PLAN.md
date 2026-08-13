@@ -333,3 +333,18 @@
 | Debug panel描画 | Pass | 正面・近接・広角の3枚を1280×720描画。状態表示、11群、単一再生／停止ボタン、sky操作に欠け・重なり・鏡文字なし |
 | Quest / Android再upload | Open | 新しいbuildで4リスト15曲、AutoPlay、UnyStylus線、説明UI、地面端、夜空階調を実機確認する |
 | iOS再upload | Open | GLES3/Metal shader、説明UI、動画/音声、夜空階調を実機確認する |
+
+## 2026-08-13 説明パネルのちらつき・定員表示修正
+
+- 発端: VRChat実機で言語切替ボタンがちらつき、人数表示が旧値32のままだった
+- 原因: ボタン表面とパネル表面が同じ深度 `-0.020m` でz-fightingしていた。最大人数はSDK upload panelのremote metadataであり、Udon runtime APIは現在人数だけを公開する
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| z-fighting修正 | Pass | 言語ボタン表面をパネルより2mm手前へ移動し、Unity正面描画で欠け・重なりなし。VRChat実機のちらつき再確認はOpen |
+| 現在人数 | Confirmed | `VRCPlayerApi.GetPlayerCount()`でinstance内の実人数を更新 |
+| 最大・推奨人数 | Confirmed | 表示用正本を最大80・推奨40へ更新。Udonからupload metadataを直接取得できないためbuild時にserialized値として保存 |
+| 入退室履歴 | Pending Evidence | ローカル保持40件、表示20件へ拡張。新しい／古い履歴ボタンで1件ずつスクロールする。40件充足時の可読性とスクロール操作をVRChat実機で確認する |
+| PC / Mobile内訳 | Pending Evidence | 各local clientがUnity platform defineで自己判定し、PlayerDataで同期。Laptop / Smartphoneアイコン付きでPC / Mobile / WAITINGを集計。PC・Android・iOS混在実機で再確認する |
+| ローカル自動検証 | Pass | `Tools/Run-LocalChecks.ps1 -SkipBuild`: static validation、UdonSharp program assets、Scene validation、sky/meteor testsの全項目Pass |
+| デバッグパネル日英切替 | Pass | 既定日本語。タイトル、説明、動的状態、11群、再生/停止、sky操作を右上ボタンでローカル英語切替。日本語3視点と英語正面の1280×720描画で欠け・重なりなし。VRChat実機操作はOpen |

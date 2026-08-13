@@ -145,7 +145,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - デバッグ専用プレビューでは主要11群から任意の1群を選び、活動期・放射点高度に関係なく25秒間20本をローカル再生できる。時間は `MeteorController.DebugForcedPreviewDurationSeconds` で自然イベントと別に調整し、各5秒waveの最低1本を開始時の視線正面へ配置する
 - 星は+1時間のローカルoffsetとresetで移動を目視比較でき、自動試験でも回転差を検証する
 - ワールド内デバッグパネルは約0.47 × 0.41mのローカル専用Pickupとし、ドロップ後 `WorldDebugPanelPickup.ReturnDelaySeconds`（初期値10秒）で初期位置へ戻す。復帰待ち中の再取得は古い復帰要求を取り消す
-- デバッグパネルは現在のイベント状態、群ID、表示中の流星数を常時表示する。現在条件ボタンは停止中に `PLAY CURRENT`、再生中に `STOP EVENT` と表示を切り替える。自然イベントを停止した場合は同じhour Event IDをその時刻内で再開しない
+- デバッグパネルは現在のイベント状態、群ID、表示中の流星数を常時表示する。既定表示は日本語とし、右上のツライチボタンで各ユーザーがローカルに日本語 / Englishを切り替える。現在条件ボタンは停止中に「現在を再生」 / `PLAY CURRENT`、再生中に「イベント停止」 / `STOP EVENT` と表示を切り替える。自然イベントを停止した場合は同じhour Event IDをその時刻内で再開しない
 
 ## 8. 動画プレイヤー
 
@@ -186,7 +186,9 @@ QvPenは公式VPM依存として復元する。UnyStylus本体は購入者向け
 
 動画プレイヤーの隣に同程度の大きさの説明パネルを置く。パネル本体にはColliderを付けず、面と同一平面に見える言語切替ボタンだけをInteract対象とする。本文は日本語を初期表示とし、ボタンでローカルに英語へ切り替える。
 
-同じパネルへ現在人数 `ONLINE n / 32` と、ローカルクライアントが観測した直近7件の入退室履歴を表示する。履歴は個人名を外部保存・永続化・ネットワーク同期しない。
+同じパネルへ現在人数 `ONLINE n / 80`、推奨人数 `RECOMMENDED 40` と、ローカルクライアントが観測した直近40件の入退室履歴を表示する。履歴は一度に最大20件を表示し、パネル右端の新しい／古い履歴ボタンで1件ずつスクロールする。新しい入退室を受信したときは最新位置へ戻す。現在人数はUdonの `VRCPlayerApi.GetPlayerCount()` から取得する。最大・推奨人数はVRChat SDKのupload設定からruntime Udonへ公開されないため、`WorldPresenceBoard.DefaultMaximumCapacity` / `DefaultRecommendedCapacity` を表示用の正本としてSceneへ焼き込む。履歴は個人名を外部保存・永続化・ネットワーク同期しない。
+
+PCとMobile（Android / iOS）の人数内訳は、各クライアントがビルド対象のUnity platform defineから自身をPC / Mobileの2分類で判定し、`PlayerData` の整数値として自動同期する。受信済みの値を全player分集計し、Laptop / Smartphoneの図形アイコンとともに表示する。未受信者は `WAITING` として合計人数との差を明示する。Android VRもAndroid buildであるためMobileへ数え、`IsUserInVR()` を端末OSの判定には用いない（根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRChat Player API](https://creators.vrchat.com/worlds/udon/players/)、確認日 2026-08-13、VRChat Worlds SDK 3.10.4）。
 
 ### 9.2 プレイヤー移動
 
