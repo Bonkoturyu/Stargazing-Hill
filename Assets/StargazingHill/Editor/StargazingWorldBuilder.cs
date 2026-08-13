@@ -445,6 +445,47 @@ namespace StargazingHill.Editor
             RenderCameraToPng(camera, "stargazing-hill-tree-junction.png");
         }
 
+        /// <summary>
+        /// Renders the debug panel head on. ValidateDebugPanelLayout proves the labels fit their buttons,
+        /// but only a render shows whether the result is actually readable, so this exists to be looked at.
+        /// Run without -nographics.
+        /// </summary>
+        public static void RenderDebugPanelPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+
+            GameObject panel = null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int index = 0; index < roots.Length; index++)
+                if (roots[index].name == "VRDebugPanel") panel = roots[index];
+            if (panel == null)
+                throw new InvalidOperationException("VR debug panel root is missing from the scene.");
+
+            bool wasActive = panel.activeSelf;
+            panel.SetActive(true);
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
+            // Labels face the panel's -Z, so a reader stands on that side of the board.
+            Vector3 viewing = -panel.transform.forward;
+
+            camera.transform.position = panel.transform.position + viewing * 2.05f;
+            camera.transform.LookAt(panel.transform.position);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel.png");
+
+            Vector3 gridCentre = panel.transform.position + panel.transform.up * 0.32f;
+            camera.transform.position = gridCentre + viewing * 0.95f;
+            camera.transform.LookAt(gridCentre);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-grid.png");
+
+            // Wide enough to include the toggle and the drawing tools it sits among.
+            Vector3 surroundings = panel.transform.position + panel.transform.right * 0.85f;
+            camera.transform.position = surroundings + viewing * 4.2f + Vector3.up * 0.6f;
+            camera.transform.LookAt(surroundings);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-wide.png");
+
+            panel.SetActive(wasActive);
+        }
+
         public static void RenderMeteorDebugPreviewForBatchMode()
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -1516,6 +1557,7 @@ namespace StargazingHill.Editor
                     throw new InvalidOperationException(
                         "VR debug panel button has no backing Udon behaviour: " + debugButtons[index].name);
             }
+            ValidateDebugPanelLayout(scene);
             GameObject qvPen = GameObject.Find("World/DrawingSystem/QvPen");
             GameObject unyStylus = GameObject.Find("World/DrawingSystem/UnyStylus");
             if (qvPen == null || unyStylus == null)
@@ -1588,6 +1630,169 @@ namespace StargazingHill.Editor
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The debug panel is laid out by hand in panel-local units, where two mistakes are invisible to
+        /// every other check here: two buttons landing on the same slot, and labels sized past the board.
+        /// TextMesh scales by characterSize * fontSize / 10, so a label's true size is only knowable from
+        /// the mesh it generates - this reads that mesh instead of repeating the installer's estimate.
+        /// </summary>
+        private static void ValidateDebugPanelLayout(Scene scene)
+        {
+            GameObject panel = null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int index = 0; index < roots.Length; index++)
+                if (roots[index].name == "VRDebugPanel") panel = roots[index];
+            if (panel == null)
+                throw new InvalidOperationException("VR debug panel root is missing from the scene.");
+
+            Transform sheet = panel.transform.Find("PanelSheet");
+            if (sheet == null)
+                throw new InvalidOperationException("VR debug panel board is missing.");
+            float halfWidth = sheet.localScale.x * 0.5f;
+            float halfHeight = sheet.localScale.y * 0.5f;
+
+            var placed = new List<KeyValuePair<string, Rect>>();
+            foreach (WorldDebugPanelButton button in panel.GetComponentsInChildren<WorldDebugPanelButton>(true))
+            {
+                Transform t = button.transform;
+                var rect = new Rect(
+                    t.localPosition.x - t.localScale.x * 0.5f,
+                    t.localPosition.y - t.localScale.y * 0.5f,
+                    t.localScale.x, t.localScale.y);
+                for (int index = 0; index < placed.Count; index++)
+                {
+                    if (placed[index].Value.Overlaps(rect))
+                        throw new InvalidOperationException("VR debug panel buttons share a slot: " +
+                                                           placed[index].Key + " and " + button.name + ".");
+                }
+                if (rect.xMin < -halfWidth || rect.xMax > halfWidth ||
+                    rect.yMin < -halfHeight || rect.yMax > halfHeight)
+                    throw new InvalidOperationException(
+                        "VR debug panel button leaves the board: " + button.name + " " + rect + ".");
+                placed.Add(new KeyValuePair<string, Rect>(button.name, rect));
+            }
+
+            bool measuredFromMesh = false;
+            float tightestFace = 0f;
+            string tightestLabel = "none";
+            foreach (TextMesh label in panel.GetComponentsInChildren<TextMesh>(true))
+            {
+                Renderer renderer = label.GetComponent<Renderer>();
+                if (renderer == null)
+                    throw new InvalidOperationException("VR debug panel label has no renderer: " + label.text);
+
+                // TextMesh reads from its own -Z. Every label sits on the panel's -Z face, so a label facing
+                // the other way renders mirrored and is only readable from behind the board.
+                if (Vector3.Dot(label.transform.forward, panel.transform.forward) < 0.99f)
+                    throw new InvalidOperationException(
+                        "VR debug panel label \"" + label.text + "\" faces away from the board's reading side.");
+
+                // A TextMesh only builds its mesh when it first renders. That happens during a build, where
+                // the panel is created in a live scene, but never in a -nographics validate-only run against
+                // a scene loaded from disk. Measure the real mesh when it exists and fall back to the size
+                // the serialized fields imply otherwise: characterSize * fontSize / 10 metres per line.
+                Bounds mesh = renderer.localBounds;
+                if (mesh.size.x > 0f && mesh.size.y > 0f) measuredFromMesh = true;
+                else
+                {
+                    float nominal = label.characterSize * label.fontSize / 10f;
+                    int characters = label.text == null ? 0 : label.text.Length;
+                    mesh = new Bounds(Vector3.zero,
+                        new Vector3(characters * 0.68f * nominal, nominal * 1.2f, 0f));
+                }
+
+                float minX = float.MaxValue, maxX = float.MinValue;
+                float minY = float.MaxValue, maxY = float.MinValue;
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    Vector3 local = new Vector3(
+                        (corner & 1) == 0 ? mesh.min.x : mesh.max.x,
+                        (corner & 2) == 0 ? mesh.min.y : mesh.max.y,
+                        mesh.center.z);
+                    Vector3 onPanel = panel.transform.InverseTransformPoint(
+                        label.transform.TransformPoint(local));
+                    minX = Mathf.Min(minX, onPanel.x);
+                    maxX = Mathf.Max(maxX, onPanel.x);
+                    minY = Mathf.Min(minY, onPanel.y);
+                    maxY = Mathf.Max(maxY, onPanel.y);
+                }
+
+                if (minX < -halfWidth || maxX > halfWidth || minY < -halfHeight || maxY > halfHeight)
+                    throw new InvalidOperationException(
+                        "VR debug panel label \"" + label.text + "\" does not fit the board: x [" +
+                        minX.ToString("F3") + ", " + maxX.ToString("F3") + "] y [" +
+                        minY.ToString("F3") + ", " + maxY.ToString("F3") + "] against half extents " +
+                        halfWidth.ToString("F3") + " / " + halfHeight.ToString("F3") + ".");
+
+                // A label that fits the board can still run past its own button and into the neighbour, so
+                // button labels are measured against the button face as well. Buttons are unit cubes, so the
+                // face is +/-0.5 in the parent's space.
+                Transform button = label.transform.parent;
+                if (button == null || button.GetComponent<WorldDebugPanelButton>() == null) continue;
+                Matrix4x4 toButton = Matrix4x4.TRS(
+                    label.transform.localPosition, label.transform.localRotation, label.transform.localScale);
+                float faceMinX = float.MaxValue, faceMaxX = float.MinValue;
+                float faceMinY = float.MaxValue, faceMaxY = float.MinValue;
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    Vector3 onFace = toButton.MultiplyPoint3x4(new Vector3(
+                        (corner & 1) == 0 ? mesh.min.x : mesh.max.x,
+                        (corner & 2) == 0 ? mesh.min.y : mesh.max.y,
+                        mesh.center.z));
+                    faceMinX = Mathf.Min(faceMinX, onFace.x);
+                    faceMaxX = Mathf.Max(faceMaxX, onFace.x);
+                    faceMinY = Mathf.Min(faceMinY, onFace.y);
+                    faceMaxY = Mathf.Max(faceMaxY, onFace.y);
+                }
+                if (faceMinX < -0.5f || faceMaxX > 0.5f || faceMinY < -0.5f || faceMaxY > 0.5f)
+                    throw new InvalidOperationException(
+                        "VR debug panel label \"" + label.text + "\" overflows button " + button.name +
+                        ": x [" + faceMinX.ToString("F3") + ", " + faceMaxX.ToString("F3") + "] y [" +
+                        faceMinY.ToString("F3") + ", " + faceMaxY.ToString("F3") + "] against +/-0.5.");
+
+                float used = Mathf.Max(Mathf.Abs(faceMinX), faceMaxX, Mathf.Abs(faceMinY), faceMaxY) / 0.5f;
+                if (used > tightestFace)
+                {
+                    tightestFace = used;
+                    tightestLabel = label.text;
+                }
+            }
+
+            // The toggle deliberately lives outside the panel root so it still works while the panel is
+            // hidden, which also means nothing stops it being parked in front of the board.
+            GameObject toggle = null;
+            for (int index = 0; index < roots.Length; index++)
+                if (roots[index].name == "VRDebugPanelToggle") toggle = roots[index];
+            if (toggle == null)
+                throw new InvalidOperationException("VR debug panel toggle is missing from the scene.");
+
+            Vector3 togglePoint = panel.transform.InverseTransformPoint(toggle.transform.position);
+            Vector3 toggleHalf = toggle.transform.localScale * 0.5f;
+            if (togglePoint.z < 0f &&
+                Mathf.Abs(togglePoint.x) < halfWidth + toggleHalf.x &&
+                Mathf.Abs(togglePoint.y) < halfHeight + toggleHalf.y)
+                throw new InvalidOperationException(
+                    "VR debug panel toggle blocks the board's reading face at panel-space " +
+                    togglePoint.ToString("F3") + "; move it clear of +/-" +
+                    (halfWidth + toggleHalf.x).ToString("F3") + " in x or +/-" +
+                    (halfHeight + toggleHalf.y).ToString("F3") + " in y.");
+
+            // The board hangs from a hand-picked world position, so nothing otherwise stops its lowest row
+            // of buttons from sitting in the grass where they cannot be read or pressed.
+            float ground = EvaluateTerrainHeight(panel.transform.position.x, panel.transform.position.z);
+            float boardBottom = panel.transform.position.y - halfHeight;
+            if (boardBottom < ground + 0.05f)
+                throw new InvalidOperationException(
+                    "VR debug panel board reaches the ground: bottom edge at y=" + boardBottom.ToString("F3") +
+                    " against terrain y=" + ground.ToString("F3") + " at the panel.");
+
+            Debug.Log("[Stargazing Hill] VR debug panel layout validated: " + placed.Count + " buttons, label sizes " +
+                      (measuredFromMesh ? "measured from generated meshes" : "derived from serialized TextMesh fields") +
+                      ", tightest fit \"" + tightestLabel + "\" at " +
+                      (tightestFace * 100f).ToString("F0") + "% of its button face, board bottom " +
+                      (boardBottom - ground).ToString("F2") + "m above ground.");
         }
 
         private static void ValidateWalkableSurface(Transform spawn)

@@ -225,3 +225,36 @@
 | 強制プレビューの退行検出 | Pass | 導入直後に `TestSkyAndMeteorForBatchMode` の失敗を検出（`visible=False`）。PR #16 がonset式を `0.35+slot*0.88` から `(slot+0.5)*slotSpacing+jitter` へ変更した結果、slot 0のonsetが0.625±0.28秒となり、強制プレビュー開始点0.75秒より後になる場合に流星が1本も出なかった。強制プレビューのみ旧onset式へ戻し、自然イベントのPR #16 スケジューリングは維持 |
 | Test Runner統合 | Open | テスト用asmdefから `Assembly-CSharp-Editor` を参照できないため、EditModeテスト化にはプロジェクトのasmdef分割が要る。BACKLOG `Later` へ記録 |
 | CI側でのUnity実行 | Open | ライセンスと実行時間の都合で未導入。実行枠が使えるときは現行のPython検証がCIで走る |
+
+## 2026-08-13 VRデバッグパネルのレイアウト修正と幾何検査
+
+- 要求: 実機でパネルを表示したところ、ラベルが板からはみ出し互いに重なっていた
+- 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4
+
+`TextMesh` の実寸は `characterSize × fontSize ÷ 10` メートルである。`WorldDebugPanelInstaller` は `fontSize = 64` のまま `characterSize` にメートル値を直接渡していたため、全ラベルが6.4倍で描画されていた。既存の検査はいずれもこれを見られない — Python検証はソース文字列を読むだけ、`StargazingChecks` はprogram assetの有無だけ、`ValidateScene` はボタン数と backing Udon behaviour だけを見ていた。
+
+| 欠陥 | 内容 | 発見手段 |
+|---|---|---|
+| ラベル6.4倍 | `characterSize` にメートル値を直接代入。`METEOR DEBUG` が幅約4.4m（板幅2.35m） | ユーザーのスクリーンショット |
+| ボタン重複 | `GEMINIDS`（index 10 → row 5 / column 0）と `STOP` が共に `(-0.57, -0.655)` | 座標の再計算 |
+| ラベル鏡文字 | ラベルの `localRotation` が `Euler(0,180,0)`。`TextMesh` は自身の -Z から読めるため、可読面が板の裏側になっていた | バッチレンダリング |
+| トグルの遮蔽 | `VRDebugPanelToggle` がパネル座標系 `(-0.39, -0.39, -0.85)`、板の手前かつシルエット内側で `STOP` を完全に隠していた | バッチレンダリング |
+
+`StargazingWorldBuilder.ValidateDebugPanelLayout()` を `ValidateScene` へ追加した。
+
+| 検査 | 方式 |
+|---|---|
+| ボタン同士の重なり・板からのはみ出し | パネルローカルの矩形演算 |
+| ラベルの向き | `dot(label.forward, panel.forward) ≥ 0.99` |
+| ラベルが板・ボタン面に収まるか | `Renderer.localBounds` の4隅をパネル空間／ボタン空間へ変換 |
+| トグルが板の可読面を塞いでいないか | トグル中心をパネル空間へ射影し、`z < 0` かつ板矩形内なら失敗 |
+| 板下端の地面クリアランス | `EvaluateTerrainHeight` と比較し 0.05m 以上 |
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 全検査の通過 | Pass | ローカル5検査すべてPass |
+| ラベル実寸の測定 | Pass | ビルド経路では生成メッシュを実測。最も余裕がないのは `REPLAY CURRENT 3 MIN` でボタン面の78% |
+| 検証のみ経路のフォールバック | Pass | `TextMesh` は初回描画時にしかメッシュを生成せず、ディスクから読んだSceneを `-nographics` で検証する経路では実測できない。serialized値から `characterSize × fontSize ÷ 10`、字送り0.68で保守的に算出（同条件で `S DELTA AQUARIIDS` 88%）。実測できたかはログに明示する |
+| 目視確認 | Pass | `RenderDebugPanelPreviewForBatchMode`（`-nographics` を付けずに実行）で正面・グリッド近接・広角の3枚を出力し、数値だけで判断しない |
+| 板下端の地面クリアランス | Pass | 0.35m。広角で下部に重なって見えるのはQvPenパレットの手前遮蔽であり、正面からは干渉しない |
+| 実機でのVR可読性・押しやすさ | Open | 描画では確認済みだが、Quest実機での文字可読性とコライダーの押しやすさは未評価 |
