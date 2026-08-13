@@ -20,10 +20,26 @@ namespace StargazingHill.Editor
         private const string PanelObjectName = "VRDebugPanel";
         private const string ToggleObjectName = "VRDebugPanelToggle";
 
+        // TextMesh renders a line at characterSize * fontSize / 10 world units, so a metre-based layout has
+        // to convert rather than assign metres straight to characterSize. The first version did not, and
+        // every label came out 6.4x too large and spilled off the board.
+        private const int LabelFontSize = 64;
+        private const float MetresToCharacterSize = 10f / LabelFontSize;
+        // Upper bound on Arial uppercase advance as a fraction of the nominal line height. Used to size a
+        // label before its mesh exists; StargazingWorldBuilder re-checks the generated mesh for real.
+        private const float AdvancePerCharacter = 0.68f;
+
+        // Panel face is 2.35 x 2.05, so usable half-extents are 1.175 / 1.025 minus a small margin.
+        private const float ButtonWidth = 1.02f;
+        private const float ButtonHeight = 0.15f;
+        private const float ColumnOffset = 0.545f;
+
         // Temporary placement near YamaPlayer / QvPen / UnyStylus. Keep these as the only placement knobs.
         private static readonly Vector3 PanelPosition = new Vector3(-9.65f, 1.42f, -22.05f);
         private static readonly Vector3 PanelEuler = new Vector3(0f, 230f, 0f);
-        private static readonly Vector3 TogglePosition = new Vector3(-8.75f, 1.03f, -21.80f);
+        // Beside the board rather than in front of it. The toggle used to float 0.85m off the panel's
+        // reading face and inside its silhouette, which hid the STOP button whenever the panel was shown.
+        private static readonly Vector3 TogglePosition = new Vector3(-10.743f, 1.12f, -20.748f);
         private static readonly Vector3 ToggleEuler = new Vector3(0f, 230f, 0f);
 
         private static bool _installing;
@@ -115,9 +131,9 @@ namespace StargazingHill.Editor
             SceneManager.MoveGameObjectToScene(panel, scene);
 
             CreateThinBoard(panel.transform, boardMaterial);
-            CreateText(panel.transform, "METEOR DEBUG", new Vector3(0f, 0.67f, -0.022f), 0.085f, TextAnchor.MiddleCenter);
+            CreateText(panel.transform, "METEOR DEBUG", new Vector3(0f, 0.885f, -0.022f), 0.100f, TextAnchor.MiddleCenter);
             CreateText(panel.transform, "FORCED 25s / REPLAY CURRENT 3min / LOCAL ONLY",
-                new Vector3(0f, 0.54f, -0.022f), 0.036f, TextAnchor.MiddleCenter);
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter);
 
             string[] labels =
             {
@@ -126,34 +142,38 @@ namespace StargazingHill.Editor
                 "N TAURIDS", "LEONIDS", "GEMINIDS"
             };
 
-            const float startY = 0.37f;
-            const float rowStep = 0.205f;
+            // Eleven showers over six two-column rows. The last row is half empty on purpose: it separates
+            // the shower grid from the control rows below, which must not share a slot with a shower.
+            const float startY = 0.605f;
+            const float rowStep = 0.19f;
+            Vector3 wideButton = new Vector3(ButtonWidth, ButtonHeight, 0.006f);
             for (int index = 0; index < labels.Length; index++)
             {
-                int column = index % 2;
-                int row = index / 2;
-                float x = column == 0 ? -0.57f : 0.57f;
-                float y = startY - row * rowStep;
+                float x = index % 2 == 0 ? -ColumnOffset : ColumnOffset;
+                float y = startY - (index / 2) * rowStep;
                 CreateActionButton(panel.transform, labels[index], new Vector3(x, y, -0.012f),
-                    new Vector3(1.00f, 0.145f, 0.006f), buttonMaterial,
+                    wideButton, buttonMaterial,
                     WorldDebugPanelButton.ActionForcedShower, index, panel, meteor, sky);
             }
 
-            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(0.57f, -0.655f, -0.012f),
-                new Vector3(1.00f, 0.145f, 0.006f), buttonMaterial,
+            const float controlY = -0.585f;
+            CreateActionButton(panel.transform, "REPLAY CURRENT 3 MIN", new Vector3(ColumnOffset, controlY, -0.012f),
+                wideButton, buttonMaterial,
                 WorldDebugPanelButton.ActionNaturalEvent, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "STOP", new Vector3(-0.57f, -0.655f, -0.012f),
-                new Vector3(1.00f, 0.145f, 0.006f), dangerMaterial,
+            CreateActionButton(panel.transform, "STOP", new Vector3(-ColumnOffset, controlY, -0.012f),
+                wideButton, dangerMaterial,
                 WorldDebugPanelButton.ActionStopMeteor, 0, panel, meteor, sky);
 
-            CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.76f, -0.86f, -0.012f),
-                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
+            const float skyY = -0.795f;
+            Vector3 skyButton = new Vector3(0.66f, ButtonHeight, 0.006f);
+            CreateActionButton(panel.transform, "SKY -1H", new Vector3(-0.72f, skyY, -0.012f),
+                skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyMinusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, -0.86f, -0.012f),
-                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
+            CreateActionButton(panel.transform, "SKY +1H", new Vector3(0f, skyY, -0.012f),
+                skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyPlusHour, 0, panel, meteor, sky);
-            CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.76f, -0.86f, -0.012f),
-                new Vector3(0.64f, 0.145f, 0.006f), buttonMaterial,
+            CreateActionButton(panel.transform, "SKY RESET", new Vector3(0.72f, skyY, -0.012f),
+                skyButton, buttonMaterial,
                 WorldDebugPanelButton.ActionSkyReset, 0, panel, meteor, sky);
 
             // Toggle stays outside panelRoot so it remains usable while the panel is hidden.
@@ -162,7 +182,8 @@ namespace StargazingHill.Editor
             SceneManager.MoveGameObjectToScene(toggle, scene);
             ConfigureButton(toggle, WorldDebugPanelButton.ActionTogglePanel, 0, panel, meteor, sky,
                 "Toggle meteor debug panel");
-            CreateText(toggle.transform, "DEBUG ON / OFF", new Vector3(0f, 0f, -0.53f), 0.055f,
+            CreateText(toggle.transform, "DEBUG ON / OFF", new Vector3(0f, 0f, -0.53f),
+                FitLabelHeight("DEBUG ON / OFF", 0.78f * 0.88f, 0.22f * 0.52f),
                 TextAnchor.MiddleCenter, true);
 
             panel.SetActive(false);
@@ -186,7 +207,18 @@ namespace StargazingHill.Editor
                 localPosition, Quaternion.identity, localScale);
             ConfigureButton(button, action, showerIndex, panelRoot, meteor, sky, label);
             CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f),
-                label.Length > 14 ? 0.032f : 0.043f, TextAnchor.MiddleCenter, true);
+                FitLabelHeight(label, localScale.x * 0.88f, localScale.y * 0.52f),
+                TextAnchor.MiddleCenter, true);
+        }
+
+        /// <summary>
+        /// Largest metre height at which the label still fits inside the button face. Long shower names such
+        /// as "S DELTA AQUARIIDS" are what drive this down; short ones just take the height limit.
+        /// </summary>
+        private static float FitLabelHeight(string label, float widthLimit, float heightLimit)
+        {
+            if (string.IsNullOrEmpty(label)) return heightLimit;
+            return Mathf.Min(heightLimit, widthLimit / (label.Length * AdvancePerCharacter));
         }
 
         private static void ConfigureButton(
@@ -242,14 +274,18 @@ namespace StargazingHill.Editor
             return go;
         }
 
+        /// <param name="heightMetres">Nominal line height in world metres, converted to characterSize here.</param>
         private static TextMesh CreateText(
-            Transform parent, string text, Vector3 localPosition, float characterSize,
+            Transform parent, string text, Vector3 localPosition, float heightMetres,
             TextAnchor anchor, bool compensateParentScale = false)
         {
             GameObject go = new GameObject("Label");
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPosition;
-            go.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            // TextMesh reads from its own -Z, and every label sits just in front of the board on the panel's
+            // -Z face, so the label must keep the panel's orientation. A 180 degree flip here put the
+            // readable side behind the board and rendered every label mirrored.
+            go.transform.localRotation = Quaternion.identity;
             if (compensateParentScale)
             {
                 Vector3 s = parent.localScale;
@@ -263,8 +299,8 @@ namespace StargazingHill.Editor
             mesh.text = text;
             mesh.anchor = anchor;
             mesh.alignment = TextAlignment.Center;
-            mesh.characterSize = characterSize;
-            mesh.fontSize = 64;
+            mesh.characterSize = heightMetres * MetresToCharacterSize;
+            mesh.fontSize = LabelFontSize;
             mesh.color = new Color(0.88f, 0.94f, 1f, 1f);
             return mesh;
         }
