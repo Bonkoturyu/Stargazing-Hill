@@ -30,6 +30,11 @@
 - `Provisional`: Stationは着席設定、`Interact()` からの入場、VRでの退出操作をClientSimと実機で確認する。
 - `Provisional`: World-space Canvasは背景面から十分離し、Z-fightingを実機で確認する。初期目安は0.05m以上。
 - `Provisional`: TMPのフォールバック、モバイル対応Shader、透明描画コストをQuest/iOSで確認する。
+- `Confirmed`: ローカル専用デバッグリモコンは `VRCPickup` と重力なし `Rigidbody` を使い、同期コンポーネントを付けない。ドロップからの復帰待ち中に再取得された場合、古い遅延eventを状態検査で無効化する。詳細は [ADR 0011](adr/0011-local-handheld-debug-panel.md)。
+
+## 配布
+
+- `Confirmed`: 再配布用unitypackageは所有アセットrootを明示列挙し、外部依存を再帰的に含めない。YamaPlayer、QvPen、購入品UnyStylusは配布先で正規経路から復元する。詳細は [ADR 0010](adr/0010-redistributable-unitypackage-boundary.md)。
 
 ## 性能
 

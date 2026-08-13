@@ -142,6 +142,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - Play ModeのEditorメニューから、現在条件の毎時イベントを再生できる
 - デバッグ専用プレビューでは主要11群から任意の1群を選び、活動期・放射点高度に関係なく25秒間20本をローカル再生できる。時間は `MeteorController.DebugForcedPreviewDurationSeconds` で自然イベントと別に調整し、各5秒waveの最低1本を開始時の視線正面へ配置する
 - 星は+1時間のローカルoffsetとresetで移動を目視比較でき、自動試験でも回転差を検証する
+- ワールド内デバッグパネルは約0.47 × 0.41mのローカル専用Pickupとし、ドロップ後 `WorldDebugPanelPickup.ReturnDelaySeconds`（初期値10秒）で初期位置へ戻す。復帰待ち中の再取得は古い復帰要求を取り消す
 
 ## 8. 動画プレイヤー
 

@@ -20,6 +20,9 @@ MOON_SHADER = ROOT / "Assets/StargazingHill/Shaders/Moon.shader"
 OBSERVATORY_PROFILE = ROOT / "Assets/StargazingHill/Settings/TokyoObservatory.asset"
 SHOWER_CATALOG = ROOT / "Assets/StargazingHill/Settings/IMO2026MajorShowers.asset"
 PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
+DEBUG_PANEL_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelPickup.cs"
+PACKAGE_EXPORTER = ROOT / "Assets/StargazingHill/Editor/StargazingUnityPackageExporter.cs"
+PACKAGE_README = ROOT / "Assets/StargazingHill/README_UNITYPACKAGE.md"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
 GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_diff_1k.jpg"
@@ -176,6 +179,48 @@ def validate_environment_and_drawing() -> None:
         "SetGravityStrength(gravityStrength)",
     ):
         assert expected_call in player_settings
+
+
+def validate_redistributable_package_and_debug_pickup() -> None:
+    exporter = PACKAGE_EXPORTER.read_text(encoding="utf-8")
+    assert 'OwnedAssetRoot = "Assets/StargazingHill"' in exporter
+    assert 'BatchOutputPath = "Build/StargazingHill-redistributable.unitypackage"' in exporter
+    assert 'OwnedAssetRoot + "/SourceDownloads/"' in exporter
+    assert "ExportForBatchMode()" in exporter
+    assert "ExportPackageOptions.Default" in exporter
+    assert "IncludeDependencies" not in exporter.replace(
+        "Deliberately omits IncludeDependencies", ""
+    )
+    for forbidden_path in (
+        '"Assets/Rasta/"',
+        '"Packages/net.kwxxw.yama-stream/"',
+        '"Packages/net.ureishi.qvpen/"',
+    ):
+        assert forbidden_path in exporter
+
+    restore_guide = PACKAGE_README.read_text(encoding="utf-8")
+    for dependency in ("YamaPlayer", "QvPen", "UnyStylus"):
+        assert dependency in restore_guide
+
+    pickup = DEBUG_PANEL_PICKUP.read_text(encoding="utf-8")
+    return_delay = re.findall(
+        r"public const float ReturnDelaySeconds = ([0-9]+(?:\.[0-9]+)?)f;", pickup
+    )
+    assert return_delay == ["10"]
+    assert "UdonBehaviourSyncMode(BehaviourSyncMode.None)" in pickup
+    assert "public override void OnPickup()" in pickup
+    assert "public override void OnDrop()" in pickup
+    assert "public void ReturnIfReady()" in pickup
+    assert "_returnPending = false;" in pickup
+
+    builder = BUILDER.read_text(encoding="utf-8")
+    installer = (ROOT / "Assets/StargazingHill/Editor/WorldDebugPanelInstaller.cs").read_text(
+        encoding="utf-8"
+    )
+    assert "EnsureProgramAsset(typeof(WorldDebugPanelPickup)" in builder
+    assert "internal const float PanelScale = 0.20f;" in installer
+    assert "panel.AddComponent<VRCPickup>()" in installer
+    assert "WorldDebugPanelPickup.ReturnDelaySeconds" in builder
 
 
 def validate_sky_reference() -> None:
@@ -429,11 +474,12 @@ def main() -> None:
     validate_catalog()
     validate_yama_dependency_and_rolloff()
     validate_environment_and_drawing()
+    validate_redistributable_package_and_debug_pickup()
     validate_sky_reference()
     print(
         f"OK: {EXPECTED_STAR_COUNT} HYG stars, parameterized observatory, five USNO Moon "
         "references, 11 IMO showers, YamaPlayer, CC0 environment, locomotion, QvPen, "
-        "and UnyStylus references validated"
+        "UnyStylus references, redistributable package boundary, and debug pickup validated"
     )
 
 
