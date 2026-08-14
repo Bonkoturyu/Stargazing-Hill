@@ -30,10 +30,10 @@
 | visibility | GitHub APIで `visibility: public`、`private: false` を確認 | Confirmed |
 | default branch | `main` | Confirmed |
 | branch ruleset | `main` を対象にPR経由、branch削除禁止、non-fast-forward禁止、squash mergeの既存rulesetを `active` 化 | Confirmed |
-| Actions履歴 | Budget/Billingでjob開始前に失敗した `Static validation` run 74件を削除し、失敗run 0件を確認 | Confirmed |
+| Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定 | Confirmed |
 | Dependabot | security updatesを有効化し、open alert 0件を確認 | Confirmed |
 | Secret scanning | Secret scanningとPush protectionを有効化 | Confirmed |
-| CodeQL | Public化後に利用可能だが、Actions Budget/Billing制限解除後の初回実行確認が必要 | Pending Evidence |
+| CodeQL | Public化後に利用可能。設定と初回実行は未実施 | Pending Evidence |
 
 ## Blueprint IDの扱い
 
@@ -51,7 +51,7 @@ VRChat SDKの `VRCPipelineManager` はBlueprint IDをworldの一意なIDとし�
 
 ## 公開後に残る作業
 
-- `Pending Evidence`: GitHub ActionsのBilling/Budget制限解除後に、tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
+- `Pending Evidence`: tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
 - `Pending Evidence`: QvPen upstream packageには明示license fileがないため、本体は今後も追跡・同梱しない。
 - `Pending Evidence`: BOOTH向け初回artifactをclean Unity 2022.3.22f1 projectへimportし、依存復元後の保存Scene validationを行う。
 

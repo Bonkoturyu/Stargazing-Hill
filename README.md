@@ -59,4 +59,4 @@ YamaPlayerのPlaylistはYamaPlayer標準のInspectorにある「プレイリス�
 
 ## GitHub Release
 
-`v*` tagをpushするとGitHub Actionsが再配布用unitypackageを生成・検査し、SHA-256一覧とともにZIP化してReleaseへ添付する。Unity EditorやUnity licenseは不要。YamaPlayer、QvPen、購入品UnyStylusは含まれない。現在ActionがBudget/Billing制限中のため、最初の実行確認は制限解除後に行う。公開前監査は [docs/PUBLIC_RELEASE_AUDIT.md](docs/PUBLIC_RELEASE_AUDIT.md) を参照する。
+`v*` tagをpushするとGitHub Actionsが再配布用unitypackageを生成・検査し、SHA-256一覧とともにZIP化してReleaseへ添付する。Unity EditorやUnity licenseは不要。YamaPlayer、QvPen、購入品UnyStylusは含まれない。Actions runnerの稼働は確認済みで、tagによる最初のRelease実行は `Pending Evidence`。公開監査は [docs/PUBLIC_RELEASE_AUDIT.md](docs/PUBLIC_RELEASE_AUDIT.md) を参照する。

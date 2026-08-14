@@ -56,4 +56,4 @@
 
 ## GitHub Release
 
-推送 `v*` 標籤後，GitHub Actions 會建立並檢查可再散布的 UnityPackage，再將它與 SHA-256 校驗檔一起封裝成 ZIP 並附加到對應的 Release。此流程不需要 Unity Editor 或 Unity 授權，也不包含 YamaPlayer、QvPen 與付費的 UnyStylus 檔案。目前 Actions 受 Budget/Billing 限制，首次實際執行將在限制解除後確認。請參閱[公開前稽核（日文）](docs/PUBLIC_RELEASE_AUDIT.md)。
+推送 `v*` 標籤後，GitHub Actions 會建立並檢查可再散布的 UnityPackage，再將它與 SHA-256 校驗檔一起封裝成 ZIP 並附加到對應的 Release。此流程不需要 Unity Editor 或 Unity 授權，也不包含 YamaPlayer、QvPen 與付費的 UnyStylus 檔案。Actions runner已確認可用；第一次以標籤建立Release仍為 `Pending Evidence`。請參閱[公開稽核（日文）](docs/PUBLIC_RELEASE_AUDIT.md)。

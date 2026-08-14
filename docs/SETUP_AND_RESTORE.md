@@ -91,7 +91,7 @@ tag `v1.2.3` のpush時、`.github/workflows/release-unitypackage.yml` が `Star
 - `StargazingHill-1.2.3.unitypackage`
 - `SHA256SUMS.txt`
 
-手動実行ではGitHub Actionsの **Run workflow** から、既に存在する `v*` tagを `release_tag` に入力する。tagはworkflowを含む既定branch `main` のcommitへ付ける。ActionのBudget/Billing制限が解除されていることを確認する。
+手動実行ではGitHub Actionsの **Run workflow** から、既に存在する `v*` tagを `release_tag` に入力する。tagはworkflowを含む既定branch `main` のcommitへ付ける。実行前にActionsが有効で、Release作成用の `contents: write` がworkflow jobへ限定されていることを確認する。
 
 このCI経路も `Assets/StargazingHill` だけを対象とし、archive検査を通過しなければReleaseを更新しない。YamaPlayer、QvPen、購入品UnyStylusはZIP内のunitypackageに含まれないため、import前に本章冒頭の手順で別途復元する。
 
