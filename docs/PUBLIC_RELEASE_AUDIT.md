@@ -30,7 +30,7 @@
 | visibility | GitHub APIで `visibility: public`、`private: false` を確認 | Confirmed |
 | default branch | `main` | Confirmed |
 | branch ruleset | `main` を対象にPR経由、branch削除禁止、non-fast-forward禁止、squash mergeの既存rulesetを `active` 化 | Confirmed |
-| Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定 | Confirmed |
+| Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定。PR #28のpush / pull request runがともにPass | Confirmed |
 | Dependabot | security updatesを有効化し、open alert 0件を確認 | Confirmed |
 | Secret scanning | Secret scanningとPush protectionを有効化 | Confirmed |
 | CodeQL | Public化後に利用可能。設定と初回実行は未実施 | Pending Evidence |

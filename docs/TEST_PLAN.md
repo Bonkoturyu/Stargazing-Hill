@@ -614,4 +614,4 @@
 | 最新unitypackage生成 | Pass | Unity 2022.3.22f1 batch exportで26,135,648 bytes、118 pathnameを生成。`Validate-UnityPackage.py`がowned root、必須license/NOTICE、外部依存除外を確認 |
 | BOOTH draft ZIP | Pass | `StargazingHill-0.1.0-draft-BOOTH.zip`、25,443,648 bytes。unitypackage、5言語README、LICENSE、NOTICE、SHA256SUMSの5fileを収録。package SHA-256 `0e5ec9b9ea58c24fd21f9de572e1d01f1ddd195464666f59d6c3ddad0880afed` を再計算して一致 |
 | BOOTH clean import | Pending Evidence | 顧客向けZIP内のunitypackageをclean projectへimportし、VPM依存と購入済みUnyStylus復元後に確認する |
-| Static validation Action | Pending Evidence | repositoryのfull-SHA必須方針に合わせ、`actions/checkout`と`actions/setup-python`を公式v6 tagが指すcommit SHAへ固定。PR #28で再実行する |
+| Static validation Action | Pass | repositoryのfull-SHA必須方針に合わせ、`actions/checkout`と`actions/setup-python`を公式v6 tagが指すcommit SHAへ固定。PR #28のpush run `31823686804` とpull request run `31823690056` がともにPass |
