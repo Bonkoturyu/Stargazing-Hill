@@ -56,4 +56,4 @@ Unity `2022.3.22f1`을 사용합니다. Clone을 VRChat Creator Companion에 추
 
 ## GitHub Release
 
-`v*` 태그를 푸시하면 GitHub Actions가 재배포용 UnityPackage를 생성하고 검사한 뒤, SHA-256 체크섬과 함께 ZIP으로 묶어 해당 Release에 첨부합니다. Unity Editor나 Unity 라이선스는 필요하지 않으며 YamaPlayer, QvPen, 유료 UnyStylus 파일은 포함하지 않습니다. 현재 Actions의 Budget/Billing 제한이 있으므로 최초 실제 실행 확인은 제한 해제 후 진행합니다. [공개 전 감사(일본어)](docs/PUBLIC_RELEASE_AUDIT.md)를 참고하세요.
+`v*` 태그를 푸시하면 GitHub Actions가 재배포용 UnityPackage를 생성하고 검사한 뒤, SHA-256 체크섬과 함께 ZIP으로 묶어 해당 Release에 첨부합니다. Unity Editor나 Unity 라이선스는 필요하지 않으며 YamaPlayer, QvPen, 유료 UnyStylus 파일은 포함하지 않습니다. Actions runner 사용 가능 상태는 확인되었고, 태그 기반 첫 Release 실행은 아직 `Pending Evidence`입니다. [공개 감사(일본어)](docs/PUBLIC_RELEASE_AUDIT.md)를 참고하세요.

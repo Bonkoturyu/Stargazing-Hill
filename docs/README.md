@@ -11,6 +11,7 @@
 - [SETUP_AND_RESTORE.md](SETUP_AND_RESTORE.md): クリーンclone、VPM依存、購入品UnyStylusの復元手順
 - [WORLD_DESCRIPTION.md](WORLD_DESCRIPTION.md): VRChat SDKへ貼り付ける日英Descriptionの正本
 - [PUBLIC_RELEASE_AUDIT.md](PUBLIC_RELEASE_AUDIT.md): Public化前の秘密情報・権利・Blueprint・Release artifact監査
+- [BOOTH_RELEASE_GUIDE.md](BOOTH_RELEASE_GUIDE.md): BOOTH向け配布範囲、依存明示、顧客向けZIP作成、販売前確認
 - [RISKS_AND_OPEN_QUESTIONS.md](RISKS_AND_OPEN_QUESTIONS.md): 未解決事項とリスク
 
 ## 運用と証拠

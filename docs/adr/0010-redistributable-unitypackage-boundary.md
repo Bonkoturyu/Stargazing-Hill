@@ -29,4 +29,4 @@ YamaPlayer、QvPen、UnyStylusの本体はunitypackageへ同梱されず、配�
 - `Tools/Validate-UnityPackage.py` の検査を通過したpackageだけを、SHA-256一覧とともにZIP化する。
 - ZIPとchecksumを同じtagのGitHub Releaseへ添付する。
 - 使用Actionはcommit SHAへ固定し、job権限はRelease更新に必要な `contents: write` だけとする。
-- Budget/Billing制限中はworkflowが起動できないため、最初のtag releaseとclean projectへのimport結果は `Pending Evidence` とする。
+- 決定時はBudget/Billing制限でworkflowを起動できなかった。2026-08-15にrunner起動を確認して制約は解消したが、最初のtag releaseとclean projectへのimport結果は引き続き `Pending Evidence` とする。

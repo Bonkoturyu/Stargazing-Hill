@@ -1,16 +1,16 @@
-# Public公開前監査
+# Public公開監査
 
-状態: `In Progress`
+状態: `Confirmed`
 
 確認日: 2026-08-14
 
-この文書は、GitHub repositoryをPrivateからPublicへ変更する前の確認結果と、公開後も維持する境界を記録する。コード・仕様の正本ではなく、公開判断のチェックリストである。
+この文書は、GitHub repositoryをPrivateからPublicへ変更する前の確認結果、2026-08-14の公開実施結果、公開後も維持する境界を記録する。コード・仕様の正本ではなく、公開判断のチェックリストである。
 
 ## 現在の確認結果
 
 | 対象 | 結果 | 状態 |
 |---|---|---|
-| repository visibility | `Bonkoturyu/Stargazing-Hill` は確認時点で `PRIVATE` | Confirmed |
+| repository visibility | `Bonkoturyu/Stargazing-Hill` は2026-08-14に `PUBLIC` へ変更済み | Confirmed |
 | 現在ツリーの秘密情報 | 秘密鍵、GitHub/GitLab/AWS token、Discord webhook、一般的なpassword/secret代入、Windows/macOS/Linuxの個人ホーム絶対pathを検出せず | Confirmed |
 | Git履歴の秘密情報 | 全到達commitに同じpattern検査を実施し、該当なし | Confirmed |
 | commit作者情報 | 作者mailはGitHubの `users.noreply.github.com` のみ | Confirmed |
@@ -21,7 +21,19 @@
 | VRChat VPM resolver | `Packages/com.vrchat.core.vpm-resolver` はVRChat Distro License付きで追跡される。root MITの例外であり、無償公開とする | Confirmed |
 | 大容量履歴 | 最大の到達blobは旧Jacaranda mesh約37.1 MiB。GitHubの単一file 100 MiB制限未満だが、clone容量には残る | Confirmed |
 
-自動pattern検査は、未知の形式の秘密や画像内の情報まで完全に証明するものではない。Public化の直前に、GitHub上の差分と全branch/tagをもう一度目視確認する。
+自動pattern検査は、未知の形式の秘密や画像内の情報まで完全に証明するものではない。Public化直前にGitHub上の全branch/tagを再確認し、remote branchは `main` のみ、tagは0件だった。
+
+## 公開実施結果
+
+| 対象 | 結果 | 状態 |
+|---|---|---|
+| visibility | GitHub APIで `visibility: public`、`private: false` を確認 | Confirmed |
+| default branch | `main` | Confirmed |
+| branch ruleset | `main` を対象にPR経由、branch削除禁止、non-fast-forward禁止、squash mergeの既存rulesetを `active` 化 | Confirmed |
+| Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定。PR #28のpush / pull request runがともにPass | Confirmed |
+| Dependabot | security updatesを有効化し、open alert 0件を確認 | Confirmed |
+| Secret scanning | Secret scanningとPush protectionを有効化 | Confirmed |
+| CodeQL | Public化後に利用可能。設定と初回実行は未実施 | Pending Evidence |
 
 ## Blueprint IDの扱い
 
@@ -37,12 +49,11 @@ VRChat SDKの `VRCPipelineManager` はBlueprint IDをworldの一意なIDとし�
 - https://creators.vrchat.com/platforms/android/cross-platform-setup/
 - https://creators.vrchat.com/releases/release-3-5-1/
 
-## Public化の前に残る作業
+## 公開後に残る作業
 
-- `Pending Evidence`: 現在の大量の未commit変更を意図した単位でcommitし、Release対象tagが既定branch `main` に含まれることを確認する。
-- `Pending Evidence`: GitHub ActionsのBilling/Budget制限解除後に、tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
+- `Pending Evidence`: tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
 - `Pending Evidence`: QvPen upstream packageには明示license fileがないため、本体は今後も追跡・同梱しない。
-- `Pending Evidence`: Publicへ切り替える直前にGitHubの全remote branch/tagを再走査する。
+- `Pending Evidence`: BOOTH向け初回artifactをclean Unity 2022.3.22f1 projectへimportし、依存復元後の保存Scene validationを行う。
 
 ## Release artifactの境界
 

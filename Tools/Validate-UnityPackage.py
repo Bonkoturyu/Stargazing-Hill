@@ -10,6 +10,8 @@ OWNED_ROOT = "Assets/StargazingHill"
 REQUIRED_PATHS = {
     f"{OWNED_ROOT}/Scenes/StargazingHill.unity",
     f"{OWNED_ROOT}/README_UNITYPACKAGE.md",
+    f"{OWNED_ROOT}/LICENSE.md",
+    f"{OWNED_ROOT}/NOTICE.md",
 }
 FORBIDDEN_PREFIXES = (
     "Assets/Rasta/",

@@ -586,7 +586,7 @@
 ## 2026-08-14 Public公開前監査とRelease ZIP自動化
 
 - 要求: Public化前に秘密情報・第三者依存・Blueprint IDを監査し、再配布用unitypackageをZIP化してGitHub Releaseへ出す仕組みを用意する
-- 制約: GitHub ActionsはBudget/Billing制限中のため、remote runnerでの実行証拠は後日取得する
+- 当初制約: GitHub ActionsはBudget/Billing制限中だった。2026-08-15にremote runner起動を確認し、この制約は解消済み
 
 | 確認項目 | 状態 | 証拠・残課題 |
 |---|---|---|
@@ -595,5 +595,23 @@
 | Blueprint ID | Confirmed | 保存Sceneにworld ID 1件。VRChat公式資料上、別owner/無効IDはSDKがclearする。clone利用者はDetachまたはclear確認が必要 |
 | 権利境界 | Confirmed | root MITの例外を`NOTICE.md`へ明示し、VRChat VPM resolverをDistro License対象として依存記録へ追加。外部3packageはRelease対象外 |
 | workflow静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`、Python compile、YAML load、`git diff --check`がPass。Actionはcommit SHA固定 |
-| Release workflow実行 | Pending Evidence | Budget/Billing制限解除後、`main`上の`v*` tagで実行し、Release ZIPとSHA-256を確認する |
+| Release workflow実行 | Pending Evidence | `main`上の`v*` tagで実行し、Release ZIPとSHA-256を確認する |
 | clean import | Pending Evidence | Release ZIP内のunitypackageをclean Unity 2022.3.22f1 projectへimportし、依存復元後に保存Scene validationを実行する |
+
+## 2026-08-14 Public化とBOOTH配布準備
+
+- 要求: 最終監査に問題がなければrepositoryをPublic化し、BOOTH販売用unitypackageの準備を開始する
+- 制約: remote Release workflowとCodeQLの初回実行証拠は後日取得する。Actions runner自体は2026-08-15に稼働確認済み
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| GitHub visibility | Pass | GitHub APIで `public` / `private: false` を確認 |
+| remote範囲 | Pass | branchは `main` のみ、tag 0件、Secrets/Variables 0件、失敗Actions run 0件 |
+| main保護 | Pass | PR、branch削除禁止、non-fast-forward禁止、squash merge rulesetを `active` 化 |
+| GitHub security | Pass | Dependabot security updates、Secret scanning、Push protectionを有効化。open Dependabot alert 0件 |
+| packageライセンス | Confirmed | `Assets/StargazingHill` 内へMIT本文と自己完結したNOTICEを追加し、Exporterとvalidatorで収録必須化 |
+| BOOTH ZIP組立 | Confirmed | `Tools/Prepare-BoothRelease.ps1`で検査済みunitypackage、5言語README、LICENSE、NOTICE、SHA-256をZIP化する手順を実装 |
+| 最新unitypackage生成 | Pass | Unity 2022.3.22f1 batch exportで26,135,648 bytes、118 pathnameを生成。`Validate-UnityPackage.py`がowned root、必須license/NOTICE、外部依存除外を確認 |
+| BOOTH draft ZIP | Pass | `StargazingHill-0.1.0-draft-BOOTH.zip`、25,443,648 bytes。unitypackage、5言語README、LICENSE、NOTICE、SHA256SUMSの5fileを収録。package SHA-256 `0e5ec9b9ea58c24fd21f9de572e1d01f1ddd195464666f59d6c3ddad0880afed` を再計算して一致 |
+| BOOTH clean import | Pending Evidence | 顧客向けZIP内のunitypackageをclean projectへimportし、VPM依存と購入済みUnyStylus復元後に確認する |
+| Static validation Action | Pass | repositoryのfull-SHA必須方針に合わせ、`actions/checkout`と`actions/setup-python`を公式v6 tagが指すcommit SHAへ固定。PR #28のpush run `31823686804` とpull request run `31823690056` がともにPass |

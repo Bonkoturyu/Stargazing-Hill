@@ -60,4 +60,4 @@ This path exports project-owned assets and redistributable CC0/CC BY-SA content 
 
 ## GitHub Releases
 
-Pushing a `v*` tag runs GitHub Actions to create and validate the redistributable UnityPackage, then wraps it and its SHA-256 checksum in a ZIP attached to the matching Release. The workflow needs neither Unity Editor nor a Unity license. YamaPlayer, QvPen, and the purchased UnyStylus files are excluded. Its first live run remains pending until the current Actions Budget/Billing restriction is lifted. See the [public-release audit](docs/PUBLIC_RELEASE_AUDIT.md).
+Pushing a `v*` tag runs GitHub Actions to create and validate the redistributable UnityPackage, then wraps it and its SHA-256 checksum in a ZIP attached to the matching Release. The workflow needs neither Unity Editor nor a Unity license. YamaPlayer, QvPen, and the purchased UnyStylus files are excluded. Actions runner availability is confirmed; the first tag-based Release run remains `Pending Evidence`. See the [public-release audit](docs/PUBLIC_RELEASE_AUDIT.md).
