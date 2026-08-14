@@ -20,13 +20,14 @@
 - `Confirmed`: SubAgentは最大1体、深さ1、親が要件・統合・最終検証を保持する。
 - `Confirmed`: 星は極小Quadを一つのMeshへまとめ、Additive Unlitで描画する設計を参考にする。
 - `Confirmed`: カタログ座標の全天球Meshと、観測時刻・地点によるランタイム回転を分離する。
+- `Confirmed`: 参照ワールドの肉眼限界`mag <= 6.8`、消散係数`0.23 mag/airmass`、`airmass ≈ 1 / sin(altitude)`、最低正弦`0.05`を採用する。参照側は固定時刻のEditor bakeだが、本ワールドは回転する全天球のため星・流星共通Shaderでruntime評価する。参照: `Assets/BonkotuWorld/Editor/NightStarMeshBaker.cs`（commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae`、確認日2026-08-14）。
 - `Provisional`: Udonの時刻差は直接減算せず、SDKが提供する差分計算APIを優先する。実装時に現行SDKで再確認する。
 - `Provisional`: 2D AudioSource、Station、World-space Canvas、TMP、モバイルShaderの既知注意点を実装ガイドへ移す。導入時に現行SDKと実機で再確認する。
 - `Confirmed`: 参照ワールドでPCVR / Quest実機確認済みのローカルPickup・ドロップ後遅延復帰パターンを、流星デバッグパネルへ採用する。再取得時の古い復帰要求を無効化する。参照ワールド固有の両手拡縮と同期は採用しない。
 
 ## 見送り・保留
 
-- `Pending Evidence`: HYGのCSV、派生Mesh、既存ベーカー、Shaderの直接コピー。元データと派生物のライセンス、表示義務、share-alike範囲を確定するまで取り込まない。
+- `Pending Evidence`: HYGのCSV、派生Mesh、既存ベーカー、Shaderの直接コピー。元データと派生物のライセンス、表示義務、share-alike範囲を確定するまで取り込まない。大気消散は数式と定数だけを設計根拠として採用し、コードや派生物はコピーしない。
 - `Out of scope`: Claude CLI委譲Skill。現在のCodex/SubAgent構成で代替でき、外部CLI依存を増やさない。
 - `Out of scope`: 他プロジェクト固有のモデル名、個人PC設定、シーン構成、製品固有ルール。
 - `Provisional`: 他リポジトリのQuest向け数値目安や古いSDK回避策。現行公式資料と実機測定なしに規則化しない。

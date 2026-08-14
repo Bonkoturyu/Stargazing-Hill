@@ -73,6 +73,41 @@ $transforms = @(
           var udonPlaylist = item.GetComponent<Playlist>();
           if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();
 '@
+    },
+    @{
+        Path = 'Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess.cs'
+        Original = @'
+          udonPlaylist.SetProgramVariable("_urls", urls);
+
+          results.Add(udonPlaylist);
+'@
+        Patched = @'
+          udonPlaylist.SetProgramVariable("_urls", urls);
+          UdonSharpEditorUtility.CopyProxyToUdon(udonPlaylist);
+          UnityEditor.EditorUtility.SetDirty(udonPlaylist);
+
+          results.Add(udonPlaylist);
+'@
+    },
+    @{
+        Path = 'Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistEditorWindow.cs'
+        Original = @'
+      if (_player != null)
+      {
+        EditorUtility.SetDirty(_player.gameObject);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_player.gameObject.scene);
+      }
+'@
+        Patched = @'
+      if (_player != null)
+      {
+        // Keep the standard YamaPlayer Playlist Editor as the single authoring surface while also
+        // refreshing the persisted runtime Playlist components used by ClientSim.
+        new PlaylistBuildProcess().Process();
+        EditorUtility.SetDirty(_player.gameObject);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_player.gameObject.scene);
+      }
+'@
     }
 )
 

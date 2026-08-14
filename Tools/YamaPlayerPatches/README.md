@@ -8,9 +8,9 @@ VPMが復元するYamaPlayer本体はGitへ格納せず、再適用に必要な�
 
 | 対象版 | パッチ | 目的 |
 |---|---|---|
-| `2.0.0-beta.7` | `2.0.0-beta.7-disable-editor-auto-update.patch` | Editor起動時のVPM自動更新競合を避け、保存済みruntime PlaylistをSDK build時に再利用して二重生成を防ぐ |
+| `2.0.0-beta.7` | `2.0.0-beta.7-disable-editor-auto-update.patch` | Editor起動時のVPM自動更新競合を避け、標準Playlist Editor保存時にruntime Playlistも更新し、SDK build時の二重生成を防ぐ |
 
-変更対象はEditor側の `PackageManager.cs` と `PlaylistBuildProcess.cs` だけである。`CheckUpdate()`と`UpdatePackage()`は残すため、YamaPlayerの手動確認とVCCによる更新は利用できる。Runtimeコード、Prefab、動画再生処理は変更しない。
+変更対象はEditor側の `PackageManager.cs`、`PlaylistBuildProcess.cs`、`PlaylistEditorWindow.cs`だけである。`CheckUpdate()`と`UpdatePackage()`は残すため、YamaPlayerの手動確認とVCCによる更新は利用できる。Playlistの編集UI・保存形式、Runtimeコード、Prefab、動画再生処理は変更しない。
 
 ## 使い方
 

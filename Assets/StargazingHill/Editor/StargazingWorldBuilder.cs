@@ -45,8 +45,10 @@ namespace StargazingHill.Editor
         private const string InfoLanguageProgramPath = Root + "/Scripts/WorldInfoLanguageToggle.asset";
         private const string PresenceBoardScriptPath = Root + "/Scripts/WorldPresenceBoard.cs";
         private const string PresenceBoardProgramPath = Root + "/Scripts/WorldPresenceBoard.asset";
-        private const string PresenceScrollScriptPath = Root + "/Scripts/WorldPresenceHistoryScrollButton.cs";
-        private const string PresenceScrollProgramPath = Root + "/Scripts/WorldPresenceHistoryScrollButton.asset";
+        private const string ObservatorySelectorScriptPath = Root + "/Scripts/WorldObservatorySelector.cs";
+        private const string ObservatorySelectorProgramPath = Root + "/Scripts/WorldObservatorySelector.asset";
+        private const string ObservatoryButtonScriptPath = Root + "/Scripts/WorldObservatoryButton.cs";
+        private const string ObservatoryButtonProgramPath = Root + "/Scripts/WorldObservatoryButton.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -91,7 +93,19 @@ namespace StargazingHill.Editor
         private static readonly Vector3 UnyStylusEuler = new Vector3(0f, 239.9454f, 0f);
         private static readonly Vector3 AmenityCenter = new Vector3(-6.756f, 0f, -22.375f);
 
-        [MenuItem("Stargazing Hill/Build Complete World", false, 10)]
+        [MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild Complete World (Destructive)...", false, 90)]
+        public static void BuildCompleteWorldMenu()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Rebuild Complete World",
+                    "This recreates the StargazingHill scene. Versioned layout data is used for generated " +
+                    "features, but uncaptured manual scene edits can be lost.",
+                    "Rebuild", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            BuildCompleteWorld();
+        }
+
         public static void BuildCompleteWorld()
         {
             EnsureFolders();
@@ -155,6 +169,8 @@ namespace StargazingHill.Editor
             starMaterial.SetFloat("_Intensity", 1.35f);
             starMaterial.SetFloat("_HorizonStart", 0f);
             starMaterial.SetFloat("_HorizonFull", Mathf.Sin(15f * Mathf.Deg2Rad));
+            starMaterial.SetFloat("_ExtinctionCoefficient", 0.23f);
+            starMaterial.SetFloat("_MinimumSinAltitude", 0.05f);
             EditorUtility.SetDirty(starMaterial);
             Material[] meteorMaterials = CreateOrUpdateMeteorMaterials();
             Material moonMaterial = CreateOrUpdateMaterial(
@@ -170,21 +186,33 @@ namespace StargazingHill.Editor
             Mesh meteorMesh = SaveMesh(MeshRoot + "/MeteorQuad.asset", BuildMeteorMesh());
             Mesh moonMesh = SaveMesh(MeshRoot + "/MoonQuad.asset", BuildMoonMesh());
 
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // YamaPlayer owns its playlist authoring UI. Preserve the standard editor-authored instance
+            // from the saved scene instead of maintaining a second Stargazing Hill playlist format.
+            Scene sourceScene = File.Exists(ScenePath)
+                ? EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single)
+                : default;
+            GameObject sourceYamaPlayer = sourceScene.IsValid()
+                ? FindGameObjectInScene(sourceScene, "World/VideoSystem/YamaPlayer")
+                : null;
+
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                sourceScene.IsValid() ? NewSceneMode.Additive : NewSceneMode.Single);
+            SceneManager.SetActiveScene(scene);
             ConfigureRenderSettings();
 
             GameObject world = new GameObject("World");
+            CreateYamaPlayer(world.transform, sourceYamaPlayer, scene);
+            if (sourceScene.IsValid()) EditorSceneManager.CloseScene(sourceScene, true);
+
             GameObject environment = CreateChild(world.transform, "Environment");
             CreateEnvironment(environment.transform, groundMesh, hillMesh, grassMesh, treeMesh,
                 groundMaterial, hillMaterial, bladeMaterial, branchMaterial, trunkMaterial, leafMaterial);
+            PicnicSceneInstaller.InstallForBuild(scene);
             CreateLighting(environment.transform);
             CreateWorldSettings(world.transform);
             CreateRealSky(world.transform, starMesh, starMaterial, moonMesh, moonMaterial, observatory);
             CreateMeteorSystem(world.transform, meteorMesh, meteorMaterials, observatory, showerCatalog);
-            CreateYamaPlayer(world.transform);
-            // Do not defer this to sceneSaved: validation runs before the first save, and ClientSim needs
-            // AutoPlay's Controller reference serialized into both its proxy and backing Udon.
-            YamaPlayerPlaylistSync.SyncForWorldBuild(scene);
             CreateDrawingSystems(world.transform);
             // Install explicitly rather than relying on the installer's sceneSaved hook: validation below
             // runs before the save, so a save-triggered install would never be present for it to check.
@@ -202,7 +230,18 @@ namespace StargazingHill.Editor
                       "and locally licensed UnyStylus.");
         }
 
-        [MenuItem("Stargazing Hill/Upgrade Meteor Visuals", false, 11)]
+        [MenuItem("Stargazing Hill/Advanced/Generated Content/Upgrade Meteor Visuals", false, 82)]
+        public static void UpgradeMeteorVisualsMenu()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Upgrade Meteor Visuals",
+                    "Update generated meteor materials and catalog references in the saved scene?",
+                    "Upgrade", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            UpgradeMeteorVisualsForBatchMode();
+        }
+
         public static void UpgradeMeteorVisualsForBatchMode()
         {
             EnsureFolders();
@@ -229,7 +268,7 @@ namespace StargazingHill.Editor
             Debug.Log("[Stargazing Hill] Meteor visuals upgraded without changing user-adjusted scene placement.");
         }
 
-        [MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower", false, 50)]
+        [MenuItem("Stargazing Hill/Preview & Debug/Trigger Hourly Meteor Shower", false, 60)]
         public static void DebugTriggerHourlyMeteorShower()
         {
             MeteorController controller = Object.FindObjectOfType<MeteorController>(true);
@@ -245,7 +284,7 @@ namespace StargazingHill.Editor
                       "Use Meteor Shower Preview for a guaranteed 20-meteor shower.");
         }
 
-        [MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour", false, 51)]
+        [MenuItem("Stargazing Hill/Preview & Debug/Advance Sky +1 Hour", false, 61)]
         public static void DebugAdvanceSkyOneHour()
         {
             RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
@@ -260,7 +299,7 @@ namespace StargazingHill.Editor
             Debug.Log("[Stargazing Hill] Advanced the local sky debug offset by one hour.");
         }
 
-        [MenuItem("Stargazing Hill/Debug/Reset Sky Time Offset", false, 52)]
+        [MenuItem("Stargazing Hill/Preview & Debug/Reset Sky Time Offset", false, 62)]
         public static void DebugResetSkyTimeOffset()
         {
             RealSkyController controller = Object.FindObjectOfType<RealSkyController>(true);
@@ -285,6 +324,66 @@ namespace StargazingHill.Editor
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             ValidateScene(scene);
             Debug.Log("[Stargazing Hill] Saved scene validation passed.");
+        }
+
+        public static void ValidateYamaPlayerPreservationForBatchMode()
+        {
+            Scene sourceScene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject source = FindGameObjectInScene(sourceScene, "World/VideoSystem/YamaPlayer");
+            if (source == null) throw new InvalidOperationException("Saved YamaPlayer is missing.");
+
+            int expectedPlaylistItems = source.GetComponentsInChildren<PlaylistItem>(true).Length;
+            int expectedRuntimePlaylists = source.GetComponentsInChildren<Playlist>(true).Length;
+            int expectedTracks = 0;
+            PlaylistItem[] sourceItems = source.GetComponentsInChildren<PlaylistItem>(true);
+            for (int index = 0; index < sourceItems.Length; index++)
+                expectedTracks += sourceItems[index].tracks == null ? 0 : sourceItems[index].tracks.Length;
+
+            Scene destinationScene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            SceneManager.SetActiveScene(destinationScene);
+            GameObject destinationWorld = new GameObject("World");
+            CreateYamaPlayer(destinationWorld.transform, source, destinationScene);
+            GameObject clone = FindGameObjectInScene(destinationScene, "World/VideoSystem/YamaPlayer");
+            PlaylistItem[] clonedItems = clone == null
+                ? Array.Empty<PlaylistItem>()
+                : clone.GetComponentsInChildren<PlaylistItem>(true);
+            Playlist[] clonedRuntime = clone == null
+                ? Array.Empty<Playlist>()
+                : clone.GetComponentsInChildren<Playlist>(true);
+            int clonedTracks = 0;
+            for (int index = 0; index < clonedItems.Length; index++)
+                clonedTracks += clonedItems[index].tracks == null ? 0 : clonedItems[index].tracks.Length;
+
+            Controller clonedController = clone == null
+                ? null
+                : clone.GetComponentInChildren<Controller>(true);
+            AutoPlay clonedAutoPlay = clone == null
+                ? null
+                : clone.GetComponentInChildren<AutoPlay>(true);
+            SerializedProperty clonedControllerReference = clonedAutoPlay == null
+                ? null
+                : new SerializedObject(clonedAutoPlay).FindProperty("_controller");
+            if (clonedItems.Length != expectedPlaylistItems ||
+                clonedRuntime.Length != expectedRuntimePlaylists || clonedTracks != expectedTracks ||
+                clonedController == null || clonedAutoPlay == null ||
+                clonedControllerReference == null ||
+                clonedControllerReference.objectReferenceValue != clonedController)
+                throw new InvalidOperationException(
+                    "Standard-editor-authored YamaPlayer settings were not preserved by full rebuild cloning.");
+
+            EditorSceneManager.CloseScene(destinationScene, true);
+            SceneManager.SetActiveScene(sourceScene);
+            Debug.Log("[Stargazing Hill] Standard YamaPlayer preservation validation passed: " +
+                      clonedItems.Length + " playlists / " + clonedTracks + " tracks.");
+        }
+
+        [MenuItem("Stargazing Hill/Validate Saved Scene", false, 1)]
+        public static void ValidateSavedSceneMenu()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            ValidateForBatchMode();
+            EditorUtility.DisplayDialog("Stargazing Hill", "Saved scene validation passed.", "OK");
         }
 
         public static void TestSkyAndMeteorForBatchMode()
@@ -469,7 +568,9 @@ namespace StargazingHill.Editor
         public static void RenderDebugPanelPreviewForBatchMode()
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            ValidateScene(scene);
+            // Keep this preview focused on the debug panel. Full-world validation may legitimately fail on
+            // an unrelated hand-adjusted prop while this tool is being used to inspect the panel itself.
+            ValidateDebugPanelLayout(scene);
 
             GameObject panel = null;
             GameObject[] roots = scene.GetRootGameObjects();
@@ -501,34 +602,113 @@ namespace StargazingHill.Editor
 
             Transform japaneseLabels = panel.transform.Find("JapaneseLabels");
             Transform englishLabels = panel.transform.Find("EnglishLabels");
-            if (japaneseLabels == null || englishLabels == null)
+            Transform traditionalChineseLabels = panel.transform.Find("TraditionalChineseLabels");
+            Transform simplifiedChineseLabels = panel.transform.Find("SimplifiedChineseLabels");
+            Transform koreanLabels = panel.transform.Find("KoreanLabels");
+            if (japaneseLabels == null || englishLabels == null || traditionalChineseLabels == null ||
+                simplifiedChineseLabels == null || koreanLabels == null)
                 throw new InvalidOperationException("VR debug panel language groups are missing.");
             japaneseLabels.gameObject.SetActive(false);
             englishLabels.gameObject.SetActive(true);
             camera.transform.position = panel.transform.position + viewing * 0.75f;
             camera.transform.LookAt(panel.transform.position);
             RenderCameraToPng(camera, "stargazing-hill-debug-panel-english.png");
+            englishLabels.gameObject.SetActive(false);
+            traditionalChineseLabels.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-zh-hant.png");
+            traditionalChineseLabels.gameObject.SetActive(false);
+            simplifiedChineseLabels.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-zh-hans.png");
+            simplifiedChineseLabels.gameObject.SetActive(false);
+            koreanLabels.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-debug-panel-korean.png");
 
             panel.SetActive(wasActive);
         }
 
         /// <summary>
-        /// Renders the world information panel head on so the bilingual copy, presence display,
+        /// Renders the world information panel head on so the five-language copy, presence display,
         /// and flush language button can be reviewed without entering Play Mode.
         /// </summary>
         public static void RenderInformationPanelPreviewForBatchMode()
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            ValidateScene(scene);
+            WorldInformationPanelInstaller.ValidateScene(scene);
             GameObject panel = GameObject.Find("World/InformationSystem/WorldInformationPanel");
             if (panel == null)
                 throw new InvalidOperationException("World information panel is missing from the scene.");
+            WorldObservatorySelector observatorySelector = panel.GetComponent<WorldObservatorySelector>();
+            if (observatorySelector == null)
+                throw new InvalidOperationException("World information panel observatory selector is missing.");
+            observatorySelector.SetDisplayLanguage(0);
 
             Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera").GetComponent<Camera>();
             Vector3 viewing = -panel.transform.forward;
             camera.transform.position = panel.transform.position + viewing * 5.0f;
             camera.transform.LookAt(panel.transform.position);
             RenderCameraToPng(camera, "stargazing-hill-information-panel.png");
+
+            Transform observatoryList = panel.transform.Find("Controls/Observatory/ObservatoryLocationList");
+            if (observatoryList == null)
+                throw new InvalidOperationException("World information panel observatory list is missing.");
+            observatoryList.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-list.png");
+            observatoryList.gameObject.SetActive(false);
+
+            WorldInfoLanguageToggle languageToggle =
+                panel.GetComponentInChildren<WorldInfoLanguageToggle>(true);
+            if (languageToggle == null || languageToggle.japaneseText == null ||
+                languageToggle.englishText == null || languageToggle.traditionalChineseText == null ||
+                languageToggle.simplifiedChineseText == null || languageToggle.koreanText == null)
+                throw new InvalidOperationException("World information panel language groups are missing.");
+            observatorySelector.SetDisplayLanguage(1);
+            languageToggle.japaneseText.SetActive(false);
+            languageToggle.englishText.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-english.png");
+            observatoryList.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-list-english.png");
+            observatoryList.gameObject.SetActive(false);
+            observatorySelector.SetDisplayLanguage(2);
+            languageToggle.englishText.SetActive(false);
+            languageToggle.traditionalChineseText.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-zh-hant.png");
+            observatoryList.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-list-zh-hant.png");
+            observatoryList.gameObject.SetActive(false);
+            observatorySelector.SetDisplayLanguage(3);
+            languageToggle.traditionalChineseText.SetActive(false);
+            languageToggle.simplifiedChineseText.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-zh-hans.png");
+            observatoryList.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-list-zh-hans.png");
+            observatoryList.gameObject.SetActive(false);
+            observatorySelector.SetDisplayLanguage(4);
+            languageToggle.simplifiedChineseText.SetActive(false);
+            languageToggle.koreanText.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-korean.png");
+            observatoryList.gameObject.SetActive(true);
+            RenderCameraToPng(camera, "stargazing-hill-information-panel-list-korean.png");
+        }
+
+        public static void RenderPicnicPreviewForBatchMode()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject picnic = GameObject.Find("World/Environment/PicnicSpot");
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (picnic == null || camera == null)
+                throw new InvalidOperationException("Picnic spot or reference camera is missing.");
+            Bounds bounds = CalculateRendererBounds(picnic);
+            camera.transform.position = bounds.center + new Vector3(-4.2f, 2.6f, -5.4f);
+            camera.transform.LookAt(bounds.center + Vector3.up * 0.25f);
+            RenderCameraToPng(camera, "stargazing-hill-picnic.png");
+
+            camera.transform.position = bounds.center + new Vector3(5.4f, 2.2f, -3.8f);
+            camera.transform.LookAt(bounds.center + Vector3.up * 0.18f);
+            RenderCameraToPng(camera, "stargazing-hill-picnic-opposite.png");
+
+            camera.transform.position = bounds.center + new Vector3(-4.8f, 1.1f, 2.8f);
+            camera.transform.LookAt(bounds.center + Vector3.up * 0.08f);
+            RenderCameraToPng(camera, "stargazing-hill-picnic-low.png");
         }
 
         public static void RenderMeteorDebugPreviewForBatchMode()
@@ -679,14 +859,25 @@ namespace StargazingHill.Editor
                 DebugPanelStatusProgramPath);
         }
 
-        [MenuItem("Stargazing Hill/Upgrade Current Scene Features", false, 12)]
+        [MenuItem("Stargazing Hill/Advanced/Generated Content/Upgrade All Generated Features...", false, 81)]
+        public static void UpgradeCurrentSceneFeaturesMenu()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Upgrade Generated Features",
+                    "This refreshes generated meshes, integrations, panels, and the picnic spot from " +
+                    "their versioned sources.",
+                    "Upgrade", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            UpgradeCurrentSceneFeaturesForBatchMode();
+        }
+
         public static void UpgradeCurrentSceneFeaturesForBatchMode()
         {
             EnsureFolders();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
             EnsureDebugPanelProgramAssets();
-            EnsureInformationPanelProgramAssets();
             EnsureInformationPanelProgramAssets();
             UdonSharpCompilerV1.CompileSync();
 
@@ -705,14 +896,14 @@ namespace StargazingHill.Editor
             if (camera == null) throw new InvalidOperationException("ReferenceCamera is missing.");
             camera.clearFlags = CameraClearFlags.Skybox;
             EditorUtility.SetDirty(camera);
-            YamaPlayerPlaylistSync.SyncForWorldBuild(scene);
             WorldDebugPanelInstaller.InstallForBuild(scene);
             WorldInformationPanelInstaller.InstallForBuild(scene);
+            PicnicSceneInstaller.InstallForBuild(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             ValidateScene(scene);
-            Debug.Log("[Stargazing Hill] Upgraded playlists, panels, extended grassland, and night-sky atmosphere without rebuilding unrelated scene objects.");
+            Debug.Log("[Stargazing Hill] Upgraded panels, extended grassland, and night-sky atmosphere without rebuilding unrelated scene objects.");
         }
 
         internal static void EnsureInformationPanelProgramAssets()
@@ -721,8 +912,10 @@ namespace StargazingHill.Editor
                 InfoLanguageProgramPath);
             EnsureProgramAsset(typeof(WorldPresenceBoard), PresenceBoardScriptPath,
                 PresenceBoardProgramPath);
-            EnsureProgramAsset(typeof(WorldPresenceHistoryScrollButton), PresenceScrollScriptPath,
-                PresenceScrollProgramPath);
+            EnsureProgramAsset(typeof(WorldObservatorySelector), ObservatorySelectorScriptPath,
+                ObservatorySelectorProgramPath);
+            EnsureProgramAsset(typeof(WorldObservatoryButton), ObservatoryButtonScriptPath,
+                ObservatoryButtonProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -832,6 +1025,10 @@ namespace StargazingHill.Editor
             material.SetFloat("_HeadSize", headSize);
             material.SetFloat("_FlareStrength", flareStrength);
             material.SetFloat("_Afterglow", afterglow);
+            material.SetFloat("_HorizonStart", 0f);
+            material.SetFloat("_HorizonFull", Mathf.Sin(12f * Mathf.Deg2Rad));
+            material.SetFloat("_ExtinctionCoefficient", 0.23f);
+            material.SetFloat("_MinimumSinAltitude", 0.05f);
             EditorUtility.SetDirty(material);
         }
 
@@ -893,6 +1090,13 @@ namespace StargazingHill.Editor
         private static float EvaluateTerrainHeight(float x, float z)
         {
             return EvaluateBaseHeight(x, z) + EvaluateHillHeight(x, z);
+        }
+
+        internal static Vector3 HillPositionForEditor => HillPosition;
+
+        internal static float EvaluateTerrainHeightForEditor(float x, float z)
+        {
+            return EvaluateTerrainHeight(x, z);
         }
 
         private static Mesh BuildGroundMesh()
@@ -1438,17 +1642,29 @@ namespace StargazingHill.Editor
             controller.populationIndices = (float[])catalog.populationIndices.Clone();
         }
 
-        private static void CreateYamaPlayer(Transform world)
+        private static void CreateYamaPlayer(
+            Transform world, GameObject standardEditorAuthoredSource, Scene destinationScene)
         {
             GameObject videoSystem = CreateChild(world, "VideoSystem");
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(YamaPrefabPath);
-            if (prefab == null)
+            GameObject player;
+            if (standardEditorAuthoredSource != null)
             {
-                throw new InvalidOperationException(
-                    "YamaPlayer 2.0.0-beta.7 is not resolved. Add https://vpm.kwxxw.net/index.json in VCC.");
+                player = Object.Instantiate(standardEditorAuthoredSource);
+                player.name = "YamaPlayer";
+                player.transform.SetParent(null, true);
+                SceneManager.MoveGameObjectToScene(player, destinationScene);
+            }
+            else
+            {
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(YamaPrefabPath);
+                if (prefab == null)
+                {
+                    throw new InvalidOperationException(
+                        "YamaPlayer 2.0.0-beta.7 is not resolved. Add https://vpm.kwxxw.net/index.json in VCC.");
+                }
+                player = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             }
 
-            GameObject player = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             player.name = "YamaPlayer";
             player.transform.SetParent(videoSystem.transform, false);
             player.transform.localPosition = YamaPlayerPosition;
@@ -1458,6 +1674,22 @@ namespace StargazingHill.Editor
             EnsureVideoInfoDownloader(player);
             RemoveEmptyPlaylistManagers(player);
             ApplyYamaDistanceRolloff(player);
+        }
+
+        private static GameObject FindGameObjectInScene(Scene scene, string path)
+        {
+            if (!scene.IsValid() || string.IsNullOrEmpty(path)) return null;
+            string[] segments = path.Split('/');
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                if (roots[rootIndex].name != segments[0]) continue;
+                Transform current = roots[rootIndex].transform;
+                for (int segmentIndex = 1; segmentIndex < segments.Length && current != null; segmentIndex++)
+                    current = current.Find(segments[segmentIndex]);
+                return current == null ? null : current.gameObject;
+            }
+            return null;
         }
 
         private static void RemoveEmptyPlaylistManagers(GameObject player)
@@ -1704,6 +1936,8 @@ namespace StargazingHill.Editor
             if (GameObject.Find("World/Environment").transform.Find("LandmarkTreeLegacy") != null)
                 throw new InvalidOperationException("Pre-Quest landmark tree must not be in the scene.");
 
+            PicnicSceneInstaller.ValidateScene();
+
             // The debug panel installs from a scene hook and previously failed halfway through, leaving a
             // panel root with no working buttons. Check a button actually carries its backing Udon program.
             WorldDebugPanelButton[] debugButtons =
@@ -1728,11 +1962,20 @@ namespace StargazingHill.Editor
                 : new WorldInfoLanguageToggle[0];
             if (debugStatuses.Length != 1 || debugStatuses[0].japaneseStatusText == null ||
                 debugStatuses[0].englishStatusText == null ||
+                debugStatuses[0].traditionalChineseStatusText == null ||
+                debugStatuses[0].simplifiedChineseStatusText == null ||
+                debugStatuses[0].koreanStatusText == null ||
                 debugStatuses[0].japanesePlayStopLabel == null ||
                 debugStatuses[0].englishPlayStopLabel == null ||
+                debugStatuses[0].traditionalChinesePlayStopLabel == null ||
+                debugStatuses[0].simplifiedChinesePlayStopLabel == null ||
+                debugStatuses[0].koreanPlayStopLabel == null ||
                 debugLanguageToggles.Length != 1 ||
                 debugLanguageToggles[0].japaneseText == null ||
                 debugLanguageToggles[0].englishText == null ||
+                debugLanguageToggles[0].traditionalChineseText == null ||
+                debugLanguageToggles[0].simplifiedChineseText == null ||
+                debugLanguageToggles[0].koreanText == null ||
                 debugLanguageToggles[0].buttonLabel == null)
                 throw new InvalidOperationException("VR debug panel status validation failed.");
             ValidateDebugPanelLayout(scene);
@@ -1778,9 +2021,20 @@ namespace StargazingHill.Editor
             Playlist[] runtimePlaylists = yamaPlayer == null
                 ? Array.Empty<Playlist>()
                 : yamaPlayer.GetComponentsInChildren<Playlist>(true);
+            int authoringPlaylistTrackCount = 0;
+            for (int playlistIndex = 0; playlistIndex < playlistItems.Length; playlistIndex++)
+                authoringPlaylistTrackCount += playlistItems[playlistIndex].tracks == null
+                    ? 0
+                    : playlistItems[playlistIndex].tracks.Length;
             int playlistTrackCount = 0;
+            bool playlistsFollowController = yamaController != null;
             for (int playlistIndex = 0; playlistIndex < runtimePlaylists.Length; playlistIndex++)
+            {
                 playlistTrackCount += runtimePlaylists[playlistIndex].TrackCount;
+                if (yamaController == null ||
+                    !runtimePlaylists[playlistIndex].transform.IsChildOf(yamaController.transform))
+                    playlistsFollowController = false;
+            }
             int downloaderCount = 0;
             for (int definitionIndex = 0; definitionIndex < definitions.Length; definitionIndex++)
             {
@@ -1794,7 +2048,9 @@ namespace StargazingHill.Editor
                 !autoPlays[0].gameObject.activeSelf ||
                 autoPlayControllerProperty == null ||
                 autoPlayControllerProperty.objectReferenceValue != yamaController ||
-                playlistItems.Length != 4 || runtimePlaylists.Length != 4 || playlistTrackCount != 15)
+                playlistItems.Length == 0 || runtimePlaylists.Length != playlistItems.Length ||
+                playlistTrackCount != authoringPlaylistTrackCount ||
+                !playlistsFollowController)
             {
                 throw new InvalidOperationException("YamaPlayer placement/module validation failed.");
             }
@@ -1816,28 +2072,136 @@ namespace StargazingHill.Editor
             ValidateAmenityPlacement(descriptors[0].spawns[0], yamaPlayer, qvPen, unyStylus);
 
             WorldPresenceBoard[] presenceBoards = Object.FindObjectsOfType<WorldPresenceBoard>(true);
-            WorldPresenceHistoryScrollButton[] historyScrollButtons =
-                Object.FindObjectsOfType<WorldPresenceHistoryScrollButton>(true);
             GameObject informationPanel = GameObject.Find("World/InformationSystem/WorldInformationPanel");
             WorldInfoLanguageToggle informationLanguageToggle = informationPanel != null
                 ? informationPanel.GetComponentInChildren<WorldInfoLanguageToggle>(true)
                 : null;
             Transform languageButton = informationPanel != null
-                ? informationPanel.transform.Find("LanguageToggle")
+                ? informationPanel.transform.Find("Controls/LanguageToggle")
+                : null;
+            RectTransform presenceCountCanvas = presenceBoards.Length == 1 &&
+                presenceBoards[0].playerCountText != null
+                    ? presenceBoards[0].playerCountText.transform.parent as RectTransform
+                    : null;
+            RectTransform historyCanvas = presenceBoards.Length == 1 &&
+                presenceBoards[0].historyScrollRect != null
+                    ? presenceBoards[0].historyScrollRect.GetComponent<RectTransform>()
+                    : null;
+            Transform laptopIcon = informationPanel != null
+                ? informationPanel.transform.Find("Visual/Presence/PlatformLaptopIcon")
+                : null;
+            Transform mobileIcon = informationPanel != null
+                ? informationPanel.transform.Find("Visual/Presence/PlatformMobileIcon")
+                : null;
+            Transform visualGroup = informationPanel != null
+                ? informationPanel.transform.Find("Visual")
+                : null;
+            Transform descriptionsGroup = informationPanel != null
+                ? informationPanel.transform.Find("Visual/Descriptions")
+                : null;
+            Transform presenceGroup = informationPanel != null
+                ? informationPanel.transform.Find("Visual/Presence")
+                : null;
+            Transform controlsGroup = informationPanel != null
+                ? informationPanel.transform.Find("Controls")
+                : null;
+            Transform observatoryGroup = informationPanel != null
+                ? informationPanel.transform.Find("Controls/Observatory")
                 : null;
             if (informationPanel == null || informationPanel.GetComponent<Collider>() != null ||
                 informationLanguageToggle == null || presenceBoards.Length != 1 ||
+                visualGroup == null || descriptionsGroup == null || presenceGroup == null ||
+                controlsGroup == null || observatoryGroup == null ||
+                descriptionsGroup.Find("TitleCanvas") == null ||
+                descriptionsGroup.Find("JapaneseDescription") == null ||
+                descriptionsGroup.Find("EnglishDescription") == null ||
+                descriptionsGroup.Find("TraditionalChineseDescription") == null ||
+                descriptionsGroup.Find("SimplifiedChineseDescription") == null ||
+                descriptionsGroup.Find("KoreanDescription") == null ||
                 informationLanguageToggle.japaneseText == null || informationLanguageToggle.englishText == null ||
+                informationLanguageToggle.traditionalChineseText == null ||
+                informationLanguageToggle.simplifiedChineseText == null ||
+                informationLanguageToggle.koreanText == null ||
                 presenceBoards[0].playerCountText == null || presenceBoards[0].historyText == null ||
+                presenceBoards[0].historyScrollRect == null ||
+                presenceBoards[0].historyScrollRect.GetComponent<VRCUiShape>() == null ||
                 presenceBoards[0].maximumCapacity != WorldPresenceBoard.DefaultMaximumCapacity ||
                 presenceBoards[0].recommendedCapacity != WorldPresenceBoard.DefaultRecommendedCapacity ||
                 presenceBoards[0].historyCapacity != WorldPresenceBoard.DefaultHistoryCapacity ||
                 presenceBoards[0].visibleHistoryCount != WorldPresenceBoard.DefaultVisibleHistoryCount ||
-                historyScrollButtons.Length != 2 ||
-                historyScrollButtons[0].presenceBoard != presenceBoards[0] ||
-                historyScrollButtons[1].presenceBoard != presenceBoards[0] ||
-                languageButton == null || languageButton.localPosition.z > -0.012f)
+                informationPanel.transform.Find("HistoryNewer") != null ||
+                informationPanel.transform.Find("HistoryOlder") != null ||
+                presenceCountCanvas == null || presenceCountCanvas.anchoredPosition.y < 0.87f ||
+                presenceBoards[0].playerCountText.fontStyle != FontStyle.Normal ||
+                historyCanvas == null || historyCanvas.anchoredPosition.y < 0.30f ||
+                !Mathf.Approximately(historyCanvas.sizeDelta.y, 610f) ||
+                languageButton == null || languageButton.localPosition.y > -1.09f ||
+                languageButton.localPosition.z > -0.012f)
                 throw new InvalidOperationException("World information/presence panel validation failed.");
+
+            WorldObservatorySelector[] observatorySelectors =
+                Object.FindObjectsOfType<WorldObservatorySelector>(true);
+            WorldObservatoryButton[] observatoryButtons =
+                Object.FindObjectsOfType<WorldObservatoryButton>(true);
+            Transform panelSheet = informationPanel.transform.Find("Visual/PanelSheet");
+            Transform observatoryPrevious = informationPanel.transform.Find("Controls/Observatory/ObservatoryPrevious");
+            Transform observatorySelected = informationPanel.transform.Find("Controls/Observatory/ObservatorySelected");
+            Transform observatoryNext = informationPanel.transform.Find("Controls/Observatory/ObservatoryNext");
+            Transform debugPanelToggle = informationPanel.transform.Find("Controls/DebugPanelToggle");
+            Transform observatoryHeading = informationPanel.transform.Find("Controls/Observatory/ObservatoryHeading");
+            Transform observatoryList = informationPanel.transform.Find("Controls/Observatory/ObservatoryLocationList");
+            Transform firstVisualLocation = observatoryList != null ? observatoryList.Find("Location_19") : null;
+            Transform lastVisualLocation = observatoryList != null ? observatoryList.Find("Location_00") : null;
+            if (observatorySelectors.Length != 1 || observatoryButtons.Length != 24 ||
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(observatorySelectors[0]) == null ||
+                observatorySelectors[0].profileIds == null ||
+                observatorySelectors[0].profileIds.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                observatorySelectors[0].displayNames == null || observatorySelectors[0].displayNames.Length != 20 ||
+                observatorySelectors[0].latitudeDegrees == null || observatorySelectors[0].latitudeDegrees.Length != 20 ||
+                observatorySelectors[0].longitudeDegreesEast == null ||
+                observatorySelectors[0].longitudeDegreesEast.Length != 20 ||
+                observatorySelectors[0].observatoryHeadingLabel == null ||
+                observatorySelectors[0].localizedHeadingLabels == null ||
+                observatorySelectors[0].localizedHeadingLabels.Length != 5 ||
+                observatorySelectors[0].selectedLocationLabel == null ||
+                observatorySelectors[0].selectedLocationLabel.text.Contains("(global)") ||
+                observatorySelectors[0].locationListRoot == null || observatoryList == null ||
+                observatorySelectors[0].skyController != skyControllers[0] ||
+                observatorySelectors[0].meteorController != meteorControllers[0] ||
+                observatorySelectors[0].debugPanelRoot == null ||
+                panelSheet == null || panelSheet.localScale.y < 3.09f ||
+                observatoryPrevious == null || observatorySelected == null || observatoryNext == null ||
+                observatoryHeading == null || debugPanelToggle == null ||
+                firstVisualLocation == null || lastVisualLocation == null ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.x, 0f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.10f))
+                throw new InvalidOperationException("Global observatory selector validation failed.");
+
+            for (int index = 0; index < observatoryButtons.Length; index++)
+                if (UdonSharpEditorUtility.GetBackingUdonBehaviour(observatoryButtons[index]) == null)
+                    throw new InvalidOperationException(
+                        "Observatory selector button has no backing Udon behaviour: " +
+                        observatoryButtons[index].name);
+
+            if (presenceCountCanvas == null ||
+                !Mathf.Approximately(presenceCountCanvas.anchoredPosition.x, 0.73f) ||
+                !Mathf.Approximately(presenceCountCanvas.anchoredPosition.y, 0.88f) ||
+                historyCanvas == null || !Mathf.Approximately(historyCanvas.anchoredPosition.x, 0.73f) ||
+                !Mathf.Approximately(historyCanvas.anchoredPosition.y, 0.31f) ||
+                languageButton == null || !Mathf.Approximately(languageButton.localPosition.x, 1.03f) ||
+                !Mathf.Approximately(languageButton.localPosition.y, -1.52f) ||
+                !Mathf.Approximately(languageButton.localScale.x, 0.56f) ||
+                debugPanelToggle == null || !Mathf.Approximately(debugPanelToggle.localPosition.x, 1.72f) ||
+                !Mathf.Approximately(debugPanelToggle.localPosition.y, -1.52f) ||
+                !Mathf.Approximately(debugPanelToggle.localScale.x, 0.72f) ||
+                laptopIcon == null || !Mathf.Approximately(laptopIcon.localPosition.x, 0.79f) ||
+                !Mathf.Approximately(laptopIcon.localPosition.y, 0.584f) ||
+                mobileIcon == null || !Mathf.Approximately(mobileIcon.localPosition.x, 0.79f) ||
+                !Mathf.Approximately(mobileIcon.localPosition.y, 0.456f))
+                throw new InvalidOperationException(
+                    "Existing information panel language/presence/history layout moved unexpectedly.");
 
             Keyframe[] expectedKeys = CreateYamaRolloffCurve().keys;
             if (sources.Length == 0) throw new InvalidOperationException("YamaPlayer audio validation failed.");
@@ -1883,11 +2247,23 @@ namespace StargazingHill.Editor
         private static void ValidateDebugPanelLayout(Scene scene)
         {
             GameObject panel = null;
+            GameObject legacyToggle = null;
             GameObject[] roots = scene.GetRootGameObjects();
             for (int index = 0; index < roots.Length; index++)
+            {
                 if (roots[index].name == "VRDebugPanel") panel = roots[index];
+                if (roots[index].name == "VRDebugPanelToggle") legacyToggle = roots[index];
+            }
             if (panel == null)
                 throw new InvalidOperationException("VR debug panel root is missing from the scene.");
+            if (legacyToggle != null)
+                throw new InvalidOperationException(
+                    "Legacy VRDebugPanelToggle must be removed; the information panel owns the debug toggle.");
+
+            if (Vector3.Distance(panel.transform.position, WorldDebugPanelInstaller.PanelPosition) > 0.002f ||
+                Quaternion.Angle(panel.transform.rotation,
+                    Quaternion.Euler(WorldDebugPanelInstaller.PanelEuler)) > 0.1f)
+                throw new InvalidOperationException("VR debug panel is not docked beside the information panel.");
 
             float expectedPanelScale = WorldDebugPanelInstaller.PanelScale;
             if (!Approximately(panel.transform.localScale, Vector3.one * expectedPanelScale, 0.0001f))
@@ -2023,25 +2399,6 @@ namespace StargazingHill.Editor
                     tightestLabel = label.text;
                 }
             }
-
-            // The toggle deliberately lives outside the panel root so it still works while the panel is
-            // hidden, which also means nothing stops it being parked in front of the board.
-            GameObject toggle = null;
-            for (int index = 0; index < roots.Length; index++)
-                if (roots[index].name == "VRDebugPanelToggle") toggle = roots[index];
-            if (toggle == null)
-                throw new InvalidOperationException("VR debug panel toggle is missing from the scene.");
-
-            Vector3 togglePoint = panel.transform.InverseTransformPoint(toggle.transform.position);
-            Vector3 toggleHalf = toggle.transform.localScale * 0.5f;
-            if (togglePoint.z < 0f &&
-                Mathf.Abs(togglePoint.x) < halfWidth + toggleHalf.x &&
-                Mathf.Abs(togglePoint.y) < halfHeight + toggleHalf.y)
-                throw new InvalidOperationException(
-                    "VR debug panel toggle blocks the board's reading face at panel-space " +
-                    togglePoint.ToString("F3") + "; move it clear of +/-" +
-                    (halfWidth + toggleHalf.x).ToString("F3") + " in x or +/-" +
-                    (halfHeight + toggleHalf.y).ToString("F3") + " in y.");
 
             float worldWidth = sheet.lossyScale.x;
             float worldHeight = sheet.lossyScale.y;

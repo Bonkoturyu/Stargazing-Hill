@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using VRC.SDK3.Components;
 using VRC.Udon;
 
 namespace StargazingHill.Editor
@@ -13,19 +14,275 @@ namespace StargazingHill.Editor
     {
         private const string ScenePath = "Assets/StargazingHill/Scenes/StargazingHill.unity";
         private const string RootPath = "Assets/StargazingHill";
-        private const string FontPath = "Packages/net.kwxxw.yama-stream/Assets/Fonts/ZenMaruGothic-Regular.ttf";
+        private const string FontPath = "Assets/StargazingHill/ThirdParty/Fonts/NotoSansCJKkr-Regular.otf";
         private const string PanelName = "WorldInformationPanel";
+        private const string VisualGroupPath = "Visual";
+        private const string DescriptionsGroupPath = "Visual/Descriptions";
+        private const string PresenceGroupPath = "Visual/Presence";
+        private const string ControlsGroupPath = "Controls";
+        private const string ObservatoryGroupPath = "Controls/Observatory";
         private const float CanvasScale = 0.002f;
-        private static readonly Vector3 Position = new Vector3(0.70f, 1.78f, -25.92f);
-        private static readonly Vector3 Euler = new Vector3(0f, 202.2865f, 0f);
-
-        [MenuItem("Stargazing Hill/Install or Refresh World Information Panel", false, 31)]
-        public static void InstallOrRefreshMenu()
+        private const float PresenceTop = 0.88f;
+        private const float HistoryTop = 0.31f;
+        private const float HistoryHeightPixels = 610f;
+        private const float LaptopIconTop = 0.584f;
+        private const float MobileIconTop = 0.456f;
+        private const float PanelTop = 1.25f;
+        private const float PanelBottom = -1.85f;
+        private const float ObservatoryControlY = -1.52f;
+        private static readonly string[] ObservatoryProfileIds =
         {
+            "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki", "naha-okinawa",
+            "rome", "paris", "moscow", "washington-dc", "san-francisco", "los-angeles", "las-vegas",
+            "new-york", "ottawa", "canberra", "jakarta", "beijing", "seoul"
+        };
+        private static readonly string[] ObservatoryDisplayNames =
+        {
+            "Tokyo, Japan", "Sapporo, Japan", "Osaka, Japan", "Takamatsu, Kagawa, Japan",
+            "Oita, Japan", "Miyazaki, Japan", "Naha, Okinawa, Japan", "Rome, Italy", "Paris, France",
+            "Moscow, Russia", "Washington D.C., America", "San Francisco, America",
+            "Los Angeles, America", "Las Vegas, America", "New York, America", "Ottawa, Canada",
+            "Canberra, Australia", "Jakarta, Indonesia", "Beijing, China", "Seoul, Korea"
+        };
+        private static readonly string[] ObservatoryDisplayNamesJapanese =
+        {
+            "東京（日本）", "札幌（日本）", "大阪（日本）", "高松・香川（日本）", "大分（日本）",
+            "宮崎（日本）", "那覇・沖縄（日本）", "ローマ（イタリア）", "パリ（フランス）",
+            "モスクワ（ロシア）", "ワシントンD.C.（アメリカ）", "サンフランシスコ（アメリカ）",
+            "ロサンゼルス（アメリカ）", "ラスベガス（アメリカ）", "ニューヨーク（アメリカ）",
+            "オタワ（カナダ）", "キャンベラ（オーストラリア）", "ジャカルタ（インドネシア）",
+            "北京（中国）", "ソウル（韓国）"
+        };
+        private static readonly string[] ObservatoryDisplayNamesTraditionalChinese =
+        {
+            "東京，日本", "札幌，日本", "大阪，日本", "高松（香川），日本", "大分，日本",
+            "宮崎，日本", "那霸（沖繩），日本", "羅馬，義大利", "巴黎，法國", "莫斯科，俄羅斯",
+            "華盛頓特區，美國", "舊金山，美國", "洛杉磯，美國", "拉斯維加斯，美國", "紐約，美國",
+            "渥太華，加拿大", "坎培拉，澳洲", "雅加達，印尼", "北京，中國", "首爾，韓國"
+        };
+        private static readonly string[] ObservatoryDisplayNamesSimplifiedChinese =
+        {
+            "东京，日本", "札幌，日本", "大阪，日本", "高松（香川），日本", "大分，日本",
+            "宫崎，日本", "那霸（冲绳），日本", "罗马，意大利", "巴黎，法国", "莫斯科，俄罗斯",
+            "华盛顿特区，美国", "旧金山，美国", "洛杉矶，美国", "拉斯维加斯，美国", "纽约，美国",
+            "渥太华，加拿大", "堪培拉，澳大利亚", "雅加达，印度尼西亚", "北京，中国", "首尔，韩国"
+        };
+        private static readonly string[] ObservatoryDisplayNamesKorean =
+        {
+            "도쿄, 일본", "삿포로, 일본", "오사카, 일본", "다카마쓰(가가와), 일본", "오이타, 일본",
+            "미야자키, 일본", "나하(오키나와), 일본", "로마, 이탈리아", "파리, 프랑스",
+            "모스크바, 러시아", "워싱턴 D.C., 미국", "샌프란시스코, 미국", "로스앤젤레스, 미국",
+            "라스베이거스, 미국", "뉴욕, 미국", "오타와, 캐나다", "캔버라, 호주",
+            "자카르타, 인도네시아", "베이징, 중국", "서울, 한국"
+        };
+        private static readonly string[] ObservatoryHeadingLabels =
+        {
+            "星空の基準地点  (global)",
+            "SKY REFERENCE LOCATION  (global)",
+            "星空基準地點  (global)",
+            "星空基准地点  (global)",
+            "별하늘 기준 위치  (global)"
+        };
+        private static readonly float[] ObservatoryLatitudes =
+        {
+            35.68f, 43.0618f, 34.6937f, 34.3428f, 33.2396f, 31.9077f, 26.2124f,
+            41.9028f, 48.8566f, 55.7558f, 38.9072f, 37.7749f, 34.0522f, 36.1699f,
+            40.7128f, 45.4215f, -35.2809f, -6.2088f, 39.9042f, 37.5665f
+        };
+        private static readonly float[] ObservatoryLongitudesEast =
+        {
+            139.76f, 141.3545f, 135.5023f, 134.0466f, 131.6093f, 131.4202f, 127.6809f,
+            12.4964f, 2.3522f, 37.6173f, -77.0369f, -122.4194f, -118.2437f, -115.1398f,
+            -74.0060f, -75.6972f, 149.1300f, 106.8456f, 116.4074f, 126.9780f
+        };
+        // Kept in sync with the hand-adjusted scene placement so a future full refresh
+        // does not put the information board back at its older generated position.
+        private static readonly Vector3 Position = new Vector3(1.471f, 1.999f, -26.29f);
+        private static readonly Vector3 Euler = new Vector3(0f, 202.2865f, 0f);
+        private static readonly Vector3 LanguageTogglePosition = new Vector3(1.03f, ObservatoryControlY, -0.0125f);
+        private static readonly Vector3 LanguageToggleScale = new Vector3(0.56f, 0.18f, 0.019f);
+        private static readonly Vector3 DebugTogglePosition = new Vector3(1.72f, ObservatoryControlY, -0.0125f);
+        private static readonly Vector3 DebugToggleScale = new Vector3(0.72f, 0.18f, 0.019f);
+
+        [MenuItem("Stargazing Hill/Content/Information Panel/Select in Hierarchy", false, 20)]
+        public static void SelectInformationPanelMenu()
+        {
+            GameObject panel = GameObject.Find("World/InformationSystem/" + PanelName);
+            if (panel == null)
+            {
+                EditorUtility.DisplayDialog("Stargazing Hill", "WorldInformationPanel is not present in the open scene.", "OK");
+                return;
+            }
+            Selection.activeGameObject = panel;
+            EditorGUIUtility.PingObject(panel);
+        }
+
+        [MenuItem("Stargazing Hill/Content/Information Panel/Validate", false, 21)]
+        public static void ValidateMenu()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Scene scene = SceneManager.GetActiveScene();
             if (scene.path != ScenePath) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            EditorUtility.DisplayDialog("Stargazing Hill", "InformationSystem validation passed.", "OK");
+        }
+
+        [MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild InformationSystem (Replaces Children)...", false, 80)]
+        public static void InstallOrRefreshMenu()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Rebuild InformationSystem",
+                    "This replaces World/InformationSystem from the versioned generator. " +
+                    "Manual changes inside InformationSystem will be lost.",
+                    "Rebuild", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.path != ScenePath) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldDebugPanelInstaller.InstallForBuild(scene);
             InstallForBuild(scene);
             EditorSceneManager.SaveScene(scene);
+        }
+
+        [MenuItem("Stargazing Hill/Content/Information Panel/Apply Saved Readability Layout", false, 22)]
+        public static void ApplyReadabilityLayoutMenu()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Apply Information Panel Layout",
+                    "Apply the versioned panel, presence, icon, and control positions without rebuilding children?",
+                    "Apply Layout", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.path != ScenePath) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ApplyReadabilityLayout(scene);
+            EditorSceneManager.SaveScene(scene);
+        }
+
+        public static void ApplyReadabilityLayoutForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ApplyReadabilityLayout(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+        }
+
+        public static void InstallOrRefreshForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldDebugPanelInstaller.InstallForBuild(scene);
+            InstallForBuild(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+        }
+
+        public static void ValidateForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            ValidateScene(scene);
+            Debug.Log("World information panel validation passed.");
+        }
+
+        internal static void ValidateScene(Scene scene)
+        {
+            if (!scene.IsValid()) throw new InvalidOperationException("StargazingHill scene is not loaded.");
+            GameObject panel = GameObject.Find("World/InformationSystem/" + PanelName);
+            if (panel == null || panel.GetComponent<Collider>() != null)
+                throw new InvalidOperationException("World information panel root is missing or has a collider.");
+
+            WorldInfoLanguageToggle languageToggle = panel.GetComponentInChildren<WorldInfoLanguageToggle>(true);
+            WorldPresenceBoard presence = panel.GetComponent<WorldPresenceBoard>();
+            WorldObservatorySelector selector = panel.GetComponent<WorldObservatorySelector>();
+            WorldObservatoryButton[] buttons = panel.GetComponentsInChildren<WorldObservatoryButton>(true);
+            Transform visualGroup = panel.transform.Find(VisualGroupPath);
+            Transform descriptionsGroup = panel.transform.Find(DescriptionsGroupPath);
+            Transform presenceGroup = panel.transform.Find(PresenceGroupPath);
+            Transform controlsGroup = panel.transform.Find(ControlsGroupPath);
+            Transform observatoryGroup = panel.transform.Find(ObservatoryGroupPath);
+            Transform sheet = panel.transform.Find(VisualGroupPath + "/PanelSheet");
+            Transform languageButton = panel.transform.Find(ControlsGroupPath + "/LanguageToggle");
+            Transform laptopIcon = panel.transform.Find(PresenceGroupPath + "/PlatformLaptopIcon");
+            Transform mobileIcon = panel.transform.Find(PresenceGroupPath + "/PlatformMobileIcon");
+            Transform list = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryLocationList");
+            Transform heading = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryHeading");
+            Transform debugButton = panel.transform.Find(ControlsGroupPath + "/DebugPanelToggle");
+            Transform firstVisualLocation = list != null ? list.Find("Location_19") : null;
+            Transform lastVisualLocation = list != null ? list.Find("Location_00") : null;
+
+            if (languageToggle == null || languageButton == null || presence == null ||
+                presence.playerCountText == null || presence.historyText == null ||
+                presence.historyScrollRect == null || selector == null || buttons.Length != 24 ||
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(selector) == null ||
+                selector.profileIds == null || selector.profileIds.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.displayNames == null || selector.displayNames.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.displayNamesJapanese == null ||
+                selector.displayNamesJapanese.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.displayNamesTraditionalChinese == null ||
+                selector.displayNamesTraditionalChinese.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.displayNamesSimplifiedChinese == null ||
+                selector.displayNamesSimplifiedChinese.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.displayNamesKorean == null ||
+                selector.displayNamesKorean.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.latitudeDegrees == null || selector.latitudeDegrees.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.longitudeDegreesEast == null ||
+                selector.longitudeDegreesEast.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.observatoryHeadingLabel == null ||
+                selector.localizedHeadingLabels == null || selector.localizedHeadingLabels.Length != 5 ||
+                selector.selectedLocationLabel == null ||
+                selector.selectedLocationLabel.text.Contains("(global)") ||
+                selector.locationListLabels == null ||
+                selector.locationListLabels.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.locationListRoot != (list != null ? list.gameObject : null) ||
+                selector.skyController == null || selector.meteorController == null ||
+                selector.debugPanelRoot == null || selector.debugToggleLabel == null ||
+                visualGroup == null || descriptionsGroup == null || presenceGroup == null ||
+                controlsGroup == null || observatoryGroup == null ||
+                descriptionsGroup.Find("TitleCanvas") == null ||
+                descriptionsGroup.Find("JapaneseDescription") == null ||
+                descriptionsGroup.Find("EnglishDescription") == null ||
+                descriptionsGroup.Find("TraditionalChineseDescription") == null ||
+                descriptionsGroup.Find("SimplifiedChineseDescription") == null ||
+                descriptionsGroup.Find("KoreanDescription") == null ||
+                sheet == null || sheet.localScale.y < 3.09f ||
+                panel.transform.Find(ObservatoryGroupPath + "/ObservatoryPrevious") == null ||
+                panel.transform.Find(ObservatoryGroupPath + "/ObservatorySelected") == null ||
+                panel.transform.Find(ObservatoryGroupPath + "/ObservatoryNext") == null ||
+                heading == null || debugButton == null ||
+                languageToggle.traditionalChineseText == null ||
+                languageToggle.simplifiedChineseText == null || languageToggle.koreanText == null ||
+                languageToggle.observatorySelector != selector ||
+                firstVisualLocation == null || lastVisualLocation == null ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.x, 0f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.10f))
+                throw new InvalidOperationException("World information panel global observatory controls are incomplete.");
+
+            RectTransform countCanvas = presence.playerCountText.transform.parent as RectTransform;
+            RectTransform historyCanvas = presence.historyScrollRect.GetComponent<RectTransform>();
+            if (countCanvas == null ||
+                !Mathf.Approximately(countCanvas.anchoredPosition.x, 0.73f) ||
+                !Mathf.Approximately(countCanvas.anchoredPosition.y, PresenceTop) ||
+                historyCanvas == null ||
+                !Mathf.Approximately(historyCanvas.anchoredPosition.x, 0.73f) ||
+                !Mathf.Approximately(historyCanvas.anchoredPosition.y, HistoryTop) ||
+                !Mathf.Approximately(historyCanvas.sizeDelta.y, HistoryHeightPixels) ||
+                !Mathf.Approximately(languageButton.localPosition.x, LanguageTogglePosition.x) ||
+                !Mathf.Approximately(languageButton.localPosition.y, LanguageTogglePosition.y) ||
+                !Mathf.Approximately(languageButton.localScale.x, LanguageToggleScale.x) ||
+                !Mathf.Approximately(debugButton.localPosition.x, DebugTogglePosition.x) ||
+                !Mathf.Approximately(debugButton.localPosition.y, DebugTogglePosition.y) ||
+                !Mathf.Approximately(debugButton.localScale.x, DebugToggleScale.x) ||
+                laptopIcon == null || !Mathf.Approximately(laptopIcon.localPosition.x, 0.79f) ||
+                !Mathf.Approximately(laptopIcon.localPosition.y, LaptopIconTop) ||
+                mobileIcon == null || !Mathf.Approximately(mobileIcon.localPosition.x, 0.79f) ||
+                !Mathf.Approximately(mobileIcon.localPosition.y, MobileIconTop))
+                throw new InvalidOperationException("Existing information panel UI coordinates changed unexpectedly.");
+
+            for (int index = 0; index < buttons.Length; index++)
+                if (UdonSharpEditorUtility.GetBackingUdonBehaviour(buttons[index]) == null)
+                    throw new InvalidOperationException(
+                        "Observatory selector button has no backing Udon behaviour: " + buttons[index].name);
         }
 
         internal static void InstallForBuild(Scene scene)
@@ -53,37 +310,66 @@ namespace StargazingHill.Editor
             panel.transform.position = Position;
             panel.transform.rotation = Quaternion.Euler(Euler);
 
+            Transform visualGroup = CreateGroup(panel.transform, "Visual");
+            Transform descriptionsGroup = CreateGroup(visualGroup, "Descriptions");
+            Transform presenceGroup = CreateGroup(visualGroup, "Presence");
+            Transform controlsGroup = CreateGroup(panel.transform, "Controls");
+            Transform observatoryGroup = CreateGroup(controlsGroup, "Observatory");
+
             GameObject sheet = GameObject.CreatePrimitive(PrimitiveType.Cube);
             sheet.name = "PanelSheet";
-            sheet.transform.SetParent(panel.transform, false);
-            sheet.transform.localScale = new Vector3(4.4f, 2.5f, 0.04f);
+            sheet.transform.SetParent(visualGroup, false);
+            sheet.transform.localPosition = new Vector3(0f, (PanelTop + PanelBottom) * 0.5f, 0f);
+            sheet.transform.localScale = new Vector3(4.4f, PanelTop - PanelBottom, 0.04f);
             sheet.GetComponent<Renderer>().sharedMaterial = boardMaterial;
             UnityEngine.Object.DestroyImmediate(sheet.GetComponent<Collider>());
 
-            CreateText(panel.transform, "STARGAZING HILL / 星見の丘", new Vector3(-2.0f, 1.02f, -0.026f),
+            Text title = CreateText(descriptionsGroup, "STARGAZING HILL / 星見の丘", new Vector3(-2.0f, 1.02f, -0.026f),
                 0.15f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.78f, 0.90f, 1f));
-            Text japanese = CreateText(panel.transform,
-                "東京の現在時刻に連動した\n星空と月を眺める、静かな草原です。\n\n毎時00分から流星イベントが始まります。\n季節の流星群がない時間は\n散在流星が空を横切ります。\n\n動画・ペン・V睡・写真撮影にどうぞ。\nPC / Android / iOS 対応",
+            title.transform.parent.name = "TitleCanvas";
+            Text japanese = CreateText(descriptionsGroup,
+                "現実の時刻と、全員で共有する観測地点に連動した\n星空と月を眺める、静かな草原です。\n\n毎時00分から流星イベントが始まります。\n季節の流星群が活動中でない時は\n散在流星が空を横切ります。\n\nV睡・雑談・動画鑑賞・お絵描き・写真撮影にどうぞ。\nPC / Android / iOS 対応",
                 new Vector3(-2.0f, 0.69f, -0.026f), 0.102f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.86f, 0.92f, 1f));
             japanese.gameObject.transform.parent.name = "JapaneseDescription";
-            Text english = CreateText(panel.transform,
-                "A quiet grassland beneath a real sky and Moon,\naligned with the current time in Tokyo.\n\nA meteor event begins at the top of every hour.\nSeasonal showers appear when active;\notherwise sporadic meteors cross the sky.\n\nRelax, chat, sleep in VR, draw, or take photos.\nPC / Android / iOS",
+            Text english = CreateText(descriptionsGroup,
+                "A quiet grassland beneath a real-time sky and Moon,\naligned to a globally shared observation location.\n\nA meteor event begins at the top of every hour.\nSeasonal showers appear when active;\notherwise sporadic meteors cross the sky.\n\nRelax, chat, sleep in VR, watch videos, draw, or take photos.\nPC / Android / iOS",
                 new Vector3(-2.0f, 0.69f, -0.026f), 0.096f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.86f, 0.92f, 1f));
             english.gameObject.transform.parent.name = "EnglishDescription";
             english.gameObject.transform.parent.gameObject.SetActive(false);
+            Text traditionalChinese = CreateText(descriptionsGroup,
+                "在寧靜草原中仰望星空與月亮，\n景象會依照目前時間與全體共享的觀測地點呈現。\n\n每逢整點會開始流星事件。\n有活躍的季節性流星雨時會顯示流星雨；\n其他時間則會有零星流星劃過天空。\n\n歡迎放鬆、聊天、VR睡眠、看影片、繪圖或拍照。\n支援 PC / Android / iOS",
+                new Vector3(-2.0f, 0.69f, -0.026f), 0.092f, TextAnchor.UpperLeft,
+                font, textMaterial, new Color(0.86f, 0.92f, 1f));
+            traditionalChinese.gameObject.transform.parent.name = "TraditionalChineseDescription";
+            traditionalChinese.gameObject.transform.parent.gameObject.SetActive(false);
+            Text simplifiedChinese = CreateText(descriptionsGroup,
+                "在宁静草原上仰望星空和月亮，\n景象会根据当前时间和全体共享的观测地点显示。\n\n每逢整点会开始流星事件。\n有活跃的季节性流星雨时会显示流星雨；\n其他时间则会有零星流星划过天空。\n\n欢迎放松、聊天、VR睡眠、观看视频、绘图或拍照。\n支持 PC / Android / iOS",
+                new Vector3(-2.0f, 0.69f, -0.026f), 0.092f, TextAnchor.UpperLeft,
+                font, textMaterial, new Color(0.86f, 0.92f, 1f));
+            simplifiedChinese.gameObject.transform.parent.name = "SimplifiedChineseDescription";
+            simplifiedChinese.gameObject.transform.parent.gameObject.SetActive(false);
+            Text korean = CreateText(descriptionsGroup,
+                "현재 시각과 모두가 공유하는 관측 지점에 맞춘\n별하늘과 달을 바라보는 조용한 초원입니다.\n\n매 정각에 유성 이벤트가 시작됩니다.\n활동 중인 계절 유성우가 있으면 유성우가 나타나며,\n그 외에는 산발 유성이 하늘을 가로지릅니다.\n\n휴식, 대화, VR 수면, 영상 감상, 그림, 사진 촬영을 즐겨 주세요.\nPC / Android / iOS 지원",
+                new Vector3(-2.0f, 0.69f, -0.026f), 0.088f, TextAnchor.UpperLeft,
+                font, textMaterial, new Color(0.86f, 0.92f, 1f));
+            korean.gameObject.transform.parent.name = "KoreanDescription";
+            korean.gameObject.transform.parent.gameObject.SetActive(false);
 
-            Text count = CreateText(panel.transform,
+            Text count = CreateText(presenceGroup,
                 "ONLINE  0 / 80\nRECOMMENDED  40\n       PC  0\n       MOBILE  0",
-                new Vector3(0.73f, 0.55f, -0.027f),
+                new Vector3(0.73f, PresenceTop, -0.027f),
                 0.082f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
-            CreatePlatformIcons(panel.transform, accentMaterial);
-            Text history = CreateText(panel.transform, "JOIN / LEAVE  0-0 / 0", new Vector3(0.73f, -0.02f, -0.027f),
-                0.050f, TextAnchor.UpperLeft, font, textMaterial, new Color(0.76f, 0.86f, 0.96f));
+            count.transform.parent.name = "PlayerCountCanvas";
+            CreatePlatformIcons(presenceGroup, accentMaterial);
+            ScrollRect historyScrollRect;
+            Text history = CreateHistoryScrollView(presenceGroup, font, textMaterial,
+                out historyScrollRect);
             WorldPresenceBoard presence = UdonSharpUndo.AddComponent<WorldPresenceBoard>(panel);
             presence.playerCountText = count;
             presence.historyText = history;
+            presence.historyScrollRect = historyScrollRect;
             presence.maximumCapacity = WorldPresenceBoard.DefaultMaximumCapacity;
             presence.recommendedCapacity = WorldPresenceBoard.DefaultRecommendedCapacity;
             presence.historyCapacity = WorldPresenceBoard.DefaultHistoryCapacity;
@@ -91,81 +377,342 @@ namespace StargazingHill.Editor
             UdonSharpEditorUtility.CopyProxyToUdon(presence);
             EditorUtility.SetDirty(presence);
 
-            CreateHistoryScrollButton(panel.transform, "HistoryNewer", new Vector3(2.03f, -0.70f, -0.0125f),
-                "▲", false, presence, font, textMaterial, buttonMaterial);
-            CreateHistoryScrollButton(panel.transform, "HistoryOlder", new Vector3(2.03f, -1.00f, -0.0125f),
-                "▼", true, presence, font, textMaterial, buttonMaterial);
-
             GameObject button = GameObject.CreatePrimitive(PrimitiveType.Cube);
             button.name = "LanguageToggle";
-            button.transform.SetParent(panel.transform, false);
+            button.transform.SetParent(controlsGroup, false);
             // The visible face is flush with the board's -Z face; only this intentional button has a collider.
             // Leave the button visually flush, but move its readable face 2 mm toward the user.
             // At exactly -0.020 m it was coplanar with the panel face and flickered from z-fighting.
-            button.transform.localPosition = new Vector3(1.72f, 0.98f, -0.0125f);
-            button.transform.localScale = new Vector3(0.72f, 0.22f, 0.019f);
+            button.transform.localPosition = LanguageTogglePosition;
+            button.transform.localScale = LanguageToggleScale;
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
             Text buttonLabel = CreateText(button.transform, "ENGLISH", new Vector3(0f, 0f, -0.53f),
-                0.10f, TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
+                0.075f, TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
             WorldInfoLanguageToggle toggle = UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(button);
             toggle.japaneseText = japanese.transform.parent.gameObject;
             toggle.englishText = english.transform.parent.gameObject;
+            toggle.traditionalChineseText = traditionalChinese.transform.parent.gameObject;
+            toggle.simplifiedChineseText = simplifiedChinese.transform.parent.gameObject;
+            toggle.koreanText = korean.transform.parent.gameObject;
             toggle.buttonLabel = buttonLabel;
             UdonSharpEditorUtility.CopyProxyToUdon(toggle);
             UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(toggle);
             if (backing != null)
             {
-                backing.InteractionText = "日本語 / English";
+                backing.InteractionText = "Language / 言語";
                 backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
             }
             EditorUtility.SetDirty(toggle);
+
+            RealSkyController sky = UnityEngine.Object.FindObjectOfType<RealSkyController>(true);
+            MeteorController meteor = UnityEngine.Object.FindObjectOfType<MeteorController>(true);
+            WorldDebugPanelPickup debugPickup = UnityEngine.Object.FindObjectOfType<WorldDebugPanelPickup>(true);
+            if (sky == null || meteor == null || debugPickup == null)
+                throw new InvalidOperationException(
+                    "Information panel observatory controls require RealSkyController, MeteorController, and VRDebugPanel.");
+            WorldObservatorySelector selector = CreateObservatoryControls(
+                panel.transform, controlsGroup, observatoryGroup, font, textMaterial, boardMaterial, buttonMaterial,
+                sky, meteor, debugPickup.gameObject);
+            toggle.observatorySelector = selector;
+            UdonSharpEditorUtility.CopyProxyToUdon(toggle);
+            EditorUtility.SetDirty(toggle);
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        private static void CreateHistoryScrollButton(Transform parent, string name, Vector3 position,
-            string label, bool scrollOlder, WorldPresenceBoard presence, Font font,
-            Material textMaterial, Material buttonMaterial)
+        private static WorldObservatorySelector CreateObservatoryControls(
+            Transform panel, Transform controls, Transform observatory, Font font,
+            Material textMaterial, Material boardMaterial,
+            Material buttonMaterial, RealSkyController sky,
+            MeteorController meteor, GameObject debugPanel)
+        {
+            Text heading = CreateText(observatory, ObservatoryHeadingLabels[0],
+                new Vector3(-0.77f, -1.31f, -0.026f), 0.060f, TextAnchor.UpperCenter,
+                font, textMaterial, new Color(0.58f, 0.90f, 1f));
+            heading.transform.parent.name = "ObservatoryHeading";
+
+            WorldObservatorySelector selector = UdonSharpUndo.AddComponent<WorldObservatorySelector>(panel.gameObject);
+            selector.profileIds = ObservatoryProfileIds;
+            selector.displayNames = ObservatoryDisplayNames;
+            selector.displayNamesJapanese = ObservatoryDisplayNamesJapanese;
+            selector.displayNamesTraditionalChinese = ObservatoryDisplayNamesTraditionalChinese;
+            selector.displayNamesSimplifiedChinese = ObservatoryDisplayNamesSimplifiedChinese;
+            selector.displayNamesKorean = ObservatoryDisplayNamesKorean;
+            selector.latitudeDegrees = ObservatoryLatitudes;
+            selector.longitudeDegreesEast = ObservatoryLongitudesEast;
+            selector.observatoryHeadingLabel = heading;
+            selector.localizedHeadingLabels = ObservatoryHeadingLabels;
+            selector.skyController = sky;
+            selector.meteorController = meteor;
+            selector.debugPanelRoot = debugPanel;
+            selector.selectedIndex = 0;
+
+            CreateObservatoryButton(observatory, "ObservatoryPrevious", "◀",
+                new Vector3(-1.98f, ObservatoryControlY, -0.0125f), new Vector3(0.30f, 0.18f, 0.019f),
+                0.095f, buttonMaterial, font, textMaterial, selector,
+                WorldObservatoryButton.ActionPrevious, 0, "Previous observatory (global)");
+
+            GameObject selectedButton = CreateObservatoryButton(observatory, "ObservatorySelected", "東京（日本）",
+                new Vector3(-0.77f, ObservatoryControlY, -0.0125f), new Vector3(1.98f, 0.18f, 0.019f),
+                0.072f, buttonMaterial, font, textMaterial, selector,
+                WorldObservatoryButton.ActionToggleList, 0, "Open observatory list (global)");
+            selector.selectedLocationLabel = selectedButton.GetComponentInChildren<Text>(true);
+
+            CreateObservatoryButton(observatory, "ObservatoryNext", "▶",
+                new Vector3(0.44f, ObservatoryControlY, -0.0125f), new Vector3(0.30f, 0.18f, 0.019f),
+                0.095f, buttonMaterial, font, textMaterial, selector,
+                WorldObservatoryButton.ActionNext, 0, "Next observatory (global)");
+
+            GameObject debugButton = CreateObservatoryButton(controls, "DebugPanelToggle", "DEBUG: OFF",
+                DebugTogglePosition, DebugToggleScale, 0.068f, buttonMaterial, font, textMaterial, selector,
+                WorldObservatoryButton.ActionToggleDebugPanel, 0, "Toggle local debug panel");
+            selector.debugToggleLabel = debugButton.GetComponentInChildren<Text>(true);
+
+            GameObject listRoot = new GameObject("ObservatoryLocationList");
+            listRoot.transform.SetParent(observatory, false);
+            GameObject listBackdrop = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            listBackdrop.name = "ListBackdrop";
+            listBackdrop.transform.SetParent(listRoot.transform, false);
+            listBackdrop.transform.localPosition = new Vector3(0f, -0.50f, -0.042f);
+            listBackdrop.transform.localScale = new Vector3(4.18f, 1.50f, 0.022f);
+            listBackdrop.GetComponent<Renderer>().sharedMaterial = boardMaterial;
+            UnityEngine.Object.DestroyImmediate(listBackdrop.GetComponent<Collider>());
+
+            Text[] locationListLabels = new Text[ObservatoryDisplayNames.Length];
+            for (int visualIndex = 0; visualIndex < ObservatoryDisplayNames.Length; visualIndex++)
+            {
+                int catalogIndex = ObservatoryDisplayNames.Length - 1 - visualIndex;
+                int row = visualIndex / 3;
+                int column = visualIndex % 3;
+                float x = -1.38f + column * 1.38f;
+                float y = 0.10f - row * 0.20f;
+                GameObject locationButton = CreateObservatoryButton(
+                    listRoot.transform, "Location_" + catalogIndex.ToString("00"),
+                    ObservatoryDisplayNamesJapanese[catalogIndex], new Vector3(x, y, -0.058f),
+                    new Vector3(1.28f, 0.17f, 0.018f), 0.042f,
+                    buttonMaterial, font, textMaterial, selector,
+                    WorldObservatoryButton.ActionSelectLocation, catalogIndex,
+                    "Select " + ObservatoryDisplayNames[catalogIndex] + " (global)");
+                locationListLabels[catalogIndex] = locationButton.GetComponentInChildren<Text>(true);
+            }
+
+            selector.locationListLabels = locationListLabels;
+            selector.locationListRoot = listRoot;
+            listRoot.SetActive(false);
+            UdonSharpEditorUtility.CopyProxyToUdon(selector);
+            EditorUtility.SetDirty(selector);
+            return selector;
+        }
+
+        private static GameObject CreateObservatoryButton(
+            Transform parent, string name, string label, Vector3 position, Vector3 scale,
+            float textHeight, Material buttonMaterial, Font font, Material textMaterial,
+            WorldObservatorySelector selector, int action, int locationIndex, string interactionText)
         {
             GameObject button = GameObject.CreatePrimitive(PrimitiveType.Cube);
             button.name = name;
             button.transform.SetParent(parent, false);
             button.transform.localPosition = position;
-            button.transform.localScale = new Vector3(0.25f, 0.20f, 0.019f);
+            button.transform.localScale = scale;
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
-            CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f),
-                0.11f, TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
+            CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f), textHeight,
+                TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
 
-            WorldPresenceHistoryScrollButton scrollButton =
-                UdonSharpUndo.AddComponent<WorldPresenceHistoryScrollButton>(button);
-            scrollButton.presenceBoard = presence;
-            scrollButton.scrollOlder = scrollOlder;
-            UdonSharpEditorUtility.CopyProxyToUdon(scrollButton);
-            UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(scrollButton);
+            WorldObservatoryButton behaviour = UdonSharpUndo.AddComponent<WorldObservatoryButton>(button);
+            behaviour.selector = selector;
+            behaviour.action = action;
+            behaviour.locationIndex = locationIndex;
+            UdonSharpEditorUtility.CopyProxyToUdon(behaviour);
+            UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(behaviour);
             if (backing != null)
             {
-                backing.InteractionText = scrollOlder ? "Older history" : "Newer history";
+                backing.InteractionText = interactionText;
                 backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
             }
-            EditorUtility.SetDirty(scrollButton);
+            EditorUtility.SetDirty(behaviour);
+            return button;
+        }
+
+        private static Transform CreateGroup(Transform parent, string name)
+        {
+            GameObject group = new GameObject(name);
+            group.transform.SetParent(parent, false);
+            return group.transform;
+        }
+
+        private static void ApplyReadabilityLayout(Scene scene)
+        {
+            if (!scene.IsValid()) throw new InvalidOperationException("StargazingHill scene is not loaded.");
+            GameObject panel = GameObject.Find("World/InformationSystem/" + PanelName);
+            if (panel == null) throw new InvalidOperationException("World information panel is missing.");
+
+            Transform languageToggle = panel.transform.Find(ControlsGroupPath + "/LanguageToggle");
+            if (languageToggle == null) throw new InvalidOperationException("Information panel language toggle is missing.");
+            languageToggle.localPosition = LanguageTogglePosition;
+            languageToggle.localScale = LanguageToggleScale;
+            Transform debugToggle = panel.transform.Find(ControlsGroupPath + "/DebugPanelToggle");
+            if (debugToggle == null) throw new InvalidOperationException("Information panel debug toggle is missing.");
+            debugToggle.localPosition = DebugTogglePosition;
+            debugToggle.localScale = DebugToggleScale;
+
+            panel.transform.position = Position;
+            panel.transform.rotation = Quaternion.Euler(Euler);
+
+            WorldPresenceBoard presence = panel.GetComponent<WorldPresenceBoard>();
+            if (presence == null || presence.playerCountText == null || presence.historyScrollRect == null)
+                throw new InvalidOperationException("Information panel presence display is incomplete.");
+
+            RectTransform countCanvas = presence.playerCountText.transform.parent as RectTransform;
+            if (countCanvas == null) throw new InvalidOperationException("Presence count canvas is missing.");
+            countCanvas.anchoredPosition = new Vector2(0.73f, PresenceTop);
+            presence.playerCountText.fontStyle = FontStyle.Normal;
+
+            RectTransform historyCanvas = presence.historyScrollRect.GetComponent<RectTransform>();
+            historyCanvas.anchoredPosition = new Vector2(0.73f, HistoryTop);
+            historyCanvas.sizeDelta = new Vector2(historyCanvas.sizeDelta.x, HistoryHeightPixels);
+
+            SetLocalPosition(panel.transform.Find(PresenceGroupPath + "/PlatformLaptopIcon"),
+                new Vector3(0.79f, LaptopIconTop, -0.023f));
+            SetLocalPosition(panel.transform.Find(PresenceGroupPath + "/PlatformMobileIcon"),
+                new Vector3(0.79f, MobileIconTop, -0.023f));
+
+            EditorUtility.SetDirty(languageToggle);
+            EditorUtility.SetDirty(debugToggle);
+            EditorUtility.SetDirty(panel.transform);
+            EditorUtility.SetDirty(countCanvas);
+            EditorUtility.SetDirty(presence.playerCountText);
+            EditorUtility.SetDirty(historyCanvas);
+            EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private static void SetLocalPosition(Transform target, Vector3 position)
+        {
+            if (target == null) throw new InvalidOperationException("Information panel platform icon is missing.");
+            target.localPosition = position;
+            EditorUtility.SetDirty(target);
+        }
+
+        private static Text CreateHistoryScrollView(Transform parent, Font font,
+            Material textMaterial, out ScrollRect scrollRect)
+        {
+            GameObject canvasObject = new GameObject("HistoryScrollCanvas");
+            canvasObject.layer = LayerMask.NameToLayer("UI");
+            canvasObject.transform.SetParent(parent, false);
+            canvasObject.transform.localPosition = new Vector3(0.73f, HistoryTop, -0.027f);
+            canvasObject.transform.localRotation = Quaternion.identity;
+            canvasObject.transform.localScale = Vector3.one * CanvasScale;
+
+            Canvas canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(650f, HistoryHeightPixels);
+            canvasRect.pivot = new Vector2(0f, 1f);
+            canvasObject.AddComponent<CanvasScaler>();
+            canvasObject.AddComponent<GraphicRaycaster>();
+            canvasObject.AddComponent<VRCUiShape>();
+
+            GameObject viewportObject = new GameObject("Viewport", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
+            viewportObject.layer = canvasObject.layer;
+            viewportObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = Vector2.zero;
+            viewport.offsetMax = new Vector2(-28f, 0f);
+            Image viewportImage = viewportObject.GetComponent<Image>();
+            viewportImage.color = new Color(1f, 1f, 1f, 0.001f);
+            viewportImage.material = textMaterial;
+            viewportImage.raycastTarget = true;
+
+            GameObject contentObject = new GameObject("Content", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Text), typeof(ContentSizeFitter));
+            contentObject.layer = canvasObject.layer;
+            contentObject.transform.SetParent(viewport, false);
+            RectTransform content = contentObject.GetComponent<RectTransform>();
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+            Text history = contentObject.GetComponent<Text>();
+            history.font = font;
+            history.fontSize = 25;
+            history.alignment = TextAnchor.UpperLeft;
+            history.horizontalOverflow = HorizontalWrapMode.Wrap;
+            history.verticalOverflow = VerticalWrapMode.Overflow;
+            history.text = "JOIN / LEAVE  0-0 / 0";
+            history.color = new Color(0.76f, 0.86f, 0.96f);
+            history.material = textMaterial;
+            ContentSizeFitter fitter = contentObject.GetComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            GameObject scrollbarObject = new GameObject("Scrollbar", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Image), typeof(Scrollbar));
+            scrollbarObject.layer = canvasObject.layer;
+            scrollbarObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform scrollbarRect = scrollbarObject.GetComponent<RectTransform>();
+            scrollbarRect.anchorMin = new Vector2(1f, 0f);
+            scrollbarRect.anchorMax = Vector2.one;
+            scrollbarRect.pivot = new Vector2(1f, 0.5f);
+            scrollbarRect.offsetMin = new Vector2(-20f, 0f);
+            scrollbarRect.offsetMax = Vector2.zero;
+            Image scrollbarImage = scrollbarObject.GetComponent<Image>();
+            scrollbarImage.color = new Color(0.08f, 0.17f, 0.28f, 0.75f);
+            // UI Image/ScrollRect reads the material's _MainTex during LateUpdate.
+            // Unlit/Color has no texture property and logs an error every frame, so all
+            // graphics in this Canvas use the VRChat supersampled UI material instead.
+            scrollbarImage.material = textMaterial;
+
+            GameObject handleObject = new GameObject("Handle", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Image));
+            handleObject.layer = canvasObject.layer;
+            handleObject.transform.SetParent(scrollbarObject.transform, false);
+            RectTransform handleRect = handleObject.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = new Vector2(3f, 3f);
+            handleRect.offsetMax = new Vector2(-3f, -3f);
+            Image handleImage = handleObject.GetComponent<Image>();
+            handleImage.color = new Color(0.58f, 0.90f, 1f, 1f);
+            handleImage.material = textMaterial;
+
+            Scrollbar scrollbar = scrollbarObject.GetComponent<Scrollbar>();
+            scrollbar.handleRect = handleRect;
+            scrollbar.targetGraphic = handleImage;
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+            scrollRect = canvasObject.AddComponent<ScrollRect>();
+            scrollRect.content = content;
+            scrollRect.viewport = viewport;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.inertia = true;
+            scrollRect.scrollSensitivity = 36f;
+            scrollRect.verticalScrollbar = scrollbar;
+            scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            scrollRect.verticalNormalizedPosition = 0f;
+            return history;
         }
 
         private static void CreatePlatformIcons(Transform parent, Material material)
         {
             GameObject laptop = new GameObject("PlatformLaptopIcon");
             laptop.transform.SetParent(parent, false);
-            laptop.transform.localPosition = new Vector3(0.79f, 0.32f, -0.023f);
-            CreateIconOutline(laptop.transform, 0.12f, 0.075f, 0.012f, material);
-            CreateIconPart(laptop.transform, "Base", new Vector3(0f, -0.050f, 0f),
-                new Vector3(0.16f, 0.014f, 0.004f), material);
+            laptop.transform.localPosition = new Vector3(0.79f, LaptopIconTop, -0.023f);
+            CreateIconOutline(laptop.transform, 0.11f, 0.065f, 0.010f, material);
+            CreateIconPart(laptop.transform, "Base", new Vector3(0f, -0.044f, 0f),
+                new Vector3(0.145f, 0.012f, 0.004f), material);
 
             GameObject mobile = new GameObject("PlatformMobileIcon");
             mobile.transform.SetParent(parent, false);
-            mobile.transform.localPosition = new Vector3(0.79f, 0.22f, -0.023f);
-            CreateIconOutline(mobile.transform, 0.065f, 0.105f, 0.010f, material);
+            mobile.transform.localPosition = new Vector3(0.79f, MobileIconTop, -0.023f);
+            CreateIconOutline(mobile.transform, 0.055f, 0.090f, 0.009f, material);
         }
 
         private static void CreateIconOutline(Transform parent, float width, float height,
@@ -198,7 +745,7 @@ namespace StargazingHill.Editor
         internal static Font EnsureFont()
         {
             Font font = AssetDatabase.LoadAssetAtPath<Font>(FontPath);
-            if (font == null) throw new InvalidOperationException("YamaPlayer Japanese font is missing: " + FontPath);
+            if (font == null) throw new InvalidOperationException("Bundled Noto CJK font is missing: " + FontPath);
             return font;
         }
 
@@ -248,6 +795,7 @@ namespace StargazingHill.Editor
             RectTransform rect = text.rectTransform;
             rect.sizeDelta = new Vector2(2000f, 1100f);
             if (anchor == TextAnchor.UpperLeft) rect.pivot = new Vector2(0f, 1f);
+            else if (anchor == TextAnchor.UpperCenter) rect.pivot = new Vector2(0.5f, 1f);
             else rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
             return text;

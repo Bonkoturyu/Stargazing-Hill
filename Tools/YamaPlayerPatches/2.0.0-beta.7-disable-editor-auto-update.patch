@@ -25,3 +25,18 @@ diff --git a/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistBuildProcess
 +          // Reuse that component when present instead of creating a duplicate during the SDK build hook.
 +          var udonPlaylist = item.GetComponent<Playlist>();
 +          if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();
+@@ -52,3 +55,5 @@ namespace Yamadev.YamaStream.Editor
+           udonPlaylist.SetProgramVariable("_urls", urls);
++          UdonSharpEditorUtility.CopyProxyToUdon(udonPlaylist);
++          UnityEditor.EditorUtility.SetDirty(udonPlaylist);
+
+diff --git a/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistEditorWindow.cs b/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistEditorWindow.cs
+--- a/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistEditorWindow.cs
++++ b/Packages/net.kwxxw.yama-stream/Editor/Playlist/PlaylistEditorWindow.cs
+@@ -493,6 +493,9 @@ namespace Yamadev.YamaStream.Editor
+       if (_player != null)
+       {
++        // Keep the standard YamaPlayer Playlist Editor as the single authoring surface while also
++        // refreshing the persisted runtime Playlist components used by ClientSim.
++        new PlaylistBuildProcess().Process();
+         EditorUtility.SetDirty(_player.gameObject);

@@ -125,7 +125,7 @@
 | 視線正面の保証 | Pass | 各waveのslot 0を開始時のcamera forwardへ配置し、地形回避の最低高度を約13°に設定。寸法は自然発生と同じで、開始時の1本だけFireball階級に固定。Unity batch testで先頭Renderer有効かつ方向dot >= 0.98を確認 |
 | Direct3D描画 | Pass | 1280×720画像を生成し、丘と木の上に強制流星の発光軌跡が出ることを目視確認 |
 | Udon VM発火経路 | Pass | proxy直接呼出しでは次のUdon Updateに表示を消される不具合を再現。backing `UdonBehaviour.SetProgramVariable` + `SendCustomEvent` へ修正し、ClientSim Play ModeでPERSEIDS、debug active、表示Renderer 1本以上を自動確認 |
-| ペルセウス座短縮入口 | Pass | `Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)` がcatalog index 4を起動 |
+| ペルセウス座短縮入口 | Pass | `Stargazing Hill/Preview & Debug/Force Perseids Preview (20 Meteors)` がcatalog index 4を起動 |
 | 自然発生への非干渉 | Confirmed | 強制indexはローカルdebug状態だけに保持し、通常経路は従来のUTC・活動度・実放射点を使用 |
 | ClientSim単一クライアント | Pass | `ClientSimMeteorDebugVerifier` が実Udon VMへ強制イベントを送信し、PERSEIDS、25秒preview active、表示Rendererを確認。SDK 3.10.4のnetworking初期化例外0件 |
 | Play Mode目視 | Pending Evidence | 利用者が修正版Game viewでメニュー操作し、ウィンドウの `再生中: PERSEIDS`、5秒ごとのwave、25秒終了を確認する |
@@ -344,7 +344,256 @@
 | z-fighting修正 | Pass | 言語ボタン表面をパネルより2mm手前へ移動し、Unity正面描画で欠け・重なりなし。VRChat実機のちらつき再確認はOpen |
 | 現在人数 | Confirmed | `VRCPlayerApi.GetPlayerCount()`でinstance内の実人数を更新 |
 | 最大・推奨人数 | Confirmed | 表示用正本を最大80・推奨40へ更新。Udonからupload metadataを直接取得できないためbuild時にserialized値として保存 |
-| 入退室履歴 | Pending Evidence | ローカル保持40件、表示20件へ拡張。新しい／古い履歴ボタンで1件ずつスクロールする。40件充足時の可読性とスクロール操作をVRChat実機で確認する |
+
+## 2026-08-13 PCVR Playlist・在室履歴UI再修正
+
+- 発端: PCVR実機でYamaPlayerのPlaylistが0件のままAutoPlayも開始せず、説明板のPC/Mobileアイコンが重なり、履歴の並びと上下ボタン操作が要件に合わなかった
+- 原因: PlaylistManagerがYamaPlayer root直下、Controllerがその兄弟だったため、Controllerの子探索に含まれていなかった。YamaPlayer build後処理はControllerをrootへ切り離すので実機でも関係が回復しなかった
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| Playlist階層 | Confirmed | 4 Playlist / 15 TrackをController子階層へ移動し、build後のController切離しへ追従する構造へ変更。Scene validationでも全runtime PlaylistがController子であることを要求 |
+| AutoPlay参照 | Confirmed | AutoPlay proxy / backingのController参照、FromPlaylist設定、Controller子のruntime Playlistを保存Sceneへ焼き込み |
+| 履歴順序・容量 | Confirmed | 最大40件を古い順に保持し、最新を最下段へ追加。新規イベント受信後は1 frame後に最下段へ追従 |
+| 履歴操作 | Confirmed | 旧上下ボタンをSceneから除去し、`VRCUiShape`付きWorld Space ScrollRectと選択可能な縦スクロールバーへ変更。表示高は約20件分 |
+| PC/Mobileアイコン | Confirmed | LaptopとSmartphoneの中心間隔を0.10mから0.14mへ広げ、両アイコンも縮小 |
+| Unity compile / 保存Scene | Confirmed | Unity 2022.3.22f1 batchmodeでUdonSharp program asset再生成と対象Scene保存が終了コード0 |
+| 情報板描画 | Confirmed | 1280×720正面描画でアイコンの非重複、旧上下ボタンの撤去、縦スクロールバー表示を目視確認 |
+| ScrollRect UI material | Confirmed | 実機Editorで`WorldInfoButton`の`Unlit/Color`に`_MainTex`がないエラーを確認。ScrollbarのImageを`VRChat/Mobile/Worlds/Supersampled UI`材へ変更し、UI Imageが要求するtexture propertyを保持 |
+| ClientSim操作 | Pending Evidence | スクロールバーの選択・ドラッグ、最新下端追従、4 Playlist表示、AutoPlayを確認する |
+| PCVR upload実機 | Pending Evidence | 新しいWindows buildで4 Playlist / 15 Track表示とAutoPlay開始を確認する |
+| 入退室履歴 | Pending Evidence | ローカル保持40件、表示約20件へ拡張。選択可能な縦ScrollRectとスクロールバーで操作する。40件充足時の可読性とスクロール操作をVRChat実機で確認する |
 | PC / Mobile内訳 | Pending Evidence | 各local clientがUnity platform defineで自己判定し、PlayerDataで同期。Laptop / Smartphoneアイコン付きでPC / Mobile / WAITINGを集計。PC・Android・iOS混在実機で再確認する |
 | ローカル自動検証 | Pass | `Tools/Run-LocalChecks.ps1 -SkipBuild`: static validation、UdonSharp program assets、Scene validation、sky/meteor testsの全項目Pass |
 | デバッグパネル日英切替 | Pass | 既定日本語。タイトル、説明、動的状態、11群、再生/停止、sky操作を右上ボタンでローカル英語切替。日本語3視点と英語正面の1280×720描画で欠け・重なりなし。VRChat実機操作はOpen |
+
+## 2026-08-13 説明パネル右側レイアウト調整
+
+- 発端: 手作業で説明パネル全体を調整した後、右上の言語切替ボタンが届きにくく、人数・履歴欄が他の本文と区別しづらかった
+- 保存方針: 手作業済みのパネルroot位置・回転・本文調整は保持し、右側UIのlocal座標だけを変更する
+
+| 対象 | 状態 | 結果 / 残確認 |
+|---|---|---|
+| 言語切替 | Confirmed | ボタンを右下へ移動し、高さを少し抑えてパネル面内へ収めた |
+| 人数・履歴 | Confirmed | 表示内容・ScrollRect高610 px（約20件）を維持したまま、人数・PC/Mobileアイコン・履歴を0.33 m上へ移動した |
+| Scene静的確認 | Pass | 手作業済みpanel rootを変更せず、対象Transform / RectTransformのみ更新。生成コードにも同じ座標を反映 |
+| Unity正面描画 | Pending Evidence | batchmode用Editor licenseがこの実行環境で有効化されておらず未実施。Unity Editorで正面表示とInteract到達性を確認する |
+
+## 2026-08-13 木陰のピクニックスポット追加
+
+- 要求: Tiny Treats `Pleasant Picnic 1.0` の指定された青い敷物、ラジオ、ティーセット、青系クッションを一本木の下へ配置する
+- 環境: Unity 2022.3.22f1、Direct3D 11
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 権利・出所 | Confirmed | Godot Asset Libraryと上流repository commit `da50c97a056fe1513413343787f2526ea7f25174`を確認。上流`LICENSE.txt`、9ファイルのSHA-256、取得日を隣接`NOTICE.md`へ記録 |
+| ポリゴン予算 | Pass | 上流6種OBJ合計2,360 triangles。複製したクッション・枕と地形追従敷物を含むScene最終合計3,028 trianglesで、追加削減なし |
+| Unity import | Pass | 6 FBXをanimation / camera / light / collider / embedded materialなし、Medium mesh compressionで取込。2 textureはmipmap・圧縮あり、最大512 px |
+| Scene構造 | Pass | `World/Environment/PicnicSpot`直下に8品を配置。Colliderなし、mobile-compatible shader、realtime shadow / light probe / reflection probeなしをUnity検証 |
+| 地形接地 | Pass | 約4m角の敷物を頂点単位で丘の高さへ追従させ、全頂点の地表クリアランスと7小物の個別接地範囲をUnityで数値検証 |
+| 指定配置 | Pass | 頂上側左上に坂下向きラジオ、その付近にティーセット、右側に柄クッション2つ、反対側に無地枕2つを配置。正面・反対側・低い横視点の3 previewで接地と並びを目視確認 |
+| unitypackage境界 | Pass | 自然配置修正版を含む12,600,585 bytes、111 pathnameで再生成。Tiny Treatsの選定10 pathname（license / noticeを含む）と地形追従Meshを収録し、YamaPlayer / QvPen / UnyStylus pathnameは0件 |
+| PC / Android / iOS実機 | Pending Evidence | 共通Scene・shader・materialを各platform buildで確認する |
+
+## 2026-08-14 ピクニック配置の自然さ・木との干渉修正
+
+- 発端: 約4m角へ拡大した敷物の上端が木へ入り、クッション・枕が立ったまま不自然に見えた
+- Opus 5設計レビュー: `claude-opus-5`で成功。木からの半径3m配置、赤・緑・橙の各指定領域、非対称offset、寝かせ回転の合成順を採用
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 木との離隔 | Pass | 敷物中心を木から約2.02mから約3.00mへ移動。敷物外周と木中心の水平距離0.85m以上をUnity validationで要求 |
+| ラジオ・ティーセット | Pass | ラジオを以前と逆向きにし、頂上側左上の赤指定領域へティーポット・マグと集約。ラジオ正面と坂下方向のdot product 0.9以上を検証 |
+| 柄クッション | Pass | 右上の緑指定領域へ2つ配置。90度寝かせ、異なるyawと±5度以内のsettle pitch / rollで非対称化 |
+| 無地枕 | Pass | 下側の橙指定領域へ2つ配置。90度寝かせ、異なるyawと±5度以内のsettle pitch / rollで非対称化 |
+| 接地・干渉 | Pass | 敷物の地形追従、全小物の地表clearance、4つの寝具の上方向を数値検証。3方向のUnity previewで木との非交差、重なりなし、平置きを目視確認 |
+| Opus 5最終画像レビュー | Pending Evidence | 修正版3画像を再投入したが、21ターン処理後にsession limit。2026-08-14 05:30 JST reset。別モデルへ切替・再試行はせず、最終自然さの判定のみ保留 |
+
+## 2026-08-14 公開用生成配置・メニュー・clone手順の整備
+
+- 発端: Unity上で手作業確定したピクニック配置を生成コードへ戻し、GitHubからcloneした利用者にも保存Scene・再生成・unitypackage出力を利用可能にする
+- 正本: `Assets/StargazingHill/Editor/Data/PicnicLayout.json`、設計判断は[ADR 0014](adr/0014-versioned-generated-scene-layout.md)
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 手作業配置のcapture | Confirmed | 保存Scene YAMLから8 Anchorのworld Transformと各Prefab `Model`子のlocal Transformをversioned JSONへ反映。今後はUnityメニューから同じschemaへ保存可能 |
+| 生成処理 | Confirmed | 全Scene build、generated feature upgrade、Picnic単体rebuildが同じJSONを読み、再生成後Transformとの一致をUnity validationで要求 |
+| メニュー整理 | Confirmed | World / Layout / Integrations / Preview & Debug / Export / Diagnosticsへ分類。全Scene buildとPicnic置換には確認dialogを追加 |
+| clone手順 | Confirmed | 通常利用は依存復元後に保存Sceneを開き、全再生成を必須にしない。生成・capture・検証・配布package手順をREADMEとSETUP_AND_RESTOREへ記録 |
+| unitypackage境界 | Confirmed | Export前に保存Scene検証を実行し、Scene・復元ガイドに加えてlayout JSONの収録を必須化。外部3依存は引き続き除外 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`でlayout schema、8品、有限値、Quaternion正規化、Installer・Exporter接続を検証 |
+| Unity compile / 再生成比較 | Pending Evidence | batchmode起動時にUnity Licensing Clientの署名検証Code 10で停止。Sceneは事前退避し、変更なし。ライセンス復旧後にcompile、単体rebuild、保存Scene validationを実行する |
+
+## 2026-08-14 公開README多言語化・星空実装ガイド
+
+- 要求: GitHubの入口を日本語・英語・繁体字・簡体字・韓国語へ対応し、星空の作り方を図解・仕組み・計算方式込みの別文書へ分離する
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 多言語README | Confirmed | `README.md`、`README.en.md`、`README.zh-Hant.md`、`README.zh-Hans.md`、`README.ko.md`を作成。全ファイル先頭から5言語へ相互移動可能 |
+| 公開利用手順 | Confirmed | 各言語へ概要、実装状態、clone後の依存復元、保存Scene検証、用途別Unityメニュー、再配布境界を記載 |
+| 星空の簡易説明 | Confirmed | HYG→Editor bake→1 Mesh→UTC回転→Shader描画をMermaid flowchartで説明 |
+| 星空の詳細説明 | Confirmed | 赤経・赤緯の単位方向、接線Quad、等級curve、B−V色、Julian Date、GMST/LST、天球Quaternion、Shader強度式を実装値と照合して記載 |
+| runtime図解 | Confirmed | Editor/runtime責任分離図とNetwork UTCからGPU描画までのsequence diagramを記載 |
+| 文書静的検証 | Pass | 5 READMEの存在・相互言語link・検証／Export menu、ガイド必須章・図・式・実装語、全local Markdown linkを検査 |
+| GitHub描画確認 | Pending Evidence | PR作成後にMermaid 2図、数式、CJK文字、言語リンクのWeb描画を確認する |
+
+## 2026-08-14 恒星・流星の大気消散
+
+- 発端: 星Meshは肉眼限界`mag <= 6.8`を採用済みだが、現行Shaderは地平線fadeだけで、空気を通る距離による輝度低下を計算していなかった
+- 参照: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` の`NightStarMeshBaker.cs`（確認日2026-08-14）
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 参照値 | Confirmed | 肉眼限界6.8等級、消散係数0.23 mag/airmass、`1 / sin(altitude)`、最低正弦0.05を確認 |
+| 回転天球への適用 | Confirmed | 固定高度へ焼かず、現在のworld高度からvertex shaderで毎描画時に評価。15秒ごとの天球回転へ追従 |
+| 恒星 | Confirmed | 既存の6.8等級選別と15°地平線fadeを維持し、大気透過率を追加 |
+| 流星 | Confirmed | Normal / Bright / Fireballの尾・核・先頭フレア・残光へ同じ透過率を追加。12°地平線fade、天頂の既存profileは維持 |
+| 共通式 | Pass | `StargazingAtmosphere.cginc`を両Shaderがincludeし、静的検証で定数・式・Material設定を確認 |
+| 文書 | Pass | 中高生向け簡易説明、空気感の4層、airmass・減光量・透過率、流星への適用をガイドと正本へ記載 |
+| Unity compile / Scene描画 | Pending Evidence | batchmode環境のUnity Licensing Client署名検証Code 10が未解消。Unity EditorでShader compile後、高度90°/30°/10°の星と流星を比較する |
+| PC / Android / iOS実機 | Pending Evidence | 低空の暗星密度、流星の視認性、地平線fade、GPU時間を各platformで確認する |
+
+## 2026-08-14 Global観測地点セレクター
+
+- 要求: 説明パネルの観測地点だけを全員共通にし、急な切替を許容して `(global)` と明示する
+- 正本: [ADR 0016](adr/0016-global-observatory-selector.md)、地点一覧は[REAL_SKY_SYSTEM.md](REAL_SKY_SYSTEM.md)
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| Global設計 | Confirmed | `WorldObservatorySelector`をManual Syncとし、整数`selectedIndex`だけを同期。Ownership取得、即時適用、serialization、deserialization適用を実装 |
+| 地点catalog | Confirmed | 初期Tokyoを含む指定20地点をID・表示名・緯度・東経の同長配列で一元化。星・月と流星へ同じ値を渡す |
+| 操作UI | Confirmed | `◀` / 選択文字 / `▶`、押下時に20件を縦展開する直接選択リスト、面一のローカルDebug ON/OFFを生成コードへ追加 |
+| Global表記 | Pass | 見出しとInteractionに`(global)`を含め、選択名には重複表示しない静的検査を追加 |
+| 既存UI不変条件 | Pass | ONLINEと履歴を維持し、Laptop / Smartphone iconは最新の手調整座標をUnity Scene validationの厳密値として固定。言語切替は下端操作列へ移動 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`でManual Sync、20地点、Global表記、操作経路、既存UI座標、生成・検証入口を確認 |
+| Unity compile / Scene再生成 | Pass | Unity 2022.3.22f1でUdonSharp 100 scriptsをcompileし、selector / button program assetと説明パネルを保存Sceneへ生成。説明パネル専用Scene validationがPass |
+| 正面描画 | Pass | 通常状態と20件展開状態を1280×720で描画。下端のGlobal地点切替・Debugボタン、既存在室欄、言語ボタンに重なりがなく、全20行を確認 |
+| 全Scene validation | Pending Evidence | 今回と無関係な手作業配置 `PicnicCushionBlueLeft` が生成用接地閾値を3.11cm超え、説明パネル検証より前に停止。手作業配置は変更せず、説明パネル専用検証で今回範囲を分離確認 |
+| ClientSim複数人 | Pending Evidence | 2クライアントで前後・直接選択、同時操作のLast-writer-wins、途中参加復元、星・月・流星の同地点化を確認する |
+| PC / Android / iOS実機 | Pending Evidence | 20件リストの到達性、文字サイズ、Quest / mobile描画負荷、Global同期を確認する |
+
+## 2026-08-14 説明・Debugパネルの手作業配置取り込み
+
+- 要求: 保存Sceneで手調整した説明パネルと端末アイコンの座標を生成値へ戻し、観測地点説明、ボタン列、Debugパネル初期位置を整理する
+- 状態: 生成コード、保存Scene、静的検査、正面描画までConfirmed
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 手調整値のcapture | Confirmed | 説明パネル`(1.471, 1.999, -26.29)` / Y `202.2865°`、Laptop / Smartphone iconの`x=0.79`、`y=0.584 / 0.456`を保存Sceneから取得し生成定数へ反映 |
+| Global表記 | Pass | 見出しとInteractionだけへ`(global)`を残し、選択名は`Tokyo, Japan`のように地点名だけを表示。見出し横へ「星空の基準地点 / SKY VIEWPOINT」を追加 |
+| 下端操作列 | Pass | 言語切替を左`x=1.03`、Debugを右`x=1.72`へ配置。幅`0.56 / 0.72m`、間隔`0.05m`を生成値とScene validationで固定 |
+| 旧Debugトグル | Pass | 独立root `VRDebugPanelToggle`の新規生成を廃止。既存Sceneでは移行時に削除し、説明パネル内Debugボタンへ一本化 |
+| Debugパネル初期位置 | Confirmed | 説明パネル右隣の`(-0.842, 1.849, -25.342)` / Y `202.2865°`へ移動。Pickupと10秒復帰は維持 |
+| clone / 旧Scene移行 | Confirmed | 当初は`[InitializeOnLoad]`で旧Sceneだけを再生成したが、公開後の手編集を暗黙に上書きし得るため、後続の公開準備で明示メニューへ変更 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`、`git diff --check` |
+| Unity compile / Scene再生成 | Pass | batchmode専用認証は失敗したため通常Editorを非表示起動。UdonSharp 100 scripts compile、Debug→Informationの順で再生成、Scene保存が成功 |
+| Scene検証・正面描画 | Pass | 説明パネル専用validation後、通常状態と20地点展開状態を1280×720で描画。端末アイコン、説明、地点名、言語・Debugボタンの分離を確認 |
+| PCVR / Quest操作 | Pending Evidence | 2ボタンの押し分け、Debug表示位置、Pickup後10秒復帰、観測地点Global同期を実機確認する |
+
+## 2026-08-14 観測地点UI再構成と5言語化
+
+- 要求: 観測地点見出しの重複をなくし、一覧を逆順3列タイルへ変更する。説明・Debugを日本語、英語、繁体字、簡体字、韓国語へ対応し、Debugパネルを低くする
+
+| 確認項目 | 状態 | 証拠 |
+|---|---|---|
+| 同期互換性 | Confirmed | catalog配列のTokyo=0からSeoul=19は不変。UI生成だけ `catalogIndex = count - 1 - visualIndex` とし、各ボタンへ元indexを設定 |
+| 観測地点見出し | Confirmed | `OBSERVATORY` / `SKY VIEW POINT`を廃止し、中央揃えの「星空の基準地点 (global)」へ一本化 |
+| 一覧レイアウト | Confirmed | 20地点を3列7行、SeoulからTokyoの視覚順で上方向へ展開。Scene validationはLocation_19の左上とLocation_00の最下段位置を検査 |
+| 説明本文 | Confirmed | 日本語から「東京の」、英語から`in Tokyo`を除去。日本語初期表示で5言語をローカル循環切替 |
+| Debug表示 | Confirmed | 5言語のタイトル、説明、動的状態、11群名、再生/停止、sky操作を生成し、初期Yを`1.45`へ変更 |
+| 多言語フォント | Confirmed | 公式Noto Sans CJK KR RegularをOFL-1.1で同梱。SHA-256を静的検査と第三者素材台帳で固定 |
+| 静的検査 | Pass | `Validate-StargazingImplementation.py`で地点catalog、逆順index割当、3列式、5言語参照、Noto SHA-256を確認。`git diff --check`もPass |
+| Unity compile / Scene再生成 | Pass | Unity 2022.3.22f1でUdonSharp 100 scripts compile後、Debug→Informationを再生成。Noto fontと`.meta`をimportしScene保存成功 |
+| 説明パネル描画 | Pass | 通常・3列一覧・英語・繁体字・簡体字・韓国語を1280×720描画。中央見出しのUpperCenter pivotずれを検出・修正し、文字欠け・一覧重なりなしを目視確認 |
+| Debugパネル描画 | Pass | Debug固有検証で15ボタン、板下端の地上高1.24m、手持ちサイズ0.47×0.41mを確認。日本語・英語・繁体字・簡体字・韓国語を描画し文字欠け・重なりなし |
+| 全Scene validation | Pass | 手作業配置を正本へcaptureし、柔らかい寝具用の接地検査へ分離した後に再実行。Picnic 3,028 trianglesを含む保存Scene全体のvalidationがPass |
+| PCVR / Quest / iOS操作 | Pending Evidence | 5言語切替、3列一覧、Global同期、Debug表示位置を実機で確認する |
+
+## 2026-08-14 Picnicクッション手調整の生成取り込み
+
+- 発端: 利用者がUnity Scene上で柄クッション2点を敷物へ少し沈め、より自然に見える最終配置へ調整した
+- 正本: `Assets/StargazingHill/Editor/Data/PicnicLayout.json`
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| Sceneから配置正本へのcapture | Confirmed | 既存Editor capture経路で8 Anchorと各`Model`子Transformを保存。柄クッション左はlocal position `(0.030, -0.031, -0.187)`、右は`(-0.599, -0.999, -0.423)` |
+| 接地検査の意図分離 | Confirmed | ラジオ・ティーセットの硬い小物は従来の8〜18cmを維持。クッション・枕は敷物へ軽く埋める意図を`AllowBlanketEmbedding`で明示し、回転済みモデルの外接Boundsを地形基準-8〜12cmで検査 |
+| JSONからの再生成 | Pass | Unity 2022.3.22f1で`InstallForBatchMode`を実行。8品を再生成し、Anchor / `Model`子Transform一致、Colliderなし、3,028 triangles、接地範囲を確認 |
+| 描画確認 | Pass | 再生成後の正面・反対側・低位置プレビューを通常Editor相当のD3D11で描画。柄クッション2点が手調整時と同じ沈み方を保ち、木・地形への抜けや再浮上がないことを目視確認 |
+
+## 2026-08-14 観測地点名の5言語化
+
+- 要求: 選択中の星空基準地点と展開一覧の地点名を、説明パネルの表示言語へ合わせて翻訳する
+- 非対象: `selectedIndex`、20地点の順序・緯度・経度、Global同期方式、星・月・流星の計算
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 翻訳catalog | Confirmed | 日本語・英語・繁体字・簡体字・韓国語を各20件用意。静的検査で全配列長とTokyo / Washington D.C. / Seoulの代表表記を確認 |
+| Global / Local分離 | Confirmed | Global同期は従来どおり整数`selectedIndex`だけ。`WorldInfoLanguageToggle`のローカル言語indexをselectorへ渡し、選択中ラベルと20タイルのTextだけを更新 |
+| UdonSharp / Scene生成 | Pass | Unity 2022.3.22f1で100 scriptsをcompileし、説明パネルを再生成。5言語配列、20 Text参照、言語トグル参照を含む専用validationがPass |
+| 5言語描画 | Pass | 通常Editor相当のD3D11で各言語の通常状態と20地点展開状態を計10枚描画。全地点が切り替わり、3列内の文字欠け・重なりなしを目視確認 |
+| 全Scene validation | Pass | Picnic、Debugパネルを含む保存Scene全体のvalidationがPass |
+| ClientSim / PCVR / Quest / iOS操作 | Pending Evidence | 実際の言語ボタン操作、一覧を開いたままの言語変更、異言語クライアント間で同じGlobal地点が維持されることを確認する |
+
+## 2026-08-14 InformationSystem公開準備とメニュー安全化
+
+- 要求: 「星空の基準地点 (global)」見出しの5言語化、InformationSystemの編集しやすい階層化、第三者が誤操作しにくいUnityメニュー構成
+- 状態: 実装・静的検査を実施。Unity再生成・UdonSharp compile・描画はこの節の実行結果へ追記する
+
+| 確認 | 結果 | 証拠・残課題 |
+|---|---|---|
+| 見出し翻訳 | Confirmed | 日本語 / English / 繁體中文 / 简体中文 / 한국어の5文言をversioned配列化し、本文と同じローカル言語indexで更新。Global同期値には影響しない |
+| InformationSystem階層 | Confirmed | `Visual/{Descriptions,Presence}` と `Controls/Observatory` に目的別整理。各group Transformはidentityで既存表示座標を維持 |
+| 暗黙の上書き防止 | Confirmed | `WorldInformationPanelInstaller`の`[InitializeOnLoad]`自動再生成を廃止。全置換は`Advanced/Generated Content/Rebuild InformationSystem (Replaces Children)...`の確認dialog経由だけに限定 |
+| 通常操作導線 | Confirmed | rootへ保存Scene検証、`Content`へ選択・対象検証・保存済み配置適用、`Build & Export`へ配布package、`Advanced`へ生成物置換と診断を分離 |
+| 編集手順 | Confirmed | `SETUP_AND_RESTORE.md`へ階層図、編集境界、自動置換しない方針、再生成時の注意を記録 |
+| 静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`と`git diff --check`がPass。旧メニュー名と旧フラット階層参照が0件 |
+| Unity compile / Scene再生成 / 検証 | Pass | 通常Editor相当経路でUdonSharp 100 scripts compile、InformationSystem単体再生成・保存、専用validation、保存Scene全体validationがすべて終了コード0 |
+| 5言語描画 | Pass | D3D11で日本語・英語・繁体字・簡体字・韓国語の通常状態を描画し、見出しが各言語へ切り替わり既存の中央位置に収まることを目視確認 |
+
+## 2026-08-14 YamaPlayer標準Playlist Editorへの一本化
+
+- 要求: YamaPlayer本体に標準Playlist Editorがあるため、Stargazing Hill独自のPlaylist編集・同期経路を廃止する
+- 正本: 保存Scene内のYamaPlayer標準`PlaylistItem`
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| 独自経路の撤去 | Confirmed | `music_list.txt`、独自sync class、AssetPostprocessor、scene save hook、`Stargazing Hill/Integrations/YamaPlayer/Sync Playlist Config`を削除 |
+| 標準編集経路 | Confirmed | Inspectorの「プレイリストを編集する」または`YamaPlayer/Edit Playlist`だけを公開手順へ記載 |
+| ClientSim反映 | Confirmed | 2.0.0-beta.7版限定patchで標準Editor保存後に`PlaylistBuildProcess`を実行し、runtime PlaylistをUdon backingへcopy |
+| 全Scene再生成 | Confirmed | 保存Sceneの標準エディター編集済みYamaPlayerを新Sceneへ複製し、独自データ形式から再構築しない |
+| patch往復 | Pass | 2.0.0-beta.7 packageへRestore→Apply→Checkを実行し、3対象ファイルの版限定変換が往復可能なことを確認 |
+| 静的・Unity検証 | Pass | Python検証と`git diff --check`がPass。UnityでC#再compile後、保存Scene全体validationがPass |
+| 全Scene再生成時の保持 | Pass | 保存を伴わないadditive Scene検証で、標準Editor編集済みYamaPlayerを複製後も4 Playlist / 15 TrackとAutoPlayのController参照を保持 |
+| ClientSim / 実機再生 | Pending Evidence | 標準EditorでPlaylist変更後、ClientSimとPC / Android / iOS buildでリスト・AutoPlayを確認する |
+
+## 2026-08-14 公開説明・5言語README・現行文書同期
+
+- 要求: 更新済みのVRChat SDK Descriptionとワールド内説明パネルの意味を揃え、GitHubの公開入口を5言語化し、現行仕様を示す文書を最新実装へ同期する
+- 境界: ADRと過去の試験節は当時の判断・証拠として保持し、現在仕様を示す正本、README、引き継ぎ文書だけを更新する
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| 説明パネル本文 | Confirmed | 日本語、英語、繁体字、簡体字、韓国語を「現実の時刻」「全員で共有する観測地点」「毎時00分の流星」「主な利用方法」「PC / Android / iOS」の同じ意味へ統一。生成コードと保存Sceneの両方を更新 |
+| GitHub公開入口 | Confirmed | ルートREADME 5言語を20地点Global選択、大気消散、ピクニック、標準YamaPlayer Playlist経路、5言語UI、未完了の実機検証まで同じ現行状態へ同期 |
+| 配布package案内 | Confirmed | `Assets/StargazingHill/README_UNITYPACKAGE.md`を5言語化し、外部3依存の除外、復元、標準Playlist編集、再生成不要、配置captureを各言語で案内 |
+| 正本文書 | Confirmed | `PROJECT_SPEC`、`REAL_SKY_SYSTEM`、`VRCHAT_IMPLEMENTATION_GUIDE`、`IMPLEMENTATION_PLAN`から現行仕様として残っていた東京固定・HYG未確認記述を更新。`WORLD_DESCRIPTION`を文書索引へ追加 |
+| 引き継ぎ | Confirmed | `HANDOFF.md`を星空、大気、20地点Global同期、月、流星、5言語UI、ピクニック、依存境界、残検証の現在地へ全面更新 |
+| 静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`が12,495星、5言語README、Global観測地点、配布境界を含む全項目でPass。52 Markdownファイルの相対link確認と`git diff --check`もPass |
+| Unity compile / 描画 | Pending Evidence | 利用者のUnity Editorが開いているため別Editorは起動しない。script再compile後、5言語のパネル表示と改行を通常Editorまたは実機で確認する |
+
+## 2026-08-14 Public公開前監査とRelease ZIP自動化
+
+- 要求: Public化前に秘密情報・第三者依存・Blueprint IDを監査し、再配布用unitypackageをZIP化してGitHub Releaseへ出す仕組みを用意する
+- 制約: GitHub ActionsはBudget/Billing制限中のため、remote runnerでの実行証拠は後日取得する
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| 現在ツリー秘密情報 | Pass | 秘密鍵、主要token、webhook、credential代入、個人home絶対pathを検出せず |
+| 到達Git履歴 | Pass | 同じ秘密pattern、過去path、author mailを監査。author mailはGitHub noreplyのみ。YamaPlayer / QvPen / UnyStylus package本体の履歴混入なし |
+| Blueprint ID | Confirmed | 保存Sceneにworld ID 1件。VRChat公式資料上、別owner/無効IDはSDKがclearする。clone利用者はDetachまたはclear確認が必要 |
+| 権利境界 | Confirmed | root MITの例外を`NOTICE.md`へ明示し、VRChat VPM resolverをDistro License対象として依存記録へ追加。外部3packageはRelease対象外 |
+| workflow静的検査 | Pass | `python Tools/Validate-StargazingImplementation.py`、Python compile、YAML load、`git diff --check`がPass。Actionはcommit SHA固定 |
+| Release workflow実行 | Pending Evidence | Budget/Billing制限解除後、`main`上の`v*` tagで実行し、Release ZIPとSHA-256を確認する |
+| clean import | Pending Evidence | Release ZIP内のunitypackageをclean Unity 2022.3.22f1 projectへimportし、依存復元後に保存Scene validationを実行する |

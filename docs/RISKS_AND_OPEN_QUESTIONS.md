@@ -1,6 +1,6 @@
 # リスクと未解決事項
 
-確認日: 2026-08-13
+確認日: 2026-08-14
 
 | 状態 | 項目 | 解決条件 |
 |---|---|---|
@@ -20,4 +20,7 @@
 | Provisional | Quest/iOS性能予算 | 基準シーンのProfilerと実機測定から確定 |
 | Provisional | Jacaranda一本木の実機描画負荷 | 原本約386万三角形を19,507三角形へ削減済み（ADR-0009、樹冠はalpha testフロンドカード）。近距離の自然さのため葉を4,645枚まで増やしており、一本木としては軽量とは言えない。密なalpha test樹冠のoverdrawはtile GPUで別コストになるため、樹冠を見上げる状態のGPU時間をPC / Quest / iOS実機で測定し、必要なら枚数を戻す |
 | Open | 樹冠直下の空の遮蔽 | 真下から見上げると樹冠がほぼ不透明で星空が見えない。星空ワールドとして木の下を鑑賞位置に含めるなら、カード密度かカード配置の再検討が要る |
+| Confirmed | 手作業配置したPicnicクッションの接地 | 2026-08-14、利用者が敷物へ自然に沈むよう確定した柄クッション2点の`Model`子Transformを`PicnicLayout.json`へcapture。硬い小物の8〜18cm地形離隔は維持し、クッション・枕だけは敷物への軽い埋め込みを許す専用範囲で検査する |
+| Pending Evidence | GitHub Release ZIP自動化 | workflowとarchive検査は実装・静的確認済み。ActionsのBudget/Billing制限解除後、`main`上の`v*` tagでRelease作成、checksum、clean importを確認する |
+| Pending Evidence | Public化直前のremote再監査 | 現在ツリーと全到達履歴の秘密pattern検査はPass。visibility変更直前にGitHub上の全branch/tagと最終差分を再確認する。詳細は`PUBLIC_RELEASE_AUDIT.md` |
 | Out of scope | 月相表示 | 初期MVPでは位置のみ。将来の視覚効果としてBacklogへ保持 |

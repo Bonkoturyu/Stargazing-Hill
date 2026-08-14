@@ -30,9 +30,12 @@ namespace StargazingHill.Editor
             "Packages/net.ureishi.qvpen/"
         };
 
-        [MenuItem("Stargazing Hill/Export/Redistributable UnityPackage...", false, 80)]
+        [MenuItem("Stargazing Hill/Build & Export/Redistributable UnityPackage...", false, 70)]
         public static void ExportInteractive()
         {
+            if (!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return;
+            StargazingWorldBuilder.ValidateForBatchMode();
             string projectRoot = Directory.GetParent(Application.dataPath).FullName;
             string outputPath = EditorUtility.SaveFilePanel(
                 "Export Stargazing Hill UnityPackage",
@@ -104,6 +107,7 @@ namespace StargazingHill.Editor
             string ownedPrefix = OwnedAssetRoot + "/";
             bool includesScene = false;
             bool includesRestoreGuide = false;
+            bool includesPicnicLayout = false;
             for (int index = 0; index < paths.Length; index++)
             {
                 string path = paths[index].Replace('\\', '/');
@@ -117,10 +121,13 @@ namespace StargazingHill.Editor
 
                 if (path == OwnedAssetRoot + "/Scenes/StargazingHill.unity") includesScene = true;
                 if (path == OwnedAssetRoot + "/README_UNITYPACKAGE.md") includesRestoreGuide = true;
+                if (path == OwnedAssetRoot + "/Editor/Data/PicnicLayout.json") includesPicnicLayout = true;
             }
 
             if (!includesScene) throw new InvalidOperationException("Redistributable package selection lacks the world scene.");
             if (!includesRestoreGuide) throw new InvalidOperationException("Redistributable package selection lacks its restore guide.");
+            if (!includesPicnicLayout)
+                throw new InvalidOperationException("Redistributable package selection lacks the saved picnic layout.");
         }
 
         private static string ToProjectPath(string projectRoot, string fullPath)

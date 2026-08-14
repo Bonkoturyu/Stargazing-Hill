@@ -20,4 +20,13 @@ Unity 2022.3の `AssetDatabase.ExportPackage` は、`ExportPackageOptions.Includ
 
 ## Consequences
 
-YamaPlayer、QvPen、UnyStylusの本体はunitypackageへ同梱されず、配布先ではVCC/VPMと正規購入品から別途復元する必要がある。Sceneは外部Prefab参照を持つため、依存を復元してからImport・利用する。メニュー `Stargazing Hill/Export/Redistributable UnityPackage...` を配布用package作成の正規経路とし、Unity標準の依存込みExportは使用しない。
+YamaPlayer、QvPen、UnyStylusの本体はunitypackageへ同梱されず、配布先ではVCC/VPMと正規購入品から別途復元する必要がある。Sceneは外部Prefab参照を持つため、依存を復元してからImport・利用する。メニュー `Stargazing Hill/Build & Export/Redistributable UnityPackage...` を配布用package作成の正規経路とし、Unity標準の依存込みExportは使用しない。
+
+## GitHub Release自動化（2026-08-14追記）
+
+- `.github/workflows/release-unitypackage.yml` をtag `v*` と既存tagを指定する手動実行の正規経路とする。
+- CIではUnity EditorやUnity licenseを要求せず、追跡済み `.meta` の明示listからUnityPackageを構築する。
+- `Tools/Validate-UnityPackage.py` の検査を通過したpackageだけを、SHA-256一覧とともにZIP化する。
+- ZIPとchecksumを同じtagのGitHub Releaseへ添付する。
+- 使用Actionはcommit SHAへ固定し、job権限はRelease更新に必要な `contents: write` だけとする。
+- Budget/Billing制限中はworkflowが起動できないため、最初のtag releaseとclean projectへのimport結果は `Pending Evidence` とする。

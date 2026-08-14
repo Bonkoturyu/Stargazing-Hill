@@ -10,6 +10,10 @@ Shader "StargazingHill/Meteor"
         _HeadSize ("Head Size", Range(0.02, 0.30)) = 0.09
         _FlareStrength ("Flare Strength", Range(0, 2)) = 0.12
         _Afterglow ("Afterglow", Range(0, 1)) = 0.20
+        _HorizonStart ("Horizon Start", Range(-0.2, 0.3)) = 0.0
+        _HorizonFull ("Horizon Full", Range(0.01, 0.5)) = 0.208
+        _ExtinctionCoefficient ("Atmospheric Extinction (mag/airmass)", Range(0, 1)) = 0.23
+        _MinimumSinAltitude ("Minimum Sin Altitude", Range(0.01, 0.25)) = 0.05
     }
     SubShader
     {
@@ -26,6 +30,7 @@ Shader "StargazingHill/Meteor"
             #pragma fragment frag
             #pragma target 2.0
             #include "UnityCG.cginc"
+            #include "StargazingAtmosphere.cginc"
 
             struct appdata
             {
@@ -37,6 +42,7 @@ Shader "StargazingHill/Meteor"
             {
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                half atmosphere : TEXCOORD1;
             };
 
             fixed4 _TailColor;
@@ -47,12 +53,22 @@ Shader "StargazingHill/Meteor"
             half _HeadSize;
             half _FlareStrength;
             half _Afterglow;
+            half _HorizonStart;
+            half _HorizonFull;
+            half _ExtinctionCoefficient;
+            half _MinimumSinAltitude;
 
             v2f vert(appdata input)
             {
                 v2f output;
+                float3 worldPosition = mul(unity_ObjectToWorld, input.vertex).xyz;
+                float3 viewDirection = normalize(worldPosition - _WorldSpaceCameraPos.xyz);
                 output.vertex = UnityObjectToClipPos(input.vertex);
                 output.uv = input.uv;
+                half horizon = smoothstep(_HorizonStart, _HorizonFull, viewDirection.y);
+                half transmission = StargazingAtmosphericTransmission(
+                    viewDirection.y, _ExtinctionCoefficient, _MinimumSinAltitude);
+                output.atmosphere = horizon * transmission;
                 return output;
             }
 
@@ -81,7 +97,8 @@ Shader "StargazingHill/Meteor"
                                _HeadColor.rgb * head * (0.55 + _FlareStrength);
                 half brightness = (softTail + afterglow + core * 1.35 +
                                    head * (0.55 + _FlareStrength)) * _Intensity;
-                return fixed4(color * _Intensity, brightness);
+                return fixed4(color * _Intensity * input.atmosphere,
+                              brightness * input.atmosphere);
             }
             ENDCG
         }

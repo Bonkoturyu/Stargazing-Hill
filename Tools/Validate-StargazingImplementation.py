@@ -16,6 +16,8 @@ SKY_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/RealSkyController.cs"
 METEOR_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/MeteorController.cs"
 CLIENTSIM_GUARD = ROOT / "Assets/StargazingHill/Editor/VrcSdk3104ClientSimGuard.cs"
 METEOR_SHADER = ROOT / "Assets/StargazingHill/Shaders/Meteor.shader"
+STARFIELD_SHADER = ROOT / "Assets/StargazingHill/Shaders/Starfield.shader"
+ATMOSPHERE_INCLUDE = ROOT / "Assets/StargazingHill/Shaders/StargazingAtmosphere.cginc"
 MOON_SHADER = ROOT / "Assets/StargazingHill/Shaders/Moon.shader"
 OBSERVATORY_PROFILE = ROOT / "Assets/StargazingHill/Settings/TokyoObservatory.asset"
 SHOWER_CATALOG = ROOT / "Assets/StargazingHill/Settings/IMO2026MajorShowers.asset"
@@ -23,7 +25,9 @@ PLAYER_SETTINGS = ROOT / "Assets/StargazingHill/Scripts/WorldPlayerSettings.cs"
 DEBUG_PANEL_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelPickup.cs"
 PACKAGE_EXPORTER = ROOT / "Assets/StargazingHill/Editor/StargazingUnityPackageExporter.cs"
 PACKAGE_README = ROOT / "Assets/StargazingHill/README_UNITYPACKAGE.md"
-YAMA_PLAYLIST_SYNC = ROOT / "Assets/StargazingHill/Editor/YamaPlayerPlaylistSync.cs"
+RELEASE_WORKFLOW = ROOT / ".github/workflows/release-unitypackage.yml"
+PUBLIC_RELEASE_AUDIT = ROOT / "docs/PUBLIC_RELEASE_AUDIT.md"
+PROJECT_NOTICE = ROOT / "NOTICE.md"
 YAMA_PATCH_SCRIPT = ROOT / "Tools/Apply-YamaPlayerPatches.ps1"
 YAMA_PATCH = ROOT / "Tools/YamaPlayerPatches/2.0.0-beta.7-disable-editor-auto-update.patch"
 UNYSTYLUS_PATCH_SCRIPT = ROOT / "Tools/Apply-UnyStylusPatches.ps1"
@@ -33,7 +37,10 @@ DEBUG_PANEL_STATUS = ROOT / "Assets/StargazingHill/Scripts/WorldDebugPanelStatus
 INFO_LANGUAGE_TOGGLE = ROOT / "Assets/StargazingHill/Scripts/WorldInfoLanguageToggle.cs"
 PRESENCE_BOARD = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceBoard.cs"
 PRESENCE_SCROLL = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceHistoryScrollButton.cs"
+OBSERVATORY_SELECTOR = ROOT / "Assets/StargazingHill/Scripts/WorldObservatorySelector.cs"
+OBSERVATORY_BUTTON = ROOT / "Assets/StargazingHill/Scripts/WorldObservatoryButton.cs"
 INFO_PANEL_INSTALLER = ROOT / "Assets/StargazingHill/Editor/WorldInformationPanelInstaller.cs"
+PANEL_FONT = ROOT / "Assets/StargazingHill/ThirdParty/Fonts/NotoSansCJKkr-Regular.otf"
 QUALITY_SETTINGS = ROOT / "ProjectSettings/QualitySettings.asset"
 VPM_MANIFEST = ROOT / "Packages/vpm-manifest.json"
 TREE_SELECTION_TEMP = ROOT / "Assets/TreeSelectionTemp"
@@ -41,6 +48,18 @@ GRASS_DIFFUSE = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/le
 GRASS_NORMAL = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/LeafyGrass/leafy_grass_nor_gl_1k.jpg"
 JACARANDA_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/PolyHaven/JacarandaTree"
 TREE_MESH = JACARANDA_ROOT / "Jacaranda_Quest.asset"
+PICNIC_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/TinyTreats/PleasantPicnic"
+PICNIC_INSTALLER = ROOT / "Assets/StargazingHill/Editor/PicnicSceneInstaller.cs"
+PICNIC_LAYOUT = ROOT / "Assets/StargazingHill/Editor/Data/PicnicLayout.json"
+WORLD_SCENE = ROOT / "Assets/StargazingHill/Scenes/StargazingHill.unity"
+LOCALIZED_READMES = [
+    ROOT / "README.md",
+    ROOT / "README.en.md",
+    ROOT / "README.zh-Hant.md",
+    ROOT / "README.zh-Hans.md",
+    ROOT / "README.ko.md",
+]
+STARFIELD_GUIDE = ROOT / "docs/STARFIELD_IMPLEMENTATION_GUIDE.md"
 TREE_TEXTURES = [
     JACARANDA_ROOT / "jacaranda_tree_branches_diff_1k.jpg",
     JACARANDA_ROOT / "jacaranda_tree_branches_nor_gl_1k.jpg",
@@ -63,6 +82,16 @@ EXPECTED_CC0_HASHES = {
     TREE_TEXTURES[4]: "6fe80c1f514ef690cccefb90b7e559fbd1aa9c8935fdc02523cc8ab83c22f7c2",
     TREE_TEXTURES[5]: "61520be2529ffe8e3d93d4361892134833bb4657117e121749089769067914c1",
     TREE_TEXTURES[6]: "e040c86c4bd9ce703244e33a6b9cf25d2ac65c618be88178b8be3297f5d41960",
+}
+EXPECTED_PICNIC_HASHES = {
+    PICNIC_ROOT / "picnic_blanket_blue.fbx": "552a74e55e224a24051aaf7a2e6c63973a71e771bb5fae9289c71be0fbe0e2db",
+    PICNIC_ROOT / "radio.fbx": "9d6af6d768427eecfabffa3920caa9690473979cbee9df6349b76789589eaf06",
+    PICNIC_ROOT / "teapot.fbx": "0ab6edbe361f19b24d3ea6395434300f7ffd69ad1007b88a426365f29f17997a",
+    PICNIC_ROOT / "mug.fbx": "d3a3df63297f2f2a5b7a87fff5dd1803054616c69ce4fff7aed82ec1e50b6d9e",
+    PICNIC_ROOT / "pillow_small_blue.fbx": "1eabd1867988fd0609a8cb110e360bba5a4779285d9fea1d57900a87e4e7a912",
+    PICNIC_ROOT / "pillow_large_blue.fbx": "86c834155243e7315aebf734caeab56a69ce818b1db8d325180eaabf443e670d",
+    PICNIC_ROOT / "tiny_treats_texture_1.png": "31e5c7c81bfba644a59797b1907519592c7728d4af98a705449975dd929482e5",
+    PICNIC_ROOT / "tiny_treats_plaid_pattern_blue.png": "cd967007ad742e3c964be4854c971ed0d9aa98d2b6710ad05352833a68e8d6f9",
 }
 EXPECTED_ROLLOFF = [
     (0.0, 1.0),
@@ -147,18 +176,18 @@ def validate_yama_dependency_and_rolloff() -> None:
     assert "source.maxDistance = 45f;" in builder
     assert 'SetSerializedFloat(spatial, "Far", 45f);' in builder
 
-    playlist_sync = YAMA_PLAYLIST_SYNC.read_text(encoding="utf-8")
-    assert 'SerializedProperty controllerReference = serialized.FindProperty("_controller");' in playlist_sync
-    assert "controllerReference.objectReferenceValue = controller;" in playlist_sync
-    assert "UdonSharpEditorUtility.CopyProxyToUdon(autoPlay);" in playlist_sync
-    assert "Playlist runtimePlaylist = go.AddUdonSharpComponent<Playlist>();" in playlist_sync
-    assert 'runtimePlaylist.SetProgramVariable("_urls", urls);' in playlist_sync
-    assert "UdonSharpEditorUtility.CopyProxyToUdon(runtimePlaylist);" in playlist_sync
-    assert 'Regex.IsMatch(line, @"^[│\\s]+$")' in playlist_sync
-    assert "YamaPlayerPlaylistSync.SyncForWorldBuild(scene);" in builder
+    assert not (ROOT / "Assets/StargazingHill/Editor/YamaPlayerPlaylistSync.cs").exists()
+    assert not (ROOT / "Assets/StargazingHill/Editor/YamaPlayerPlaylistConfigPostprocessor.cs").exists()
+    assert not (ROOT / "Assets/StargazingHill/Config/music_list.txt").exists()
+    assert "YamaPlayerPlaylistSync" not in builder
+    assert "standard editor-authored instance" in builder
+    assert 'FindGameObjectInScene(sourceScene, "World/VideoSystem/YamaPlayer")' in builder
+    assert "Object.Instantiate(standardEditorAuthoredSource)" in builder
+    assert "ValidateYamaPlayerPreservationForBatchMode" in builder
     assert "autoPlayBacking.publicVariables.TryGetVariableValue(" in builder
     assert "if (!hasSerializedController || autoPlayController as UdonBehaviour != controllerBacking)" in builder
-    assert "playlistItems.Length != 4 || runtimePlaylists.Length != 4 || playlistTrackCount != 15" in builder
+    assert "runtimePlaylists.Length != playlistItems.Length" in builder
+    assert "playlistTrackCount != authoringPlaylistTrackCount" in builder
 
     patch_script = YAMA_PATCH_SCRIPT.read_text(encoding="utf-8")
     patch = YAMA_PATCH.read_text(encoding="utf-8")
@@ -174,6 +203,8 @@ def validate_yama_dependency_and_rolloff() -> None:
     assert "+      // Stargazing Hill: package updates are managed through VCC." in patch
     assert "var udonPlaylist = item.GetComponent<Playlist>();" in patch
     assert "if (udonPlaylist == null) udonPlaylist = item.gameObject.AddUdonSharpComponent<Playlist>();" in patch
+    assert "UdonSharpEditorUtility.CopyProxyToUdon(udonPlaylist);" in patch
+    assert "new PlaylistBuildProcess().Process();" in patch
 
 
 def validate_environment_and_drawing() -> None:
@@ -233,6 +264,146 @@ def validate_environment_and_drawing() -> None:
         assert expected_call in player_settings
 
 
+def validate_picnic_spot() -> None:
+    for path, expected_hash in EXPECTED_PICNIC_HASHES.items():
+        assert path.is_file(), f"missing Tiny Treats asset: {path}"
+        assert path.with_name(path.name + ".meta").is_file(), f"missing Unity meta: {path}.meta"
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert digest == expected_hash, f"Tiny Treats asset SHA-256 changed: {path}: {digest}"
+
+    notice = (PICNIC_ROOT / "NOTICE.md").read_text(encoding="utf-8")
+    license_text = (PICNIC_ROOT / "LICENSE.txt").read_text(encoding="utf-8")
+    assert "da50c97a056fe1513413343787f2526ea7f25174" in notice
+    assert "Creative Commons Zero v1.0 Universal" in notice
+    assert "2,360 triangles" in notice
+    assert "CC0" in license_text
+
+    installer = PICNIC_INSTALLER.read_text(encoding="utf-8")
+    builder = BUILDER.read_text(encoding="utf-8")
+    for expected in (
+        'new GameObject("PicnicSpot")',
+        "ModelImporterMeshCompression.Medium",
+        'Shader.Find("StargazingHill/Environment")',
+        "ConformBlanketToTerrain(",
+        'LayoutPath =',
+        '"Assets/StargazingHill/Editor/Data/PicnicLayout.json"',
+        "CaptureCurrentLayoutForBatchMode()",
+        "PlaceItemFromLayout(",
+        "modelLocalPosition = model.localPosition",
+        "ValidateLayoutMatchesSaved(root);",
+        '"PicnicCushionBlueLeft"',
+        '"PicnicCushionBlueRight"',
+        '"PicnicPillowBlueLeft"',
+        '"PicnicPillowBlueRight"',
+        "ValidateTerrainContact(root);",
+        "AllowBlanketEmbedding",
+        "SoftFurnishingMinimumTerrainClearance",
+        "SoftFurnishingMaximumTerrainClearance",
+        "ValidateScene()",
+        "triangles < 2800L || triangles > 3600L",
+    ):
+        assert expected in installer, f"missing picnic installer invariant: {expected}"
+
+    assert PICNIC_LAYOUT.is_file(), "missing versioned picnic generator layout"
+    assert PICNIC_LAYOUT.with_name(PICNIC_LAYOUT.name + ".meta").is_file()
+    layout = json.loads(PICNIC_LAYOUT.read_text(encoding="utf-8"))
+    assert layout["schemaVersion"] == 1
+    expected_names = [
+        "PicnicBlanketBlue",
+        "PicnicRadio",
+        "PicnicTeapot",
+        "PicnicMug",
+        "PicnicCushionBlueLeft",
+        "PicnicCushionBlueRight",
+        "PicnicPillowBlueLeft",
+        "PicnicPillowBlueRight",
+    ]
+    assert [item["name"] for item in layout["items"]] == expected_names
+    for item in layout["items"]:
+        for field in ("position", "rotation", "scale", "modelLocalPosition", "modelLocalRotation", "modelLocalScale"):
+            assert all(math.isfinite(float(value)) for value in item[field].values())
+        for field in ("rotation", "modelLocalRotation"):
+            quaternion = item[field]
+            magnitude = math.sqrt(sum(float(quaternion[key]) ** 2 for key in ("x", "y", "z", "w")))
+            assert abs(magnitude - 1.0) < 0.001, f"non-normalized picnic rotation: {item['name']}/{field}"
+
+    # The committed scene is the visual result users open after cloning. Verify that the versioned
+    # generator input was captured from that exact result, including prefab-root overrides made by hand.
+    scene = WORLD_SCENE.read_text(encoding="utf-8")
+
+    def document_at(start: int) -> str:
+        end = scene.find("\n--- !u!", start + 1)
+        return scene[start:] if end < 0 else scene[start:end]
+
+    def game_object_transform(name: str) -> tuple[str, str]:
+        marker = f"  m_Name: {name}\n"
+        marker_index = scene.find(marker)
+        assert marker_index >= 0, f"missing scene picnic object: {name}"
+        start = scene.rfind("--- !u!1 &", 0, marker_index)
+        game_object = document_at(start)
+        transform_id = re.search(r"- component: \{fileID: (\d+)\}", game_object)
+        assert transform_id, f"missing scene transform: {name}"
+        transform_start = scene.find(f"--- !u!4 &{transform_id.group(1)}\n")
+        assert transform_start >= 0, f"missing transform document: {name}"
+        return document_at(transform_start), transform_id.group(1)
+
+    def inline_vector(block: str, field: str, keys: tuple[str, ...]) -> dict[str, float]:
+        match = re.search(rf"  {re.escape(field)}: \{{([^}}]+)\}}", block)
+        assert match, f"missing {field}"
+        values = {}
+        for key in keys:
+            value = re.search(rf"(?:^|, )\s*{key}: ([^,}}]+)", match.group(1))
+            assert value, f"missing {field}.{key}"
+            values[key] = float(value.group(1))
+        return values
+
+    def assert_vector_close(actual: dict[str, float], expected: dict[str, float], label: str) -> None:
+        for key, expected_value in expected.items():
+            assert abs(actual[key] - float(expected_value)) <= 1e-6, (
+                f"scene/layout mismatch: {label}.{key}: {actual[key]} != {expected_value}"
+            )
+
+    for item in layout["items"]:
+        anchor, _ = game_object_transform(item["name"])
+        assert_vector_close(inline_vector(anchor, "m_LocalPosition", ("x", "y", "z")), item["position"], item["name"])
+        assert_vector_close(inline_vector(anchor, "m_LocalRotation", ("x", "y", "z", "w")), item["rotation"], item["name"])
+        assert_vector_close(inline_vector(anchor, "m_LocalScale", ("x", "y", "z")), item["scale"], item["name"])
+
+        child = re.search(r"  m_Children:\s*\n  - \{fileID: (\d+)\}", anchor)
+        assert child, f"missing model child: {item['name']}"
+        child_start = scene.find(f"--- !u!4 &{child.group(1)} stripped\n")
+        assert child_start >= 0, f"missing stripped model transform: {item['name']}"
+        child_block = document_at(child_start)
+        prefab_instance = re.search(r"m_PrefabInstance: \{fileID: (\d+)\}", child_block)
+        assert prefab_instance, f"missing model prefab instance: {item['name']}"
+        instance_start = scene.find(f"--- !u!1001 &{prefab_instance.group(1)}\n")
+        instance = document_at(instance_start)
+
+        def override_vector(prefix: str, keys: tuple[str, ...], default: float) -> dict[str, float]:
+            result = {}
+            for key in keys:
+                value = re.search(
+                    rf"propertyPath: {re.escape(prefix)}\.{key}\s*\n\s+value: ([^\r\n]+)", instance
+                )
+                result[key] = float(value.group(1)) if value else default
+            return result
+
+        assert_vector_close(
+            override_vector("m_LocalPosition", ("x", "y", "z"), 0.0),
+            item["modelLocalPosition"], f"{item['name']}/Model"
+        )
+        assert_vector_close(
+            override_vector("m_LocalRotation", ("x", "y", "z", "w"), 0.0) | {"w": override_vector("m_LocalRotation", ("w",), 1.0)["w"]},
+            item["modelLocalRotation"], f"{item['name']}/Model"
+        )
+        assert_vector_close(
+            override_vector("m_LocalScale", ("x", "y", "z"), 1.0),
+            item["modelLocalScale"], f"{item['name']}/Model"
+        )
+    assert "PicnicSceneInstaller.InstallForBuild(scene);" in builder
+    assert "PicnicSceneInstaller.ValidateScene();" in builder
+
+
 def validate_redistributable_package_and_debug_pickup() -> None:
     exporter = PACKAGE_EXPORTER.read_text(encoding="utf-8")
     assert 'OwnedAssetRoot = "Assets/StargazingHill"' in exporter
@@ -240,6 +411,7 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'OwnedAssetRoot + "/SourceDownloads/"' in exporter
     assert "ExportForBatchMode()" in exporter
     assert "ExportPackageOptions.Default" in exporter
+    assert 'OwnedAssetRoot + "/Editor/Data/PicnicLayout.json"' in exporter
     assert "IncludeDependencies" not in exporter.replace(
         "Deliberately omits IncludeDependencies", ""
     )
@@ -253,6 +425,22 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     restore_guide = PACKAGE_README.read_text(encoding="utf-8")
     for dependency in ("YamaPlayer", "QvPen", "UnyStylus"):
         assert dependency in restore_guide
+
+    release_workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+    for required in (
+        'tags:\n      - "v*"',
+        "permissions:\n  contents: write",
+        "Assets/StargazingHill.meta",
+        "Build/unitypackage-meta.txt",
+        "create-unitypackage@0e02a37fdb702e893dc2a96603768ca7e7dd9b54",
+        "Tools/Validate-UnityPackage.py",
+        "StargazingHill-redistributable.unitypackage",
+        "SHA256SUMS.txt",
+        "gh release create",
+        "gh release upload",
+    ):
+        assert required in release_workflow, f"release workflow is missing: {required}"
+    assert "IncludeDependencies" not in release_workflow
 
     pickup = DEBUG_PANEL_PICKUP.read_text(encoding="utf-8")
     return_delay = re.findall(
@@ -271,6 +459,9 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     )
     assert "EnsureProgramAsset(typeof(WorldDebugPanelPickup)" in builder
     assert "internal const float PanelScale = 0.20f;" in installer
+    assert "PanelPosition = new Vector3(-0.842f, 1.45f, -25.342f)" in installer
+    assert 'LegacyToggleObjectName = "VRDebugPanelToggle"' in installer
+    assert "CreatePrimitive(ToggleObjectName" not in installer
     assert "panel.AddComponent<VRCPickup>()" in installer
     assert "WorldDebugPanelPickup.ReturnDelaySeconds" in builder
 
@@ -283,12 +474,23 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "PLAY CURRENT" in debug_status and "STOP EVENT" in debug_status
     assert "現在を再生" in debug_status and "イベント停止" in debug_status
     assert "japaneseStatusText" in debug_status and "englishStatusText" in debug_status
+    assert "traditionalChineseStatusText" in debug_status
+    assert "simplifiedChineseStatusText" in debug_status
+    assert "koreanStatusText" in debug_status
     assert 'new GameObject("JapaneseLabels")' in installer
     assert 'new GameObject("EnglishLabels")' in installer
+    assert 'new GameObject("TraditionalChineseLabels")' in installer
+    assert 'new GameObject("SimplifiedChineseLabels")' in installer
+    assert 'new GameObject("KoreanLabels")' in installer
     assert 'UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(languageButton)' in installer
     assert 'CreateUiText(panel.transform, "ENGLISH"' in installer
     assert "private void ApplyLanguage()" in info_toggle
-    assert "_english = !_english;" in info_toggle
+    assert "private int _languageIndex;" in info_toggle
+    assert "if (_languageIndex > 4) _languageIndex = 0;" in info_toggle
+    assert "traditionalChineseText" in info_toggle
+    assert "simplifiedChineseText" in info_toggle
+    assert "koreanText" in info_toggle
+    assert "observatorySelector.SetDisplayLanguage(_languageIndex)" in info_toggle
     assert "VRCPlayerApi.GetPlayerCount()" in presence_board
     assert "DefaultMaximumCapacity = 80" in presence_board
     assert "DefaultRecommendedCapacity = 40" in presence_board
@@ -307,11 +509,124 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "public override void OnPlayerLeft" in presence_board
     assert 'PanelName = "WorldInformationPanel"' in info_installer
     assert "DestroyImmediate(sheet.GetComponent<Collider>())" in info_installer
-    assert "new Vector3(1.72f, 0.98f, -0.0125f)" in info_installer
+    assert "Position = new Vector3(1.471f, 1.999f, -26.29f)" in info_installer
+    assert "LanguageTogglePosition = new Vector3(1.03f, ObservatoryControlY, -0.0125f)" in info_installer
+    assert "DebugTogglePosition = new Vector3(1.72f, ObservatoryControlY, -0.0125f)" in info_installer
+    assert "LaptopIconTop = 0.584f" in info_installer
+    assert "MobileIconTop = 0.456f" in info_installer
+    assert "ApplyGeneratedLayoutMigrationIfNeeded" not in info_installer
+    assert "[InitializeOnLoad]" not in info_installer
+    assert 'new GameObject("Visual")' not in info_installer
+    assert 'CreateGroup(panel.transform, "Visual")' in info_installer
+    assert 'CreateGroup(visualGroup, "Descriptions")' in info_installer
+    assert 'CreateGroup(visualGroup, "Presence")' in info_installer
+    assert 'CreateGroup(panel.transform, "Controls")' in info_installer
+    assert 'CreateGroup(controlsGroup, "Observatory")' in info_installer
+    assert "Manual changes inside InformationSystem will be lost." in info_installer
+    assert "PresenceTop = 0.88f" in info_installer
+    assert "HistoryTop = 0.31f" in info_installer
+    assert "HistoryHeightPixels = 610f" in info_installer
     assert "presence.historyCapacity = WorldPresenceBoard.DefaultHistoryCapacity" in info_installer
     assert "presence.visibleHistoryCount = WorldPresenceBoard.DefaultVisibleHistoryCount" in info_installer
     assert 'new GameObject("PlatformLaptopIcon")' in info_installer
     assert 'new GameObject("PlatformMobileIcon")' in info_installer
+    assert PANEL_FONT.is_file()
+    assert hashlib.sha256(PANEL_FONT.read_bytes()).hexdigest() == (
+        "6bcb2a0703aa137e874fc2dffa85f6c21ba9a67fa329e81b8c801663af7e992a"
+    )
+    assert "ThirdParty/Fonts/NotoSansCJKkr-Regular.otf" in info_installer
+    assert "東京の現在時刻" not in info_installer
+    assert "current time in Tokyo" not in info_installer
+
+    observatory_selector = OBSERVATORY_SELECTOR.read_text(encoding="utf-8")
+    observatory_button = OBSERVATORY_BUTTON.read_text(encoding="utf-8")
+    assert "UdonBehaviourSyncMode(BehaviourSyncMode.Manual)" in observatory_selector
+    assert "[UdonSynced] public int selectedIndex" in observatory_selector
+    assert "Networking.SetOwner(localPlayer, gameObject)" in observatory_selector
+    assert "RequestSerialization()" in observatory_selector
+    assert "public override void OnDeserialization()" in observatory_selector
+    assert "skyController.ApplyCurrentSkyRotation()" in observatory_selector
+    assert "meteorController.latitudeDegrees = latitude" in observatory_selector
+    assert "public void SetDisplayLanguage(int languageIndex)" in observatory_selector
+    assert "observatoryHeadingLabel.text = localizedHeadingLabels[_displayLanguageIndex]" in observatory_selector
+    assert "selectedLocationLabel.text = GetLocalizedDisplayName(selectedIndex);" in observatory_selector
+    assert "locationListLabels[index].text = GetLocalizedDisplayName(index);" in observatory_selector
+    assert "displayNamesJapanese" in observatory_selector
+    assert "displayNamesTraditionalChinese" in observatory_selector
+    assert "displayNamesSimplifiedChinese" in observatory_selector
+    assert "displayNamesKorean" in observatory_selector
+    assert 'displayNames[selectedIndex] + "  (global)"' not in observatory_selector
+    assert "debugPanelRoot.SetActive(!debugPanelRoot.activeSelf)" in observatory_selector
+    assert "ExpectedLocationCount = 20" in observatory_selector
+    assert "ActionSelectLocation = 3" in observatory_button
+    assert "ActionToggleDebugPanel = 4" in observatory_button
+    assert "selector.SelectPrevious()" in observatory_button
+    assert "selector.SelectNext()" in observatory_button
+    assert "selector.SelectLocation(locationIndex)" in observatory_button
+
+    expected_profiles = (
+        "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki",
+        "naha-okinawa", "rome", "paris", "moscow", "washington-dc", "san-francisco",
+        "los-angeles", "las-vegas", "new-york", "ottawa", "canberra", "jakarta",
+        "beijing", "seoul",
+    )
+    for profile in expected_profiles:
+        assert f'"{profile}"' in info_installer, f"missing observatory profile: {profile}"
+    localized_catalogs = (
+        "ObservatoryDisplayNames",
+        "ObservatoryDisplayNamesJapanese",
+        "ObservatoryDisplayNamesTraditionalChinese",
+        "ObservatoryDisplayNamesSimplifiedChinese",
+        "ObservatoryDisplayNamesKorean",
+    )
+    for catalog_name in localized_catalogs:
+        match = re.search(
+            rf"private static readonly string\[\] {catalog_name}\s*=\s*\{{(.*?)\}};",
+            info_installer,
+            re.DOTALL,
+        )
+        assert match, f"missing localized observatory catalog: {catalog_name}"
+        assert len(re.findall(r'"(?:[^"\\]|\\.)*"', match.group(1))) == 20, (
+            f"localized observatory catalog must contain 20 names: {catalog_name}"
+        )
+    for translated_name in (
+        "東京（日本）", "ワシントンD.C.（アメリカ）", "ソウル（韓国）",
+        "東京，日本", "華盛頓特區，美國", "首爾，韓國",
+        "东京，日本", "华盛顿特区，美国", "首尔，韩国",
+        "도쿄, 일본", "워싱턴 D.C., 미국", "서울, 한국",
+    ):
+        assert f'"{translated_name}"' in info_installer, f"missing observatory translation: {translated_name}"
+    assert "toggle.observatorySelector = selector;" in info_installer
+    assert "selector.locationListLabels = locationListLabels;" in info_installer
+    assert "private const float PanelTop = 1.25f" in info_installer
+    assert "private const float PanelBottom = -1.85f" in info_installer
+    assert '"星空の基準地点  (global)"' in info_installer
+    assert '"SKY REFERENCE LOCATION  (global)"' in info_installer
+    assert '"星空基準地點  (global)"' in info_installer
+    assert '"星空基准地点  (global)"' in info_installer
+    assert '"별하늘 기준 위치  (global)"' in info_installer
+    assert 'parent.name = "ObservatoryHeading"' in info_installer
+    assert '"OBSERVATORY  (global)"' not in info_installer
+    assert '"星空の基準地点 / SKY VIEWPOINT"' not in info_installer
+    assert '"Tokyo, Japan  (global)"' not in info_installer
+    assert 'new GameObject("ObservatoryLocationList")' in info_installer
+    assert "int catalogIndex = ObservatoryDisplayNames.Length - 1 - visualIndex;" in info_installer
+    assert "int row = visualIndex / 3;" in info_installer
+    assert "int column = visualIndex % 3;" in info_installer
+    assert "float x = -1.38f + column * 1.38f;" in info_installer
+    assert "float y = 0.10f - row * 0.20f;" in info_installer
+    assert '"ObservatoryPrevious", "◀"' in info_installer
+    assert '"ObservatoryNext", "▶"' in info_installer
+    assert '"DebugPanelToggle", "DEBUG: OFF"' in info_installer
+    assert "WorldObservatorySelector.Action" not in info_installer
+    assert "WorldObservatoryButton.ActionPrevious" in info_installer
+    assert "WorldObservatoryButton.ActionNext" in info_installer
+    assert "WorldObservatoryButton.ActionToggleList" in info_installer
+    assert "WorldObservatoryButton.ActionSelectLocation" in info_installer
+    assert "WorldObservatoryButton.ActionToggleDebugPanel" in info_installer
+    assert "InstallOrRefreshForBatchMode()" in info_installer
+    assert "public static void ValidateForBatchMode()" in info_installer
+    assert 'Debug.Log("World information panel validation passed.")' in info_installer
 
 
 def validate_sky_reference() -> None:
@@ -389,6 +704,36 @@ def validate_sky_reference() -> None:
     assert "_CoreColor" in meteor_shader
     assert "_HeadColor" in meteor_shader
     assert "_Afterglow" in meteor_shader
+    assert '#include "StargazingAtmosphere.cginc"' in meteor_shader
+    assert "StargazingAtmosphericTransmission(" in meteor_shader
+    assert "brightness * input.atmosphere" in meteor_shader
+
+    starfield_shader = STARFIELD_SHADER.read_text(encoding="utf-8")
+    assert 'Shader "StargazingHill/Starfield"' in starfield_shader
+    assert '#include "StargazingAtmosphere.cginc"' in starfield_shader
+    assert "StargazingAtmosphericTransmission(" in starfield_shader
+    assert "i.atmosphericTransmission * _Intensity" in starfield_shader
+
+    atmosphere = ATMOSPHERE_INCLUDE.read_text(encoding="utf-8")
+    assert "extinctionCoefficient * (airmass - 1.0)" in atmosphere
+    assert "exp2(-1.32877124 * extinctionMagnitudes)" in atmosphere
+    assert 'starMaterial.SetFloat("_ExtinctionCoefficient", 0.23f);' in builder
+    assert 'starMaterial.SetFloat("_MinimumSinAltitude", 0.05f);' in builder
+    assert 'material.SetFloat("_HorizonFull", Mathf.Sin(12f * Mathf.Deg2Rad));' in builder
+
+    # Match the reference implementation: k=0.23 mag/airmass and
+    # X=1/max(sin(altitude), 0.05). Zenith must remain unchanged while
+    # low-altitude light is attenuated monotonically.
+    def atmospheric_transmission(altitude_degrees: float) -> float:
+        sin_altitude = max(math.sin(math.radians(altitude_degrees)), 0.05)
+        extinction_magnitudes = 0.23 * (1.0 / sin_altitude - 1.0)
+        return 10.0 ** (-0.4 * extinction_magnitudes)
+
+    transmissions = [atmospheric_transmission(value) for value in (90.0, 30.0, 10.0, 0.0)]
+    assert math.isclose(transmissions[0], 1.0, abs_tol=1e-9)
+    assert transmissions[0] > transmissions[1] > transmissions[2] > transmissions[3]
+    assert math.isclose(transmissions[1], 0.8093, abs_tol=0.001)
+    assert math.isclose(transmissions[2], 0.3649, abs_tol=0.001)
 
     moon_shader = MOON_SHADER.read_text(encoding="utf-8")
     assert 'Shader "StargazingHill/Moon"' in moon_shader
@@ -411,15 +756,15 @@ def validate_sky_reference() -> None:
         actual = values if field == "ids" else [float(value) for value in values]
         assert actual == expected, f"unexpected IMO 2026 {field}: {actual}"
 
-    assert 'MenuItem("Stargazing Hill/Debug/Trigger Hourly Meteor Shower"' in builder
-    assert 'MenuItem("Stargazing Hill/Debug/Advance Sky +1 Hour"' in builder
+    assert 'MenuItem("Stargazing Hill/Preview & Debug/Trigger Hourly Meteor Shower"' in builder
+    assert 'MenuItem("Stargazing Hill/Preview & Debug/Advance Sky +1 Hour"' in builder
     assert "TestSkyAndMeteorForBatchMode" in builder
     assert "CreateOrUpdateMeteorMaterials" in builder
     assert "UpgradeMeteorVisualsForBatchMode" in builder
 
     debug_window = (ROOT / "Assets/StargazingHill/Editor/MeteorShowerDebugWindow.cs").read_text(encoding="utf-8")
-    assert 'MenuItem("Stargazing Hill/Debug/Meteor Shower Preview..."' in debug_window
-    assert 'MenuItem("Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)"' in debug_window
+    assert 'MenuItem("Stargazing Hill/Preview & Debug/Meteor Shower Preview..."' in debug_window
+    assert 'MenuItem("Stargazing Hill/Preview & Debug/Force Perseids Preview (20 Meteors)"' in debug_window
     assert "backing.SetProgramVariable(nameof(MeteorController.debugRequestedShowerIndex), showerIndex);" in debug_window
     assert "backing.SendCustomEvent(nameof(MeteorController.DebugTriggerSelectedShower));" in debug_window
     assert "Networking.LocalPlayer" in debug_window
@@ -451,6 +796,77 @@ def validate_sky_reference() -> None:
                                 (43.6532, -79.3832)):
         pole_altitude = math.degrees(math.asin(math.sin(math.radians(latitude))))
         assert math.isclose(pole_altitude, latitude, abs_tol=1e-9), (latitude, longitude)
+
+
+def validate_public_documentation() -> None:
+    builder = BUILDER.read_text(encoding="utf-8")
+    info_installer = INFO_PANEL_INSTALLER.read_text(encoding="utf-8")
+    picnic_installer = PICNIC_INSTALLER.read_text(encoding="utf-8")
+    package_exporter = PACKAGE_EXPORTER.read_text(encoding="utf-8")
+    assert 'MenuItem("Stargazing Hill/Validate Saved Scene"' in builder
+    assert 'MenuItem("Stargazing Hill/Content/Information Panel/Select in Hierarchy"' in info_installer
+    assert 'MenuItem("Stargazing Hill/Content/Information Panel/Validate"' in info_installer
+    assert 'MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild InformationSystem' in info_installer
+    assert 'MenuItem("Stargazing Hill/Content/Picnic/' in picnic_installer
+    assert 'MenuItem("Stargazing Hill/Build & Export/Redistributable UnityPackage...' in package_exporter
+    assert 'MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild Complete World' in builder
+    assert "Stargazing Hill/Integrations" not in builder
+
+    language_links = (
+        "README.md",
+        "README.en.md",
+        "README.zh-Hant.md",
+        "README.zh-Hans.md",
+        "README.ko.md",
+    )
+    for readme in LOCALIZED_READMES:
+        assert readme.is_file(), f"missing localized README: {readme.name}"
+        content = readme.read_text(encoding="utf-8")
+        for link in language_links:
+            assert f"]({link})" in content, f"missing language link {link} in {readme.name}"
+        assert "Stargazing Hill/Validate Saved Scene" in content
+        assert "Stargazing Hill/Build & Export/Redistributable UnityPackage..." in content
+        assert "docs/PUBLIC_RELEASE_AUDIT.md" in content
+
+    audit = PUBLIC_RELEASE_AUDIT.read_text(encoding="utf-8")
+    notice = PROJECT_NOTICE.read_text(encoding="utf-8")
+    for required in (
+        "Blueprint ID",
+        "QvPen / YamaPlayer / UnyStylus",
+        "GitHub Release",
+        "stargazing",
+        "astronomy",
+        "hangout",
+    ):
+        assert required in audit, f"public release audit is missing: {required}"
+    for required in (
+        "Third-party material",
+        "HYG-derived stellar data",
+        "com.vrchat.core.vpm-resolver",
+        "YamaPlayer, QvPen, and the purchased UnyStylus",
+    ):
+        assert required in notice, f"project notice is missing: {required}"
+
+    guide = STARFIELD_GUIDE.read_text(encoding="utf-8")
+    for required in (
+        "## 簡易説明",
+        "## 詳細説明",
+        "```mermaid",
+        "BuildStarMesh()",
+        "Networking.GetNetworkDateTime()",
+        "Julian Date",
+        "Greenwich恒星時と地方恒星時",
+        "Quaternion.LookRotation(R6h, NCP)",
+        "Blend One One",
+        "12,495",
+        "星空の「空気感」を作る4層",
+        "StargazingAtmosphere.cginc",
+        "airmass",
+        "6.8等級",
+        "中高生",
+        "REAL_SKY_SYSTEM.md",
+    ):
+        assert required in guide, f"starfield guide is missing: {required}"
 
 
 def normalize_degrees(value: float) -> float:
@@ -576,13 +992,16 @@ def main() -> None:
     validate_catalog()
     validate_yama_dependency_and_rolloff()
     validate_environment_and_drawing()
+    validate_picnic_spot()
     validate_redistributable_package_and_debug_pickup()
     validate_sky_reference()
+    validate_public_documentation()
     print(
         f"OK: {EXPECTED_STAR_COUNT} HYG stars, parameterized observatory, five USNO Moon "
         "references, 11 IMO showers, YamaPlayer, CC0 environment, locomotion, QvPen, "
-        "UnyStylus references, YamaPlayer patch workflow, redistributable package boundary, "
-        "and debug pickup validated"
+        "UnyStylus references, Tiny Treats picnic spot, YamaPlayer patch workflow, "
+        "redistributable package boundary, localized READMEs, starfield guide, global observatory "
+        "selector, and debug pickup validated"
     )
 
 

@@ -34,6 +34,7 @@ namespace StargazingHill
 
         public Text playerCountText;
         public Text historyText;
+        public ScrollRect historyScrollRect;
         public int maximumCapacity = DefaultMaximumCapacity;
         public int recommendedCapacity = DefaultRecommendedCapacity;
         public int historyCapacity = DefaultHistoryCapacity;
@@ -41,7 +42,6 @@ namespace StargazingHill
 
         private string[] _history;
         private int _historyCount;
-        private int _historyOffset;
         private VRCPlayerApi[] _players;
 
         private void Start()
@@ -66,13 +66,21 @@ namespace StargazingHill
         private void AddHistory(string prefix, VRCPlayerApi player)
         {
             if (_history == null) _history = new string[Mathf.Max(1, historyCapacity)];
-            for (int index = _history.Length - 1; index > 0; index--)
-                _history[index] = _history[index - 1];
             string displayName = Utilities.IsValid(player) ? player.displayName : "Unknown";
-            _history[0] = prefix + displayName;
-            _historyCount = Mathf.Min(_historyCount + 1, _history.Length);
-            _historyOffset = 0;
+
+            if (_historyCount < _history.Length)
+            {
+                _history[_historyCount] = prefix + displayName;
+                _historyCount++;
+            }
+            else
+            {
+                for (int index = 1; index < _history.Length; index++)
+                    _history[index - 1] = _history[index];
+                _history[_history.Length - 1] = prefix + displayName;
+            }
             RefreshHistory();
+            SendCustomEventDelayedFrames(nameof(ScrollHistoryToLatest), 1);
         }
 
 #if VRC_ENABLE_PLAYER_PERSISTENCE
@@ -89,18 +97,31 @@ namespace StargazingHill
         }
 #endif
 
+        public void ScrollHistoryToLatest()
+        {
+            if (historyScrollRect != null)
+                historyScrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        // Kept for scenes made with the previous two-button history UI. The refreshed
+        // panel uses the selectable ScrollRect directly, but old scene objects must still
+        // compile long enough for the installer to replace them safely.
         public void ScrollHistoryNewer()
         {
-            _historyOffset = Mathf.Max(0, _historyOffset - 1);
-            RefreshHistory();
+            ScrollHistoryBy(-1f);
         }
 
         public void ScrollHistoryOlder()
         {
-            int pageSize = Mathf.Max(1, visibleHistoryCount);
-            int maximumOffset = Mathf.Max(0, _historyCount - pageSize);
-            _historyOffset = Mathf.Min(maximumOffset, _historyOffset + 1);
-            RefreshHistory();
+            ScrollHistoryBy(1f);
+        }
+
+        private void ScrollHistoryBy(float direction)
+        {
+            if (historyScrollRect == null) return;
+            int scrollableEntries = Mathf.Max(1, historyCapacity - visibleHistoryCount);
+            historyScrollRect.verticalNormalizedPosition = Mathf.Clamp01(
+                historyScrollRect.verticalNormalizedPosition + direction / scrollableEntries);
         }
 
         private void RefreshCount()
@@ -143,13 +164,10 @@ namespace StargazingHill
         private void RefreshHistory()
         {
             if (historyText == null) return;
-            int pageSize = Mathf.Max(1, visibleHistoryCount);
-            int visibleCount = Mathf.Min(pageSize, Mathf.Max(0, _historyCount - _historyOffset));
-            int first = visibleCount == 0 ? 0 : _historyOffset + 1;
-            int last = _historyOffset + visibleCount;
-            string value = "JOIN / LEAVE  " + first + "-" + last + " / " + _historyCount;
-            for (int index = 0; index < visibleCount; index++)
-                value += "\n" + _history[_historyOffset + index];
+            int first = _historyCount == 0 ? 0 : 1;
+            string value = "JOIN / LEAVE  " + first + "-" + _historyCount + " / " + _historyCount;
+            for (int index = 0; index < _historyCount; index++)
+                value += "\n" + _history[index];
             historyText.text = value;
         }
     }

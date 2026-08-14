@@ -25,8 +25,10 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _ExtinctionCoefficient: 0.23
     - _HorizonFull: 0.25881904
     - _HorizonStart: 0
     - _Intensity: 1.35
+    - _MinimumSinAltitude: 0.05
     m_Colors: []
   m_BuildTextureStacks: []

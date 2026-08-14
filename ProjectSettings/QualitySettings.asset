@@ -158,7 +158,7 @@ QualitySettings:
     - Android
   - serializedVersion: 3
     name: VRC Mobile
-    pixelLightCount: 1
+    pixelLightCount: 4
     shadows: 0
     shadowResolution: 1
     shadowProjection: 1
