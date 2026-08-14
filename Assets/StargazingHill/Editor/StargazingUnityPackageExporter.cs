@@ -107,6 +107,8 @@ namespace StargazingHill.Editor
             string ownedPrefix = OwnedAssetRoot + "/";
             bool includesScene = false;
             bool includesRestoreGuide = false;
+            bool includesProjectLicense = false;
+            bool includesPackageNotice = false;
             bool includesPicnicLayout = false;
             for (int index = 0; index < paths.Length; index++)
             {
@@ -121,11 +123,15 @@ namespace StargazingHill.Editor
 
                 if (path == OwnedAssetRoot + "/Scenes/StargazingHill.unity") includesScene = true;
                 if (path == OwnedAssetRoot + "/README_UNITYPACKAGE.md") includesRestoreGuide = true;
+                if (path == OwnedAssetRoot + "/LICENSE.md") includesProjectLicense = true;
+                if (path == OwnedAssetRoot + "/NOTICE.md") includesPackageNotice = true;
                 if (path == OwnedAssetRoot + "/Editor/Data/PicnicLayout.json") includesPicnicLayout = true;
             }
 
             if (!includesScene) throw new InvalidOperationException("Redistributable package selection lacks the world scene.");
             if (!includesRestoreGuide) throw new InvalidOperationException("Redistributable package selection lacks its restore guide.");
+            if (!includesProjectLicense) throw new InvalidOperationException("Redistributable package selection lacks the project license.");
+            if (!includesPackageNotice) throw new InvalidOperationException("Redistributable package selection lacks the package notice.");
             if (!includesPicnicLayout)
                 throw new InvalidOperationException("Redistributable package selection lacks the saved picnic layout.");
         }
