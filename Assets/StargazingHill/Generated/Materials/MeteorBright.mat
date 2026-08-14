@@ -27,9 +27,13 @@ Material:
     m_Floats:
     - _Afterglow: 0.32
     - _CoreWidth: 0.13
+    - _ExtinctionCoefficient: 0.23
     - _FlareStrength: 0.34
     - _HeadSize: 0.11
+    - _HorizonFull: 0.20791169
+    - _HorizonStart: 0
     - _Intensity: 4.5
+    - _MinimumSinAltitude: 0.05
     m_Colors:
     - _CoreColor: {r: 1, g: 1, b: 0.97, a: 1}
     - _HeadColor: {r: 1, g: 0.92, b: 0.72, a: 1}

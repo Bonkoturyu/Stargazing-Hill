@@ -7,6 +7,7 @@
 | 依存 | 版 | 用途 | 配布元・ライセンス | 状態 |
 |---|---|---|---|---|
 | VRChat SDK Base / Worlds | 3.10.4 | VRChatワールド | VRChat公式VPM package。各packageの `license.txt` は https://hello.vrchat.com/legal/sdk を参照。取得済みpackage、manifest、公式release `https://github.com/vrchat/packages/releases/tag/3.10.4` を2026-08-12に照合。ClientSimのUdon networking初期化順序に対する局所guardは [ADR 0006](../adr/0006-vrcsdk-3104-clientsim-networking-guard.md) に記録し、package本体は追跡しない | Confirmed |
+| VRChat Package Resolver Tool (`com.vrchat.core.vpm-resolver`) | 0.1.29 | VPM依存の復元 | VRChat公式package。復元処理をclone直後にも利用できるよう、このpackageだけは `Packages/` 配下で追跡する。package直下の `License.md` が参照するVRChat Distro License（非商用・無償配布）に従う。rootのMIT Licenseからは除外され、Release用unitypackageにも含めない。確認日2026-08-14 | Confirmed |
 | UdonSharp | VRChat Worlds 3.10.4内蔵 | ワールドロジック | `com.vrchat.worlds/Integrations/UdonSharp` として復元。上流 https://github.com/vrchat-community/UdonSharp 、MIT License、確認日2026-08-12 | Confirmed |
 | VRCWorldToolkit | 3.4.1 | Editor検証支援 | https://github.com/oneVR/VRWorldToolkit 、MIT License。package内 `LICENSE` と `licensesUrl` を2026-08-12に照合 | Confirmed |
 | AudioLink | 3.1.2 | 音声連動表現 | https://github.com/llealloo/audiolink 、MIT License。package内 `LICENSE` を2026-08-12に照合。package本体はVPMで復元 | Confirmed |

@@ -27,7 +27,7 @@ namespace StargazingHill.Editor
             EditorApplication.update -= Repaint;
         }
 
-        [MenuItem("Stargazing Hill/Debug/Meteor Shower Preview...", false, 45)]
+        [MenuItem("Stargazing Hill/Preview & Debug/Meteor Shower Preview...", false, 50)]
         public static void OpenWindow()
         {
             MeteorShowerDebugWindow window = GetWindow<MeteorShowerDebugWindow>();
@@ -36,7 +36,7 @@ namespace StargazingHill.Editor
             window.Show();
         }
 
-        [MenuItem("Stargazing Hill/Debug/Force Perseids Preview (20 Meteors)", false, 46)]
+        [MenuItem("Stargazing Hill/Preview & Debug/Force Perseids Preview (20 Meteors)", false, 51)]
         public static void ForcePerseidsPreview()
         {
             TriggerPreview(PerseidsIndex);

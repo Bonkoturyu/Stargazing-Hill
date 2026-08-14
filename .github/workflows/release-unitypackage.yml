@@ -1,0 +1,99 @@
+name: Release redistributable UnityPackage
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing v* tag to package and publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-unitypackage-${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      - name: Validate release tag and source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}"
+          python Tools/Validate-StargazingImplementation.py
+
+      - name: Build explicit asset list
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Build dist release
+          {
+            printf '%s\n' Assets/StargazingHill.meta
+            find Assets/StargazingHill -type f -name '*.meta' -print
+          } | LC_ALL=C sort -u > Build/unitypackage-meta.txt
+          test -s Build/unitypackage-meta.txt
+          if grep -E '(^|/)(SourceDownloads|Rasta|QvPen|YamaPlayer|UnyStylus)(/|$)' Build/unitypackage-meta.txt; then
+            echo "Forbidden dependency path entered the package list." >&2
+            exit 1
+          fi
+
+      - name: Create UnityPackage without Unity Editor
+        uses: natsuneko-laboratory/create-unitypackage@0e02a37fdb702e893dc2a96603768ca7e7dd9b54 # v3.2.0
+        with:
+          meta: Build/unitypackage-meta.txt
+          output: Build/StargazingHill-redistributable.unitypackage
+
+      - name: Validate and zip release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python Tools/Validate-UnityPackage.py Build/StargazingHill-redistributable.unitypackage
+          version="${RELEASE_TAG#v}"
+          package_name="StargazingHill-${version}.unitypackage"
+          zip_name="StargazingHill-${version}.zip"
+          cp Build/StargazingHill-redistributable.unitypackage "dist/$package_name"
+          (
+            cd dist
+            sha256sum "$package_name" > SHA256SUMS.txt
+            zip -9 "../release/$zip_name" "$package_name" SHA256SUMS.txt
+          )
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: StargazingHill-${{ env.RELEASE_TAG }}
+          path: |
+            release/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          assets=(release/*.zip dist/SHA256SUMS.txt)
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --verify-tag \
+              --generate-notes \
+              --title "Stargazing Hill $RELEASE_TAG"

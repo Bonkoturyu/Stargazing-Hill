@@ -55,7 +55,7 @@ namespace StargazingHill.Editor
             EditorApplication.delayCall += ApplyIfRequired;
         }
 
-        [MenuItem("Stargazing Hill/Diagnostics/Repair VRChat SDK 3.10.4 ClientSim Guard", false, 91)]
+        [MenuItem("Stargazing Hill/Advanced/Diagnostics/Repair VRChat SDK 3.10.4 ClientSim Guard", false, 95)]
         public static void ApplyIfRequired()
         {
             if (!File.Exists(PackageJsonPath) || !File.Exists(UdonManagerPath)) return;

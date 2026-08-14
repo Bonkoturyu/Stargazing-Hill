@@ -21,7 +21,9 @@ namespace StargazingHill.Editor
     {
         private const string ScenePath = "Assets/StargazingHill/Scenes/StargazingHill.unity";
         private const string PanelObjectName = "VRDebugPanel";
-        private const string ToggleObjectName = "VRDebugPanelToggle";
+        // Kept only so old generated scenes can be cleaned up. The information panel now owns the
+        // only debug ON/OFF control, so this standalone object must never be regenerated.
+        private const string LegacyToggleObjectName = "VRDebugPanelToggle";
         internal const float PanelScale = 0.20f;
 
         // TextMesh renders a line at characterSize * fontSize / 10 world units, so a metre-based layout has
@@ -39,12 +41,10 @@ namespace StargazingHill.Editor
         private const float ButtonHeight = 0.15f;
         private const float ColumnOffset = 0.545f;
 
-        // Dock placement near YamaPlayer / QvPen / UnyStylus. Keep these as the only placement knobs.
-        private static readonly Vector3 PanelPosition = new Vector3(-9.65f, 1.42f, -22.05f);
-        private static readonly Vector3 PanelEuler = new Vector3(0f, 230f, 0f);
-        private static readonly Vector3 ToggleEuler = PanelEuler;
-        private static readonly Vector3 TogglePosition = PanelPosition +
-            Quaternion.Euler(PanelEuler) * new Vector3(-0.42f, -0.16f, 0f);
+        // Dock placement immediately to the information panel's right. These values are derived from the
+        // hand-adjusted information-panel pose plus a 0.30m edge gap, and are the only placement knobs.
+        internal static readonly Vector3 PanelPosition = new Vector3(-0.842f, 1.45f, -25.342f);
+        internal static readonly Vector3 PanelEuler = new Vector3(0f, 202.2865f, 0f);
 
         private static bool _installing;
 
@@ -54,14 +54,28 @@ namespace StargazingHill.Editor
             EditorApplication.delayCall += InstallIfTargetSceneIsAlreadyOpen;
         }
 
-        [MenuItem("Stargazing Hill/Debug/Install or Refresh VR Debug Panel", false, 47)]
+        [MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild Debug Panel...", false, 83)]
         public static void InstallOrRefreshMenu()
         {
+            if (!EditorUtility.DisplayDialog(
+                    "Rebuild Debug Panel",
+                    "This replaces the generated VRDebugPanel. Manual changes inside it will be lost.",
+                    "Rebuild", "Cancel"))
+                return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Scene scene = SceneManager.GetActiveScene();
             if (scene.path != ScenePath)
                 scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Install(scene, true);
             EditorSceneManager.SaveScene(scene);
+        }
+
+        public static void InstallOrRefreshForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            Install(scene, true);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
         }
 
         /// <summary>
@@ -78,7 +92,8 @@ namespace StargazingHill.Editor
         {
             if (Application.isPlaying) return;
             Scene scene = SceneManager.GetActiveScene();
-            if (scene.path == ScenePath && FindRoot(scene, PanelObjectName) == null)
+            if (scene.path == ScenePath &&
+                (FindRoot(scene, PanelObjectName) == null || FindRoot(scene, LegacyToggleObjectName) != null))
             {
                 Install(scene, false);
                 EditorSceneManager.SaveScene(scene);
@@ -88,7 +103,7 @@ namespace StargazingHill.Editor
         private static void OnSceneSaved(Scene scene)
         {
             if (_installing || Application.isPlaying || scene.path != ScenePath) return;
-            if (FindRoot(scene, PanelObjectName) != null && FindRoot(scene, ToggleObjectName) != null) return;
+            if (FindRoot(scene, PanelObjectName) != null && FindRoot(scene, LegacyToggleObjectName) == null) return;
 
             Install(scene, false);
             _installing = true;
@@ -101,8 +116,16 @@ namespace StargazingHill.Editor
             if (!scene.IsValid()) throw new InvalidOperationException("StargazingHill scene is not loaded.");
 
             GameObject oldPanel = FindRoot(scene, PanelObjectName);
-            GameObject oldToggle = FindRoot(scene, ToggleObjectName);
-            if (!refreshExisting && oldPanel != null && oldToggle != null) return;
+            GameObject oldToggle = FindRoot(scene, LegacyToggleObjectName);
+            if (!refreshExisting && oldPanel != null)
+            {
+                if (oldToggle != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(oldToggle);
+                    EditorSceneManager.MarkSceneDirty(scene);
+                }
+                return;
+            }
             if (oldPanel != null) UnityEngine.Object.DestroyImmediate(oldPanel);
             if (oldToggle != null) UnityEngine.Object.DestroyImmediate(oldToggle);
 
@@ -144,10 +167,25 @@ namespace StargazingHill.Editor
             GameObject englishLabels = new GameObject("EnglishLabels");
             englishLabels.transform.SetParent(panel.transform, false);
             englishLabels.SetActive(false);
+            GameObject traditionalChineseLabels = new GameObject("TraditionalChineseLabels");
+            traditionalChineseLabels.transform.SetParent(panel.transform, false);
+            traditionalChineseLabels.SetActive(false);
+            GameObject simplifiedChineseLabels = new GameObject("SimplifiedChineseLabels");
+            simplifiedChineseLabels.transform.SetParent(panel.transform, false);
+            simplifiedChineseLabels.SetActive(false);
+            GameObject koreanLabels = new GameObject("KoreanLabels");
+            koreanLabels.transform.SetParent(panel.transform, false);
+            koreanLabels.SetActive(false);
 
             CreateUiText(japaneseLabels.transform, "流星デバッグ", new Vector3(-0.12f, 0.885f, -0.022f),
                 0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
             CreateUiText(englishLabels.transform, "METEOR DEBUG", new Vector3(-0.12f, 0.885f, -0.022f),
+                0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(traditionalChineseLabels.transform, "流星偵錯", new Vector3(-0.12f, 0.885f, -0.022f),
+                0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(simplifiedChineseLabels.transform, "流星调试", new Vector3(-0.12f, 0.885f, -0.022f),
+                0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(koreanLabels.transform, "유성 디버그", new Vector3(-0.12f, 0.885f, -0.022f),
                 0.100f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
             CreateUiText(japaneseLabels.transform,
                 "強制 " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
@@ -159,12 +197,39 @@ namespace StargazingHill.Editor
                 "s / REPLAY CURRENT " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "s / LOCAL ONLY",
                 new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
                 dynamicFont, dynamicTextMaterial);
+            CreateUiText(traditionalChineseLabels.transform,
+                "強制 " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+                "秒 / 播放目前 " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "秒 / 僅限本機",
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            CreateUiText(simplifiedChineseLabels.transform,
+                "强制 " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+                "秒 / 播放当前 " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "秒 / 仅限本地",
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            CreateUiText(koreanLabels.transform,
+                "강제 " + MeteorController.DebugForcedPreviewDurationSeconds.ToString("0") +
+                "초 / 현재 재생 " + MeteorController.NaturalEventDurationSeconds.ToString("0") + "초 / 로컬 전용",
+                new Vector3(0f, 0.765f, -0.022f), 0.048f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
             Text japaneseStatusText = CreateUiText(japaneseLabels.transform,
                 "状態: 待機   流星群: -\n表示中: 0",
                 new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
                 dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
             Text englishStatusText = CreateUiText(englishLabels.transform,
                 "EVENT: IDLE   SHOWER: -\nVISIBLE: 0",
+                new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
+            Text traditionalChineseStatusText = CreateUiText(traditionalChineseLabels.transform,
+                "狀態: 待機   流星雨: -\n顯示中: 0",
+                new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
+            Text simplifiedChineseStatusText = CreateUiText(simplifiedChineseLabels.transform,
+                "状态: 待机   流星雨: -\n显示中: 0",
+                new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
+            Text koreanStatusText = CreateUiText(koreanLabels.transform,
+                "상태: 대기   유성우: -\n표시 중: 0",
                 new Vector3(0f, 0.655f, -0.022f), 0.050f, TextAnchor.MiddleCenter,
                 dynamicFont, dynamicTextMaterial, new Color(0.66f, 0.90f, 1f));
 
@@ -179,6 +244,24 @@ namespace StargazingHill.Editor
                 "しぶんぎ座", "こと座", "みずがめ座η", "みずがめ座δ南",
                 "ペルセウス座", "りゅう座", "オリオン座", "おうし座南",
                 "おうし座北", "しし座", "ふたご座"
+            };
+            string[] traditionalChineseShowerLabels =
+            {
+                "象限儀座", "天琴座", "寶瓶座η", "南寶瓶座δ",
+                "英仙座", "天龍座", "獵戶座", "南金牛座",
+                "北金牛座", "獅子座", "雙子座"
+            };
+            string[] simplifiedChineseShowerLabels =
+            {
+                "象限仪座", "天琴座", "宝瓶座η", "南宝瓶座δ",
+                "英仙座", "天龙座", "猎户座", "南金牛座",
+                "北金牛座", "狮子座", "双子座"
+            };
+            string[] koreanShowerLabels =
+            {
+                "사분의자리", "거문고자리", "물병자리 η", "남쪽 물병자리 δ",
+                "페르세우스자리", "용자리", "오리온자리", "남쪽 황소자리",
+                "북쪽 황소자리", "사자자리", "쌍둥이자리"
             };
 
             // Eleven showers over six two-column rows. The last row is half empty on purpose: it separates
@@ -199,6 +282,14 @@ namespace StargazingHill.Editor
                     labelHeight, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
                 CreateUiText(japaneseLabels.transform, japaneseShowerLabels[index], new Vector3(x, y, -0.022f),
                     labelHeight, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+                CreateUiText(traditionalChineseLabels.transform, traditionalChineseShowerLabels[index],
+                    new Vector3(x, y, -0.022f), labelHeight, TextAnchor.MiddleCenter,
+                    dynamicFont, dynamicTextMaterial);
+                CreateUiText(simplifiedChineseLabels.transform, simplifiedChineseShowerLabels[index],
+                    new Vector3(x, y, -0.022f), labelHeight, TextAnchor.MiddleCenter,
+                    dynamicFont, dynamicTextMaterial);
+                CreateUiText(koreanLabels.transform, koreanShowerLabels[index], new Vector3(x, y, -0.022f),
+                    labelHeight, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
             }
 
             const float controlY = -0.675f;
@@ -212,13 +303,28 @@ namespace StargazingHill.Editor
             Text englishPlayStopLabel = CreateUiText(englishLabels.transform,
                 "PLAY CURRENT", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
                 dynamicFont, dynamicTextMaterial);
+            Text traditionalChinesePlayStopLabel = CreateUiText(traditionalChineseLabels.transform,
+                "播放目前", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            Text simplifiedChinesePlayStopLabel = CreateUiText(simplifiedChineseLabels.transform,
+                "播放当前", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
+            Text koreanPlayStopLabel = CreateUiText(koreanLabels.transform,
+                "현재 재생", new Vector3(0f, controlY, -0.022f), 0.070f, TextAnchor.MiddleCenter,
+                dynamicFont, dynamicTextMaterial);
 
             WorldDebugPanelStatus status = UdonSharpUndo.AddComponent<WorldDebugPanelStatus>(panel);
             status.meteorController = meteor;
             status.japaneseStatusText = japaneseStatusText;
             status.englishStatusText = englishStatusText;
+            status.traditionalChineseStatusText = traditionalChineseStatusText;
+            status.simplifiedChineseStatusText = simplifiedChineseStatusText;
+            status.koreanStatusText = koreanStatusText;
             status.japanesePlayStopLabel = japanesePlayStopLabel;
             status.englishPlayStopLabel = englishPlayStopLabel;
+            status.traditionalChinesePlayStopLabel = traditionalChinesePlayStopLabel;
+            status.simplifiedChinesePlayStopLabel = simplifiedChinesePlayStopLabel;
+            status.koreanPlayStopLabel = koreanPlayStopLabel;
 
             const float skyY = -0.865f;
             Vector3 skyButton = new Vector3(0.66f, ButtonHeight, 0.006f);
@@ -246,6 +352,24 @@ namespace StargazingHill.Editor
                 0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
             CreateUiText(japaneseLabels.transform, "空 リセット", new Vector3(0.72f, skyY, -0.022f),
                 0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(traditionalChineseLabels.transform, "天空 -1小時", new Vector3(-0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(traditionalChineseLabels.transform, "天空 +1小時", new Vector3(0f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(traditionalChineseLabels.transform, "天空 重設", new Vector3(0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(simplifiedChineseLabels.transform, "天空 -1小时", new Vector3(-0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(simplifiedChineseLabels.transform, "天空 +1小时", new Vector3(0f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(simplifiedChineseLabels.transform, "天空 重置", new Vector3(0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(koreanLabels.transform, "하늘 -1시간", new Vector3(-0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(koreanLabels.transform, "하늘 +1시간", new Vector3(0f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
+            CreateUiText(koreanLabels.transform, "하늘 초기화", new Vector3(0.72f, skyY, -0.022f),
+                0.060f, TextAnchor.MiddleCenter, dynamicFont, dynamicTextMaterial);
 
             GameObject languageButton = CreatePrimitive("LanguageToggle", panel.transform, buttonMaterial,
                 new Vector3(0.94f, 0.89f, -0.012f), Quaternion.identity,
@@ -258,12 +382,15 @@ namespace StargazingHill.Editor
             WorldInfoLanguageToggle languageToggle = UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(languageButton);
             languageToggle.japaneseText = japaneseLabels;
             languageToggle.englishText = englishLabels;
+            languageToggle.traditionalChineseText = traditionalChineseLabels;
+            languageToggle.simplifiedChineseText = simplifiedChineseLabels;
+            languageToggle.koreanText = koreanLabels;
             languageToggle.buttonLabel = languageLabel;
             UdonSharpEditorUtility.CopyProxyToUdon(languageToggle);
             UdonBehaviour languageBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(languageToggle);
             if (languageBacking != null)
             {
-                languageBacking.InteractionText = "日本語 / English";
+                languageBacking.InteractionText = "Language / 言語";
                 languageBacking.proximity = 2.5f;
                 EditorUtility.SetDirty(languageBacking);
             }
@@ -272,20 +399,10 @@ namespace StargazingHill.Editor
             UdonSharpEditorUtility.CopyProxyToUdon(status);
             EditorUtility.SetDirty(status);
 
-            // Toggle stays outside panelRoot so it remains usable while the panel is hidden.
-            GameObject toggle = CreatePrimitive(ToggleObjectName, null, buttonMaterial,
-                TogglePosition, Quaternion.Euler(ToggleEuler), new Vector3(0.30f, 0.10f, 0.018f));
-            SceneManager.MoveGameObjectToScene(toggle, scene);
-            ConfigureButton(toggle, WorldDebugPanelButton.ActionTogglePanel, 0, panel, meteor, sky,
-                "Toggle meteor debug panel");
-            CreateText(toggle.transform, "DEBUG", new Vector3(0f, 0f, -0.53f),
-                FitLabelHeight("DEBUG", 0.30f * 0.88f, 0.10f * 0.52f),
-                TextAnchor.MiddleCenter, true);
-
             panel.SetActive(false);
             EditorSceneManager.MarkSceneDirty(scene);
-            Debug.Log("[Stargazing Hill] Installed handheld local VR debug panel near the amenity cluster " +
-                      "(default OFF, pickup enabled, 10 second return).");
+            Debug.Log("[Stargazing Hill] Installed handheld local VR debug panel beside the information panel " +
+                      "(default OFF, information-panel toggle, pickup enabled, 10 second return).");
         }
 
         private static string FormatNaturalReplayLabel()

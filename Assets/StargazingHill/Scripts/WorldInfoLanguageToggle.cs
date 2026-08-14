@@ -9,9 +9,13 @@ namespace StargazingHill
     {
         public GameObject japaneseText;
         public GameObject englishText;
+        public GameObject traditionalChineseText;
+        public GameObject simplifiedChineseText;
+        public GameObject koreanText;
         public Text buttonLabel;
+        public WorldObservatorySelector observatorySelector;
 
-        private bool _english;
+        private int _languageIndex;
 
         private void Start()
         {
@@ -20,15 +24,26 @@ namespace StargazingHill
 
         public override void Interact()
         {
-            _english = !_english;
+            _languageIndex++;
+            if (_languageIndex > 4) _languageIndex = 0;
             ApplyLanguage();
         }
 
         private void ApplyLanguage()
         {
-            if (japaneseText != null) japaneseText.SetActive(!_english);
-            if (englishText != null) englishText.SetActive(_english);
-            if (buttonLabel != null) buttonLabel.text = _english ? "日本語" : "ENGLISH";
+            if (japaneseText != null) japaneseText.SetActive(_languageIndex == 0);
+            if (englishText != null) englishText.SetActive(_languageIndex == 1);
+            if (traditionalChineseText != null) traditionalChineseText.SetActive(_languageIndex == 2);
+            if (simplifiedChineseText != null) simplifiedChineseText.SetActive(_languageIndex == 3);
+            if (koreanText != null) koreanText.SetActive(_languageIndex == 4);
+            if (observatorySelector != null) observatorySelector.SetDisplayLanguage(_languageIndex);
+
+            if (buttonLabel == null) return;
+            if (_languageIndex == 0) buttonLabel.text = "ENGLISH";
+            else if (_languageIndex == 1) buttonLabel.text = "繁體中文";
+            else if (_languageIndex == 2) buttonLabel.text = "简体中文";
+            else if (_languageIndex == 3) buttonLabel.text = "한국어";
+            else buttonLabel.text = "日本語";
         }
     }
 }

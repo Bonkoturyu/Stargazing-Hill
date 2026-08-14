@@ -17,3 +17,6 @@
 | [0011](0011-local-handheld-debug-panel.md) | Accepted | ローカル手持ちデバッグパネル、10秒遅延復帰、再取得時キャンセル |
 | [0012](0012-yamaplayer-editor-update-check-patch.md) | Accepted | YamaPlayer Editor更新競合とruntime Playlist欠落の版限定ローカルパッチ |
 | [0013](0013-night-sky-atmospheric-gradient.md) | Accepted | 常夜の暗さを保つ三色skybox、地平線の青い空気遠近、遠端fog |
+| [0014](0014-versioned-generated-scene-layout.md) | Accepted | 手作業確定配置のversioned captureと再現可能なScene生成 |
+| [0015](0015-runtime-atmospheric-extinction.md) | Accepted | 回転する天球へ星・流星共通の大気消散を実行時適用 |
+| [0016](0016-global-observatory-selector.md) | Accepted | 説明パネルの20観測地点番号だけをGlobal同期し、星・月・流星へ即時適用 |

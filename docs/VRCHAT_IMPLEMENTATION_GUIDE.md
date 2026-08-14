@@ -12,8 +12,8 @@
 
 - `Confirmed`: カタログ座標から全天球の星を極小Quad化し、1 Mesh / 1 Renderer / Additive Unlitを基本とする。
 - `Confirmed`: 星ごとのGameObjectや毎フレーム更新は行わず、天球Transformを低頻度で更新する。
-- `Confirmed`: 既存の観測地固定ベーカーは直接移植せず、カタログ空間のMesh生成と東京・現在時刻の回転を分離する。
-- `Pending Evidence`: HYGデータまたは派生物をリポジトリへ追加する前に、出典、版、ライセンス、表示義務、派生物の配布条件を記録する。
+- `Confirmed`: 既存の観測地固定ベーカーは直接移植せず、カタログ空間のMesh生成と、現在時刻・Global観測地点による天球回転を分離する。
+- `Confirmed`: HYG v4.1の出典、版、ライセンス、加工工程、原本と派生データのSHA-256を `Assets/StargazingHill/Editor/Data/NOTICE.md` と [第三者素材台帳](legal/THIRD_PARTY_ASSETS.md) に記録する。
 
 ## Udon / Networking
 

@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-13
+確認日: 2026-08-14
 
 ## 前提
 
@@ -20,8 +20,47 @@
 6. 初回importとUdonSharp compileが静止するまで待ち、一度Unityを終了して開き直す。初回import中にビルダーを実行しない。
 7. 再起動後、Consoleのcompile errorが0件であることを確認する。
 8. `python Tools/Validate-StargazingImplementation.py` を実行する。
-9. Unityメニュー `Stargazing Hill/Build Complete World` を実行し、`Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。
+9. `Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。clone直後の通常利用では全Scene再生成は不要。
 10. `Stargazing Hill/Validate Saved Scene` を実行する。
+
+## 生成・保守メニュー
+
+| 目的 | メニュー | 注意 |
+|---|---|---|
+| 保存Sceneを検証 | `Stargazing Hill/Validate Saved Scene` | 公開・upload・package出力前に実行する |
+| 説明パネルをHierarchyで選択 | `Stargazing Hill/Content/Information Panel/Select in Hierarchy` | 手編集の入口。生成階層を置換しない |
+| 説明パネルだけ検証 | `Stargazing Hill/Content/Information Panel/Validate` | 5言語、参照、階層、座標を検査する |
+| 説明パネルの保存済み座標を適用 | `Stargazing Hill/Content/Information Panel/Apply Saved Readability Layout` | 内容や子階層を再生成せず、確定済み配置だけを戻す |
+| 生成機能を一括更新 | `Stargazing Hill/Advanced/Generated Content/Upgrade All Generated Features...` | Mesh、外部連携、各パネル、ピクニックをversioned sourceから置換する |
+| Sceneを全再生成 | `Stargazing Hill/Advanced/Generated Content/Rebuild Complete World (Destructive)...` | 未保存・未captureの手修正を失う可能性があるため、必要時だけ使う |
+| YamaPlayerのPlaylistを編集 | Inspectorの「プレイリストを編集する」または `YamaPlayer/Edit Playlist` | YamaPlayer標準機能。編集後はSceneを保存する |
+| 現在のピクニック配置を生成側へ保存 | `Stargazing Hill/Content/Picnic/Save Current Scene Layout to Generator...` | Sceneを保存後、`PicnicLayout.json`を更新する |
+| 保存配置からピクニックを再生成 | `Stargazing Hill/Content/Picnic/Rebuild from Saved Layout...` | 現在の`PicnicSpot`を置換する |
+| 配布packageを作成 | `Stargazing Hill/Build & Export/Redistributable UnityPackage...` | 保存Scene検証を自動実行し、外部依存を含めない |
+
+ピクニックをScene上で手調整した場合は、Sceneを保存し、配置保存メニューを実行してから、Sceneと `Assets/StargazingHill/Editor/Data/PicnicLayout.json` の両方をcommitする。Anchor Transformに加えて各 `Model` 子のlocal Transformも保存されるため、clone先の全再生成でも同じ配置を復元できる。
+
+### InformationSystemの編集境界
+
+`World/InformationSystem/WorldInformationPanel` は次の目的別グループに分かれる。親Transformはidentityで、子の見た目の座標を変えない。
+
+```text
+WorldInformationPanel
+├─ Visual
+│  ├─ PanelSheet
+│  ├─ Descriptions      # TitleCanvasと5言語本文
+│  └─ Presence          # 人数、端末アイコン、入退室履歴
+└─ Controls
+   ├─ LanguageToggle
+   ├─ DebugPanelToggle
+   └─ Observatory       # 見出し、前後、選択地点、20地点一覧
+```
+
+文言や見た目の調整は該当グループ内で行う。`Advanced/Generated Content/Rebuild InformationSystem (Replaces Children)...` は `InformationSystem` 全体を生成コードの値で置換するため、手編集を残したい場合は使わない。Editor起動時の自動置換は行わない。生成値自体を変更する場合は `WorldInformationPanelInstaller.cs` も更新し、再生成後に `Content/Information Panel/Validate` を通す。
+
+### YamaPlayerの編集境界
+
+Playlistの正本は保存Scene内のYamaPlayer標準 `PlaylistItem` とし、Inspectorの「プレイリストを編集する」または `YamaPlayer/Edit Playlist` から編集する。`music_list.txt`、Stargazing Hill独自のPlaylist Editor、自動同期hookは使用しない。編集後はYamaPlayer Playlist Editorの保存とScene保存を行う。`Rebuild Complete World` は保存Sceneの標準エディター編集済みYamaPlayerを複製するため、Playlist、AutoPlay、module設定を独自形式へ変換しない。
 
 ## Gitへ入れないもの
 
@@ -38,12 +77,23 @@ UnyStylus v1.3の2 shaderはAndroid / iOSのGLES3で `unityFogFactor` を同じg
 
 ## 再配布用unitypackage
 
-1. 上記手順で外部依存を復元し、`Stargazing Hill/Build Complete World` と保存Scene検証を通す。
-2. Unityメニュー `Stargazing Hill/Export/Redistributable UnityPackage...` を実行する。
+1. 上記手順で外部依存を復元し、`Stargazing Hill/Validate Saved Scene`を通す。全再生成を試験する公開候補では、事前にSceneを退避してから`Stargazing Hill/Advanced/Generated Content/Rebuild Complete World (Destructive)...`も確認する。
+2. Unityメニュー `Stargazing Hill/Build & Export/Redistributable UnityPackage...` を実行する。
 3. 出力されたpackageには `Assets/StargazingHill` だけが含まれ、YamaPlayer、QvPen、UnyStylus本体は含まれない。
 4. 配布先ではVCC/VPMでYamaPlayerとQvPenを復元し、正規購入済みUnyStylus v1.3をImportしてからpackageを利用する。
 
 自動生成はUnityのbatch modeで `StargazingHill.Editor.StargazingUnityPackageExporter.ExportForBatchMode` を呼び、`Build/StargazingHill-redistributable.unitypackage` を `python Tools/Validate-UnityPackage.py Build/StargazingHill-redistributable.unitypackage` で検査する。Unity標準の **Include dependencies** を使った書き出しは、外部packageを混入させるため再配布経路に使用しない。設計判断は [ADR 0010](adr/0010-redistributable-unitypackage-boundary.md) を正本とする。
+
+### GitHub Releaseから取得する
+
+tag `v1.2.3` のpush時、`.github/workflows/release-unitypackage.yml` が `StargazingHill-1.2.3.zip` を作り、GitHub Releaseへ添付する。ZIPには次を含める。
+
+- `StargazingHill-1.2.3.unitypackage`
+- `SHA256SUMS.txt`
+
+手動実行ではGitHub Actionsの **Run workflow** から、既に存在する `v*` tagを `release_tag` に入力する。tagはworkflowを含む既定branch `main` のcommitへ付ける。ActionのBudget/Billing制限が解除されていることを確認する。
+
+このCI経路も `Assets/StargazingHill` だけを対象とし、archive検査を通過しなければReleaseを更新しない。YamaPlayer、QvPen、購入品UnyStylusはZIP内のunitypackageに含まれないため、import前に本章冒頭の手順で別途復元する。
 
 ## 検証境界
 
