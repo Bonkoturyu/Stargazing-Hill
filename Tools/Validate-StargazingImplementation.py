@@ -56,6 +56,9 @@ SETTINGS_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsControl
 SETTINGS_BUTTON = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsButton.cs"
 SETTINGS_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsBoardPickup.cs"
 RADIO_SPEAKER = ROOT / "Assets/StargazingHill/Scripts/WorldRadioSpeaker.cs"
+COMPASS_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/OpenGameArt/Compass"
+COMPASS_INSTALLER = ROOT / "Assets/StargazingHill/Editor/CompassSceneInstaller.cs"
+COMPASS_NEEDLE = ROOT / "Assets/StargazingHill/Scripts/LocalCompassNeedle.cs"
 NIGHT_MODE_SHADER = ROOT / "Assets/StargazingHill/Shaders/NightModeOverlay.shader"
 WORLD_SCENE = ROOT / "Assets/StargazingHill/Scenes/StargazingHill.unity"
 LOCALIZED_READMES = [
@@ -98,6 +101,11 @@ EXPECTED_PICNIC_HASHES = {
     PICNIC_ROOT / "pillow_large_blue.fbx": "86c834155243e7315aebf734caeab56a69ce818b1db8d325180eaabf443e670d",
     PICNIC_ROOT / "tiny_treats_texture_1.png": "31e5c7c81bfba644a59797b1907519592c7728d4af98a705449975dd929482e5",
     PICNIC_ROOT / "tiny_treats_plaid_pattern_blue.png": "cd967007ad742e3c964be4854c971ed0d9aa98d2b6710ad05352833a68e8d6f9",
+}
+EXPECTED_COMPASS_HASHES = {
+    COMPASS_ROOT / "Compass.fbx": "2198a54c7b87dc97790413a5ad97a1c2184eb953e5329b7b8ba89e068367434a",
+    COMPASS_ROOT / "Compass_Albedo.png": "b0b870da48d1e45b7ce12d5d26cce75ae2598d9fb20a0c82b971e740df1f97f3",
+    COMPASS_ROOT / "Compass_Normal.png": "2bd60ae53a5f72a4f26b3d169268a672e68846460096fb25dc6f80222339200a",
 }
 EXPECTED_ROLLOFF = [
     (0.0, 1.0),
@@ -660,10 +668,20 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     settings_button = SETTINGS_BUTTON.read_text(encoding="utf-8")
     settings_pickup = SETTINGS_PICKUP.read_text(encoding="utf-8")
     radio_speaker = RADIO_SPEAKER.read_text(encoding="utf-8")
+    compass_installer = COMPASS_INSTALLER.read_text(encoding="utf-8")
+    compass_needle = COMPASS_NEEDLE.read_text(encoding="utf-8")
     night_shader = NIGHT_MODE_SHADER.read_text(encoding="utf-8")
+    for path, expected_hash in EXPECTED_COMPASS_HASHES.items():
+        assert path.exists(), f"Missing recorded CC0 compass asset: {path}"
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_hash
     assert 'new GameObject("SettingsSystem")' in settings_installer
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
+    assert "private const float BoardScale = 0.18f;" in settings_installer
+    assert "pickupCollider.center = new Vector3(0f, 1.03f, 0.05f);" in settings_installer
+    assert "pickupCollider.size = new Vector3(2.72f, 0.22f, 0.16f);" in settings_installer
+    assert "pickup.proximity = 0.35f;" in settings_installer
+    assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
     assert "VRCMirrorReflection" in settings_installer and "mirrors.Length != 5" in settings_installer
     assert "CreateNightSlider" in settings_installer and "VRCUiShape" in settings_installer
@@ -674,6 +692,21 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "ReturnDelaySeconds = 10f" in settings_pickup
     assert "BoardToggle = 8" in settings_button
     assert "speakerSource.enabled = _useAllowed && _speakerOn" in radio_speaker
+    assert "interactionCollider.enabled = _useAllowed;" in radio_speaker
+    assert "stateText.gameObject.SetActive(_useAllowed);" in radio_speaker
+    assert "backing.proximity = 0.6f;" in settings_installer
+    assert "CompassSceneInstaller.InstallForBuild(scene);" in settings_installer
+    assert 'new GameObject("LocalNorthCompass")' in compass_installer
+    assert "pickup.proximity = 0.4f;" in compass_installer
+    assert "compass.AddComponent<VRCPickup>()" in compass_installer
+    assert "compass.AddComponent<VRCObjectSync>()" in compass_installer
+    assert "UdonSharpUndo.AddComponent<LocalCompassNeedle>(compass)" in compass_installer
+    assert "UdonBehaviourSyncMode(BehaviourSyncMode.None)" in compass_needle
+    assert "transform.InverseTransformDirection(Vector3.forward)" in compass_needle
+    assert "Quaternion.LookRotation(localNorth.normalized, Vector3.up)" in compass_needle
+    assert "ReturnDelaySeconds = 10f" in compass_needle
+    assert "Networking.IsOwner(gameObject)" in compass_needle
+    assert "objectSync.Respawn()" in compass_needle
     assert 'Shader "StargazingHill/NightModeOverlay"' in night_shader
 
 
@@ -1063,7 +1096,7 @@ def main() -> None:
         "references, 11 IMO showers, YamaPlayer, CC0 environment, locomotion, QvPen, "
         "UnyStylus references, Tiny Treats picnic spot, YamaPlayer patch workflow, "
         "redistributable package boundary, localized READMEs, starfield guide, global observatory "
-        "selector, and debug pickup validated"
+        "selector, debug pickup, local settings, and a CC0 local-north handheld compass validated"
     )
 
 

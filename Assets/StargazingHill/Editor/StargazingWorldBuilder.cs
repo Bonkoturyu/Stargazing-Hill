@@ -57,6 +57,8 @@ namespace StargazingHill.Editor
         private const string SettingsPickupProgramPath = Root + "/Scripts/WorldSettingsBoardPickup.asset";
         private const string RadioSpeakerScriptPath = Root + "/Scripts/WorldRadioSpeaker.cs";
         private const string RadioSpeakerProgramPath = Root + "/Scripts/WorldRadioSpeaker.asset";
+        private const string CompassNeedleScriptPath = Root + "/Scripts/LocalCompassNeedle.cs";
+        private const string CompassNeedleProgramPath = Root + "/Scripts/LocalCompassNeedle.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -941,6 +943,8 @@ namespace StargazingHill.Editor
                 SettingsPickupProgramPath);
             EnsureProgramAsset(typeof(WorldRadioSpeaker), RadioSpeakerScriptPath,
                 RadioSpeakerProgramPath);
+            EnsureProgramAsset(typeof(LocalCompassNeedle), CompassNeedleScriptPath,
+                CompassNeedleProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)

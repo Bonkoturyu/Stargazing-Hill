@@ -237,13 +237,14 @@ namespace StargazingHill
             if (mirrorText != null)
             {
                 string[] names = { "上", "下", "左", "右", "天井" };
-                mirrorText.text = _mirrorIndex < 0 ? "MIRROR / ミラー  OFF" :
-                    "MIRROR / ミラー  " + names[_mirrorIndex];
+                mirrorText.text = _mirrorIndex < 0 ? "ミラー / MIRROR  OFF" :
+                    "ミラー / MIRROR  " + names[_mirrorIndex];
             }
             if (radioUseText != null)
-                radioUseText.text = "RADIO USE / ラジオ操作  " + (_radioUseAllowed ? "ON" : "OFF");
+                radioUseText.text = "ラジオのUSE範囲 / RADIO USE AREA  " +
+                    (_radioUseAllowed ? "ON" : "OFF");
             if (saveText != null)
-                saveText.text = "SAVE / 保存  " + (_saveEnabled ? "ON" : "OFF");
+                saveText.text = "設定保存 / SAVE  " + (_saveEnabled ? "ON" : "OFF");
         }
 
         private void SaveIfEnabled()

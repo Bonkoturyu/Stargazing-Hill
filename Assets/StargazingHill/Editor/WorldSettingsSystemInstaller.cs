@@ -24,8 +24,9 @@ namespace StargazingHill.Editor
         private const string RootPath = "Assets/StargazingHill";
         private const string AlarmPath = RootPath + "/Generated/Audio/SettingsAlarm.wav";
         private const float CanvasScale = 0.002f;
+        private const float BoardScale = 0.18f;
         private static readonly Vector3 BoardPosition = new Vector3(10.55f, 2.95f, 9.35f);
-        private static readonly Vector3 BoardEuler = new Vector3(0f, 202.2865f, 0f);
+        private static readonly Vector3 BoardEuler = new Vector3(0f, 22.2865f, 0f);
 
         [MenuItem("Stargazing Hill/Content/Settings Board/Rebuild...", false, 40)]
         public static void InstallMenu()
@@ -71,6 +72,7 @@ namespace StargazingHill.Editor
             Transform old = world.Find("SettingsSystem");
             if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
             RemoveGeneratedRadioComponents();
+            CompassSceneInstaller.InstallForBuild(scene);
 
             Font font = WorldInformationPanelInstaller.EnsureFont();
             Material textMaterial = WorldInformationPanelInstaller.EnsureTextMaterial();
@@ -92,13 +94,16 @@ namespace StargazingHill.Editor
             board.transform.SetParent(system.transform, false);
             board.transform.position = BoardPosition;
             board.transform.rotation = Quaternion.Euler(BoardEuler);
+            board.transform.localScale = Vector3.one * BoardScale;
 
             GameObject sheet = CreateCube("PanelSheet", board.transform, new Vector3(0f, 0f, 0f),
                 new Vector3(2.65f, 2.25f, 0.045f), boardMaterial, false);
 
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
-            pickupCollider.center = new Vector3(0f, 0f, 0.05f);
-            pickupCollider.size = new Vector3(2.72f, 2.32f, 0.16f);
+            // Keep pickup handling on a narrow top grip so it does not steal the UI ray
+            // from buttons and the slider across the entire face of the board.
+            pickupCollider.center = new Vector3(0f, 1.03f, 0.05f);
+            pickupCollider.size = new Vector3(2.72f, 0.22f, 0.16f);
             pickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -106,9 +111,9 @@ namespace StargazingHill.Editor
             body.angularDrag = 8f;
             VRCPickup pickup = board.AddComponent<VRCPickup>();
             pickup.pickupable = true;
-            pickup.proximity = 1.2f;
+            pickup.proximity = 0.35f;
             pickup.InteractionText = "設定ボードを持つ / Grab settings board";
-            pickup.UseText = "設定 / Settings";
+            pickup.UseText = string.Empty;
             pickup.orientation = VRC_Pickup.PickupOrientation.Any;
             pickup.AutoHold = VRC_Pickup.AutoHoldMode.No;
             WorldSettingsBoardPickup pickupReturn = UdonSharpUndo.AddComponent<WorldSettingsBoardPickup>(board);
@@ -117,71 +122,79 @@ namespace StargazingHill.Editor
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);
 
-            Text title = CreateText(board.transform, "LOCAL COMFORT SETTINGS / ローカル設定",
-                new Vector3(-1.18f, 0.94f, -0.028f), 0.095f, TextAnchor.UpperLeft,
+            Text title = CreateText(board.transform, "ローカル設定 / LOCAL SETTINGS",
+                new Vector3(0f, 0.98f, -0.028f), 0.090f, TextAnchor.UpperCenter,
                 font, textMaterial, new Color(0.78f, 0.90f, 1f));
             title.transform.parent.name = "TitleCanvas";
             Text clock = CreateText(board.transform, "0000-00-00  00:00:00  LOCAL",
-                new Vector3(-1.18f, 0.68f, -0.028f), 0.070f, TextAnchor.UpperLeft,
+                new Vector3(0f, 0.76f, -0.028f), 0.064f, TextAnchor.UpperCenter,
                 font, textMaterial, Color.white);
             clock.transform.parent.name = "ClockCanvas";
 
-            Text mirrorState = CreateText(board.transform, "MIRROR / ミラー  OFF",
-                new Vector3(-1.18f, 0.44f, -0.028f), 0.066f, TextAnchor.UpperLeft,
+            CreateCube("HeaderDivider", board.transform, new Vector3(0f, 0.64f, -0.026f),
+                new Vector3(2.35f, 0.012f, 0.012f), accentMaterial, false);
+            CreateCube("ColumnDivider", board.transform, new Vector3(0.06f, -0.17f, -0.026f),
+                new Vector3(0.012f, 1.48f, 0.012f), accentMaterial, false);
+
+            Text mirrorState = CreateText(board.transform, "ミラー / MIRROR  OFF",
+                new Vector3(-1.18f, 0.52f, -0.028f), 0.060f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             mirrorState.transform.parent.name = "MirrorStateCanvas";
             string[] mirrorLabels = { "上", "下", "左", "右", "天井", "全OFF" };
             for (int index = 0; index < mirrorLabels.Length; index++)
             {
-                float x = -1.03f + index * 0.41f;
+                int column = index % 3;
+                int row = index / 3;
+                float x = -1.04f + column * 0.39f;
+                float y = 0.30f - row * 0.25f;
                 CreateButton(board.transform, "Mirror_" + index, mirrorLabels[index],
-                    new Vector3(x, 0.19f, -0.0125f), new Vector3(0.35f, 0.20f, 0.019f),
-                    0.060f, buttonMaterial, font, textMaterial, controller,
+                    new Vector3(x, y, -0.0125f), new Vector3(0.34f, 0.20f, 0.019f),
+                    0.055f, buttonMaterial, font, textMaterial, controller,
                     index < 5 ? WorldSettingsButton.Mirror : WorldSettingsButton.MirrorsOff,
                     index, "Mirror / ミラー " + mirrorLabels[index]);
             }
 
-            CreateText(board.transform, "NIGHT MODE / ナイトモード",
-                new Vector3(-1.18f, -0.10f, -0.028f), 0.065f, TextAnchor.UpperLeft,
+            CreateText(board.transform, "ナイトモード / NIGHT MODE",
+                new Vector3(-1.18f, -0.26f, -0.028f), 0.058f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             Slider slider = CreateNightSlider(board.transform, textMaterial, accentMaterial);
 
             Text alarmState = CreateText(board.transform, "ALARM  22:00  OFF",
-                new Vector3(-1.18f, -0.56f, -0.028f), 0.065f, TextAnchor.UpperLeft,
+                new Vector3(0.15f, 0.52f, -0.028f), 0.060f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             alarmState.transform.parent.name = "AlarmStateCanvas";
-            CreateButton(board.transform, "AlarmHourDown", "時−", new Vector3(-1.03f, -0.81f, -0.0125f),
-                new Vector3(0.35f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmHourDown", "時−", new Vector3(0.35f, 0.30f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1");
-            CreateButton(board.transform, "AlarmHourUp", "時＋", new Vector3(-0.62f, -0.81f, -0.0125f),
-                new Vector3(0.35f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmHourUp", "時＋", new Vector3(0.75f, 0.30f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1");
-            CreateButton(board.transform, "AlarmMinuteDown", "分−", new Vector3(-0.21f, -0.81f, -0.0125f),
-                new Vector3(0.35f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmMinuteDown", "分−", new Vector3(0.35f, 0.05f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5");
-            CreateButton(board.transform, "AlarmMinuteUp", "分＋", new Vector3(0.20f, -0.81f, -0.0125f),
-                new Vector3(0.35f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmMinuteUp", "分＋", new Vector3(0.75f, 0.05f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5");
-            CreateButton(board.transform, "AlarmToggle", "ALARM", new Vector3(0.69f, -0.81f, -0.0125f),
-                new Vector3(0.48f, 0.20f, 0.019f), 0.050f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmToggle", "ON/OFF", new Vector3(1.15f, 0.30f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF");
-            CreateButton(board.transform, "AlarmStop", "STOP", new Vector3(1.08f, -0.81f, -0.0125f),
-                new Vector3(0.26f, 0.20f, 0.019f), 0.046f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "AlarmStop", "STOP", new Vector3(1.15f, 0.05f, -0.0125f),
+                new Vector3(0.34f, 0.20f, 0.019f), 0.046f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm");
 
-            Text radioState = CreateText(board.transform, "RADIO USE / ラジオ操作  OFF",
-                new Vector3(-1.18f, -1.02f, -0.028f), 0.055f, TextAnchor.UpperLeft,
+            Text radioState = CreateText(board.transform, "ラジオのUSE範囲 / RADIO USE AREA  OFF",
+                new Vector3(0.15f, -0.28f, -0.028f), 0.050f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             radioState.transform.parent.name = "RadioStateCanvas";
-            CreateButton(board.transform, "RadioUseToggle", "RADIO USE", new Vector3(0.53f, -1.04f, -0.0125f),
-                new Vector3(0.62f, 0.18f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.RadioUseToggle, 0, "Allow radio interaction");
-            Text saveState = CreateText(board.transform, "SAVE / 保存  OFF",
-                new Vector3(-1.18f, -1.25f, -0.028f), 0.055f, TextAnchor.UpperLeft,
+            CreateButton(board.transform, "RadioUseToggle", "USE範囲 ON/OFF", new Vector3(0.94f, -0.50f, -0.0125f),
+                new Vector3(0.72f, 0.23f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
+                controller, WorldSettingsButton.RadioUseToggle, 0, "Show or hide radio USE area");
+            Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
+                new Vector3(0.15f, -0.74f, -0.028f), 0.050f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             saveState.transform.parent.name = "SaveStateCanvas";
-            CreateButton(board.transform, "SaveToggle", "SAVE", new Vector3(0.96f, -1.28f, -0.0125f),
-                new Vector3(0.48f, 0.18f, 0.019f), 0.048f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "SaveToggle", "SAVE ON/OFF", new Vector3(0.94f, -0.96f, -0.0125f),
+                new Vector3(0.72f, 0.23f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.SaveToggle, 0, "Save local settings ON/OFF");
 
             AudioSource alarmAudio = system.AddComponent<AudioSource>();
@@ -224,12 +237,22 @@ namespace StargazingHill.Editor
                 ? system.GetComponentsInChildren<WorldSettingsButton>(true)
                 : new WorldSettingsButton[0];
             GameObject board = system != null ? system.transform.Find("LocalSettingsBoard")?.gameObject : null;
+            VRCPickup boardPickup = board != null ? board.GetComponent<VRCPickup>() : null;
             if (controller == null || board == null || board.activeSelf ||
                 buttons.Length != 15 ||
                 controller.nightSlider == null || controller.mirrors == null || controller.mirrors.Length != 5 ||
                 controller.radioSpeaker == null || controller.alarmAudio == null ||
-                board.GetComponent<VRCPickup>() == null || board.GetComponent<WorldSettingsBoardPickup>() == null)
+                boardPickup == null || board.GetComponent<WorldSettingsBoardPickup>() == null)
                 throw new InvalidOperationException("Local settings system validation failed.");
+            if (Mathf.Abs(boardPickup.proximity - 0.35f) > 0.001f ||
+                !string.IsNullOrEmpty(boardPickup.UseText) || board.GetComponent<VRCObjectSync>() != null)
+                throw new InvalidOperationException("Local settings board pickup must remain local and UI-safe.");
+            if (Mathf.Abs(board.transform.localScale.x - BoardScale) > 0.0001f ||
+                Quaternion.Angle(board.transform.rotation, Quaternion.Euler(BoardEuler)) > 0.01f)
+                throw new InvalidOperationException("Local settings board size or facing validation failed.");
+            BoxCollider boardGrip = board.GetComponent<BoxCollider>();
+            if (boardGrip == null || boardGrip.size.y > 0.30f)
+                throw new InvalidOperationException("Local settings board pickup grip overlaps the control area.");
             for (int index = 0; index < controller.mirrors.Length; index++)
                 if (controller.mirrors[index] == null || controller.mirrors[index].activeSelf ||
                     controller.mirrors[index].GetComponent<VRCMirrorReflection>() == null)
@@ -243,6 +266,11 @@ namespace StargazingHill.Editor
             Transform blanket = GameObject.Find("World/Environment/PicnicSpot/PicnicBlanketBlue")?.transform;
             if (blanket == null || blanket.GetComponentsInChildren<MeshCollider>(true).Length != 1)
                 throw new InvalidOperationException("Picnic blanket collider validation failed.");
+            if (controller.radioSpeaker.interactionCollider == null ||
+                controller.radioSpeaker.interactionCollider.enabled ||
+                controller.radioSpeaker.stateText == null || controller.radioSpeaker.stateText.gameObject.activeSelf)
+                throw new InvalidOperationException("Radio USE area must be hidden by default.");
+            CompassSceneInstaller.ValidateScene();
             Debug.Log("[Stargazing Hill] Local settings system validation passed.");
         }
 
@@ -294,13 +322,19 @@ namespace StargazingHill.Editor
 
             GameObject trigger = new GameObject("RadioUseTrigger");
             trigger.transform.SetParent(radio, false);
-            trigger.transform.localPosition = new Vector3(0f, 0.35f, 0f);
+            Bounds radioBounds = CalculateLocalRendererBounds(radio);
+            trigger.transform.localPosition = radioBounds.center;
             BoxCollider collider = trigger.AddComponent<BoxCollider>();
-            collider.size = new Vector3(1.5f, 1.0f, 0.8f);
+            collider.size = new Vector3(
+                Mathf.Max(0.15f, radioBounds.size.x * 1.08f),
+                Mathf.Max(0.12f, radioBounds.size.y * 1.08f),
+                Mathf.Max(0.12f, radioBounds.size.z * 1.08f));
             collider.isTrigger = true;
+            collider.enabled = false;
             WorldRadioSpeaker radioBehaviour = UdonSharpUndo.AddComponent<WorldRadioSpeaker>(trigger);
             radioBehaviour.speakerSource = source;
-            Text state = CreateText(trigger.transform, "RADIO LOCKED", new Vector3(0f, 0.62f, 0f),
+            radioBehaviour.interactionCollider = collider;
+            Text state = CreateText(trigger.transform, "RADIO LOCKED", new Vector3(0f, radioBounds.extents.y + 0.12f, 0f),
                 0.15f, TextAnchor.MiddleCenter, font, textMaterial, new Color(0.58f, 0.90f, 1f));
             state.gameObject.SetActive(false);
             radioBehaviour.stateText = state;
@@ -308,12 +342,41 @@ namespace StargazingHill.Editor
             UdonBehaviour backing = UdonSharpEditorUtility.GetBackingUdonBehaviour(radioBehaviour);
             if (backing != null)
             {
-                backing.InteractionText = "Radio ON/OFF";
-                backing.proximity = 2.0f;
+                backing.InteractionText = "ラジオ音声 ON/OFF / Radio speaker ON/OFF";
+                backing.proximity = 0.6f;
                 EditorUtility.SetDirty(backing);
             }
             EditorUtility.SetDirty(radioBehaviour);
             return radioBehaviour;
+        }
+
+        private static Bounds CalculateLocalRendererBounds(Transform root)
+        {
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            bool initialized = false;
+            Bounds localBounds = new Bounds(Vector3.zero, Vector3.zero);
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Bounds bounds = renderers[rendererIndex].bounds;
+                Vector3 min = bounds.min;
+                Vector3 max = bounds.max;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 world = new Vector3(
+                        (corner & 1) == 0 ? min.x : max.x,
+                        (corner & 2) == 0 ? min.y : max.y,
+                        (corner & 4) == 0 ? min.z : max.z);
+                    Vector3 local = root.InverseTransformPoint(world);
+                    if (!initialized)
+                    {
+                        localBounds = new Bounds(local, Vector3.zero);
+                        initialized = true;
+                    }
+                    else localBounds.Encapsulate(local);
+                }
+            }
+            if (!initialized) throw new InvalidOperationException("Radio renderer bounds are missing.");
+            return localBounds;
         }
 
         private static void AppendAudioSource(Yamadev.YamaStream.Controller controller, AudioSource source)
@@ -414,7 +477,7 @@ namespace StargazingHill.Editor
             GameObject dock = new GameObject("TreeSettingsToggle");
             dock.transform.SetParent(parent, false);
             dock.transform.position = new Vector3(9.10f, 2.68f, 7.55f);
-            dock.transform.rotation = Quaternion.Euler(0f, 202.2865f, 0f);
+            dock.transform.rotation = Quaternion.Euler(0f, 22.2865f, 0f);
             CreateButton(dock.transform, "Toggle", "SETTINGS\n設定", Vector3.zero,
                 new Vector3(0.56f, 0.34f, 0.05f), 0.068f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.BoardToggle, 0, "Local settings board ON/OFF");
@@ -425,12 +488,12 @@ namespace StargazingHill.Editor
             GameObject canvasObject = new GameObject("NightModeSliderCanvas");
             canvasObject.layer = LayerMask.NameToLayer("UI");
             canvasObject.transform.SetParent(parent, false);
-            canvasObject.transform.localPosition = new Vector3(0f, -0.34f, -0.032f);
+            canvasObject.transform.localPosition = new Vector3(-0.59f, -0.50f, -0.032f);
             canvasObject.transform.localScale = Vector3.one * CanvasScale;
             Canvas canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(1120f, 90f);
+            canvasRect.sizeDelta = new Vector2(510f, 90f);
             canvasObject.AddComponent<CanvasScaler>();
             canvasObject.AddComponent<GraphicRaycaster>();
             canvasObject.AddComponent<VRCUiShape>();
@@ -525,6 +588,11 @@ namespace StargazingHill.Editor
             cube.GetComponent<Renderer>().sharedMaterial = material;
             if (!keepCollider) UnityEngine.Object.DestroyImmediate(cube.GetComponent<Collider>());
             return cube;
+        }
+
+        internal static Material EnsurePublicColorMaterial(string path, Color color)
+        {
+            return EnsureColorMaterial(path, color);
         }
 
         private static Material EnsureColorMaterial(string path, Color color)

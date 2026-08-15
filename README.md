@@ -21,6 +21,7 @@ VRChat向けの静かな星空・草原ワールド。
 - PC / Quest(Android) / iOS対応を前提とした軽量設計
 - 日本語・英語・繁体字・簡体字・韓国語切替のワールド説明、現在人数、ローカル入退室履歴パネル
 - 木のそばの手持ちローカル設定ボード（5方向ミラー、ナイトモード、日時・アラーム、ラジオ操作、任意保存）
+- 星空の北をローカルに指す、持ち運び可能なCC0方位磁石
 
 ## ドキュメント
 
@@ -37,7 +38,7 @@ VRChat向けの静かな星空・草原ワールド。
 
 ## ステータス
 
-CC0テクスチャの±250m草原、単一Colliderの小丘、CC0の一本木とピクニックスポット、HYG v4.1の全天球星空、地平線の空気遠近と大気消散、Global共有の22観測地点、topocentric月位置、IMO 2026主要11流星群、状態表示付き毎時流星イベント、YamaPlayer 2.0.0-beta.7、QvPen 3.3.15、購入済みUnyStylus v1.3、5言語UI、ローカル設定ボードまで実装済み。月位置は東京のUSNO基準5日時で高度・方位とも0.10°以内。新しい設定ボードのUnityコンパイルと保存Scene構造検証は完了し、PCVR / Android / iOS実機検証は未完了。
+CC0テクスチャの±250m草原、単一Colliderの小丘、CC0の一本木・ピクニックスポット・手持ち方位磁石、HYG v4.1の全天球星空、地平線の空気遠近と大気消散、Global共有の22観測地点、topocentric月位置、IMO 2026主要11流星群、状態表示付き毎時流星イベント、YamaPlayer 2.0.0-beta.7、QvPen 3.3.15、購入済みUnyStylus v1.3、5言語UI、ローカル設定ボードまで実装済み。方位磁石の針は各クライアントで星空の北を指す。月位置は東京のUSNO基準5日時で高度・方位とも0.10°以内。新しい設定ボードと方位磁石のUnityコンパイル・保存Scene構造検証は完了し、PCVR / Android / iOS実機検証は未完了。
 
 clone後はVCC/VPM依存と購入済みUnyStylusを復元してから、保存済みの `Assets/StargazingHill/Scenes/StargazingHill.unity` を開く。通常利用ではSceneの全再生成は不要。詳しい順序は [docs/SETUP_AND_RESTORE.md](docs/SETUP_AND_RESTORE.md) を参照する。
 

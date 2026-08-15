@@ -14,13 +14,14 @@ A quiet grassland world for VRChat, built around a real star field and Moon alig
 - Japanese, English, Traditional Chinese, Simplified Chinese, and Korean information, observatory, and debug panels
 - Current instance population and a local join/leave history
 - A handheld local settings board by the tree: five mirror views, night-mode slider, clock, alarm, radio control, and opt-in persistence
+- A movable CC0 compass whose needle locally points toward the star field's north
 - Designed for Windows, Android/standalone VR, and iOS
 
 The star field uses 12,495 stars baked into one mesh, one renderer, and one additive unlit material. At runtime, the whole celestial sphere rotates instead of updating thousands of stars individually. See the illustrated [Starfield Implementation Guide](docs/STARFIELD_IMPLEMENTATION_GUIDE.md) and the authoritative [Real Sky System specification](docs/REAL_SKY_SYSTEM.md).
 
 ## Project status
 
-The environment, real star field, atmospheric extinction, globally shared 22-location selector, Moon calculation, meteor system, YamaPlayer standard playlist workflow, drawing tools, five-language panels, population display, local history, debug controls, and local comfort settings are implemented. Unity compilation and saved-scene structural validation of the new settings board have passed; final physical Windows/Android/iOS validation remains open.
+The environment, real star field, atmospheric extinction, globally shared 22-location selector, Moon calculation, meteor system, YamaPlayer standard playlist workflow, drawing tools, five-language panels, population display, local history, debug controls, local comfort settings, and a handheld local-north compass are implemented. Unity compilation and saved-scene structural validation of the settings board and compass have passed; final physical Windows/Android/iOS validation remains open.
 
 ## Open a clean clone
 

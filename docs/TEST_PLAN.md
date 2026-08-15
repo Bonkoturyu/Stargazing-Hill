@@ -637,11 +637,13 @@
 | 説明パネルVR操作 | Confirmed | 各操作ボタンへWorld Space Canvas、GraphicRaycaster、`VRCUiShape`、UI Buttonを追加。Udon `Interact`も維持 |
 | 観測地点catalog | Confirmed | Tokyo=0〜Seoul=19を維持し、Tottori=20、Matsue (Shimane)=21を末尾追加。5言語名と緯度・東経を22件同長で静的検査 |
 | ピクニックCollider | Confirmed | 地形追従後の敷物Meshへ非convex・非Trigger MeshColliderを1つ生成。その他の物理Colliderは0件。ラジオUSEはTriggerとして設定システム側で分離 |
-| 設定ボード | Confirmed | 初期OFF、木のローカルトグル、Pickup、ドロップ10秒復帰、面一ボタンとVRレーザー経路を生成コードへ実装 |
+| 設定ボード | Confirmed | 初期OFF、木のローカルトグル、ObjectSyncなしのローカルPickup、ドロップ10秒復帰を実装。約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、時計を上段・ミラー/暗さを左列・アラーム/ラジオ/保存を右列とした保存Scene構造を検証Pass。中央dividerと3列目の重なりを解消し、ラジオ・SAVE操作targetも拡大 |
 | ミラー | Provisional | 5方向、初期OFF、最大1面、Player系Layer、AA 1を保存Sceneへ生成し構造検証Pass。向き、サイズ、Quest / iOS負荷は実機確認する |
 | ナイトモード | Pending Evidence | 頭部追従の内向き透明sphereと0〜90% Sliderを実装。両眼描画、アバターUIへの影響、モバイル負荷を実機確認する |
 | 日時・アラーム | Pending Evidence | ローカル日時表示、時分調整、ON/OFF、STOP、2D loop音源を実装。日跨ぎと再入室を確認する |
-| ラジオSpeaker | Pending Evidence | YamaPlayer Controller、Unity Video target、AVPro Speakerへ追加AudioSourceを接続。USE許可と出力ON/OFF、音量追従を各動画経路で確認する |
+| ラジオSpeaker | Pending Evidence | YamaPlayer Controller、Unity Video target、AVPro Speakerへ追加AudioSourceを接続。Triggerはラジオ実モデルのRenderer Boundsから作成し、操作距離を0.6mへ制限。USE禁止時にColliderと状態表示が無効、有効時だけ状態表示が復帰する構造を検証Pass。出力ON/OFF、音量追従を各動画経路で確認する |
+| 手持ち方位磁石 | Provisional | OpenGameArtのCC0モデルと権利記録を導入。本体にBoxCollider / Rigidbody / proximity 0.4mのVRCPickup / VRCObjectSync、針に非同期Udonを設定し、天文上の北と同じワールド+Zをローカルで指す。ownerだけがドロップ10秒後にRespawnする保存Scene構造、Udon compile、素材hashを検証Pass。PCVR / Questで水平保持、赤針の読みやすさ、物理挙動と復帰を確認する |
 | PlayerData保存 | Pending Evidence | SAVE ON時だけ `StargazingHill.Settings.*` を保存し、`OnPlayerRestored`後に復元。SAVE OFFを含む再入室試験が必要 |
 | 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
-| Unity compile / Scene生成 | Pass | 2026-08-15、Unity 2022.3.22f1を通常Editor相当の非表示起動で実行。C# compile、4 Udon program asset生成、保存済みPicnic layoutからの再生成、敷物MeshCollider、設定ボード・5方向ミラー・ナイトモード・アラーム・ラジオSpeakerのScene保存が完了。Picnic 3,028 triangles、InformationSystem専用validation、設定システムvalidationがPass |
+| Unity compile / Scene生成 | Pass | 2026-08-15、Unity 2022.3.22f1を通常Editor相当の非表示起動で再実行。C# compile、105 UdonSharp scripts、保存済みPicnic layoutからの再生成、敷物MeshCollider、設定ボード・5方向ミラー・ナイトモード・アラーム・ラジオSpeaker・手持ち方位磁石のScene保存が完了。コンパスRespawn参照とproximity 0.4m、InformationSystem専用validation、設定システムvalidationがPass。ログ `Logs/CompassSettingsFinalValidateNormal.log`、終了コード0 |
+| 設定UIの外部レビュー | Pass | 2026-08-15、固定モデル`claude-opus-5`で5実装ファイルの静的レビューを取得。コンパスの北向き計算と「本体同期・針ローカル」の境界は妥当。抽出されたラジオ状態表示、中央線との重なり、操作target間隔、コンパス落下復帰は修正済み。設定ボードPickupの複数人競合懸念は、公式VRC Pickup / Object Sync仕様（確認日2026-08-15、Worlds SDK 3.10.4）からObjectSyncなしのローカル設計には該当しないと判断。Unity Sceneと実機はレビュー対象外 |

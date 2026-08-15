@@ -104,6 +104,8 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - 形状予算: 上流6種OBJ合計2,360 triangles、8 Scene itemと地形追従Meshを含む最終合計3,028 triangles
 - 対象: PC / Android / iOSで同じ構成を使用
 
+木陰には、星座を探すときの方角確認用としてOpenGameArtのCC0方位磁石を置く。本体はproximity 0.4mの `VRCPickup` と `VRCObjectSync` で持ち運びを共有するが、針は同期せず、各クライアントで天文系と同じワールド+Z（北）へ向け直す。したがって、磁石を持つ人は本体を水平にして赤い針と自分の向きを見比べることで、星空の北と方位をローカルに確認できる。機種名やプレイヤー向きをネットワーク送信しない。ドロップ10秒後は現在のownerだけが `VRCObjectSync.Respawn()` を実行し、初期位置へ戻す。
+
 ポリゴン削減は行わない。削減による形状劣化や保守用の派生データを増やすほどの負荷ではないため、上流FBXを追跡可能なまま用いる。全Scene再生成と局所feature updateは同じ配置正本を読み、手作業確定後のSceneと生成結果が乖離しないことを検証する。
 
 ## 4. 照明
@@ -213,15 +215,15 @@ PCとMobile（Android / iOS）の人数内訳は、各クライアントがビ�
 
 ### 9.2 木陰のローカル設定ボード
 
-一本木のそばに、初期状態では非表示のローカル設定ボードを置く。木に面一で取り付けた `SETTINGS / 設定` ボタンから各ユーザーが個別に表示する。ボードはPickup可能で、ドロップ10秒後に初期位置へ戻る。
+一本木のそばに、初期状態では非表示のローカル設定ボードを置く。木に面一で取り付けた `SETTINGS / 設定` ボタンから各ユーザーが個別に表示する。ボードは約0.48 × 0.41mの手持ちサイズとし、上端の細いグリップだけをproximity 0.35mのPickup領域にすることで、板面のUI操作と持ち運びを分離する。`VRCObjectSync`は付けず、ボードのTransformとドロップ10秒後の初期位置復帰もローカルに処理する。時計・状態を上段、ミラーと暗さを左列、アラーム・ラジオ・保存を右列へまとめる。
 
 - ミラー: 上、下、左、右、天井の5方向から1つを選ぶ。同じボタンの再操作または全OFFで非表示にする。全ミラーは初期OFF、Player系Layerだけを低品質設定で反射する
 - ナイトモード: World Space UIの直線Sliderで、頭部を囲むローカル半透明オーバーレイの暗さを0〜90%で調整する。World Lightingや他ユーザーの見た目は変更しない
 - 日時・アラーム: クライアントのローカル日時を秒単位で表示し、時・分とON/OFFを設定する。発報音はローカル2D音声とする
-- ラジオ: 設定ボードでUSE可否を有効にした場合だけ、ピクニックのラジオをUSEしてYamaPlayer音声のラジオ側SpeakerをON/OFFできる。音量・MuteはYamaPlayer Controllerへ追従する
+- ラジオ: 設定ボードでUSE範囲を有効にした場合だけ、ピクニックのラジオへ実形状に沿うUSE Triggerと現在のON/OFF表示を出し、0.6m以内からYamaPlayer音声のラジオ側SpeakerをON/OFFできる。無効時はTrigger Colliderと状態表示を止め、VRビーム、Hover表示、USE操作を出さない。音量・MuteはYamaPlayer Controllerへ追従する
 - 保存: `SAVE / 保存` をONにした利用者だけ、VRChat PlayerDataへナイトモード、ミラー、アラーム、ラジオUSE可否を保存する。`OnPlayerRestored` 後に復元し、SAVE OFFでは次回入室へ設定を持ち越さない
 
-設定ボード、ミラー、ナイトモード、アラーム、ラジオSpeakerは同期変数を持たず、すべて各クライアントのローカル状態とする。根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRC Mirror Reflection](https://creators.vrchat.com/worlds/components/vrc_mirrorreflection/)、[VRC UI Shape](https://creators.vrchat.com/worlds/components/vrc_uishape/)（確認日 2026-08-15、VRChat Worlds SDK 3.10.4）。
+設定ボード、ミラー、ナイトモード、アラーム、ラジオSpeakerは同期変数を持たず、すべて各クライアントのローカル状態とする。設定ボードには `VRCPickup` だけを付け、Transform同期を担う `VRCObjectSync` を付けない。根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRC Mirror Reflection](https://creators.vrchat.com/worlds/components/vrc_mirrorreflection/)、[VRC UI Shape](https://creators.vrchat.com/worlds/components/vrc_uishape/)、[VRC Pickup](https://creators.vrchat.com/worlds/components/vrc_pickup/)、[VRC Object Sync](https://creators.vrchat.com/worlds/components/vrc_objectsync/)（確認日 2026-08-15、VRChat Worlds SDK 3.10.4）。
 
 ### 9.3 プレイヤー移動
 

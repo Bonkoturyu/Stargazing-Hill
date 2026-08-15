@@ -11,7 +11,7 @@ Third-party material remains under its own license and is not relicensed by the 
 In particular:
 
 - HYG-derived stellar data is distributed under CC BY-SA 4.0.
-- Poly Haven and Tiny Treats assets recorded in this repository are CC0.
+- Poly Haven, Tiny Treats, and the OpenGameArt compass assets recorded in this repository are CC0.
 - Noto Sans CJK is distributed under the SIL Open Font License 1.1.
 - `Packages/com.vrchat.core.vpm-resolver` is covered by the VRChat Distro License in that directory.
 - YamaPlayer, QvPen, and the purchased UnyStylus package are external dependencies. Their package contents are not included in the redistributable Stargazing Hill UnityPackage.
