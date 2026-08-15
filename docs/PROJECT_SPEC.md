@@ -91,7 +91,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 
 ### 3.4 木陰のピクニックスポット
 
-一本木の下に、Tiny Treats `Pleasant Picnic 1.0` のCC0素材から青い敷物、ラジオ、ティーポット、マグ、青系クッション2点をまとめて配置する。休憩地点の視覚的な目印とし、プレイヤー移動を妨げないよう全品Colliderなしとする。
+一本木の下に、Tiny Treats `Pleasant Picnic 1.0` のCC0素材から青い敷物、ラジオ、ティーポット、マグ、青系クッション2点をまとめて配置する。休憩地点の視覚的な目印とする。敷物には沈み込み防止用の静的な非Trigger `MeshCollider` を1つだけ付け、ラジオ、ティーポット、マグ、クッション、枕には物理Colliderを付けない。ラジオのUSE判定だけは、音声切替用のTriggerとして別管理する。
 
 - runtime Scene: `World/Environment/PicnicSpot`
 - 生成配置正本: `Assets/StargazingHill/Editor/Data/PicnicLayout.json`。8 Anchorのworld Transformと各`Model`子のlocal Transformを保持し、Scene上の手修正をEditorメニューからcaptureする
@@ -129,7 +129,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - Editorで全天球用の1 Meshへベイク
 - Additive Unlit Shaderで描画
 - ランタイムでは天球全体のTransformのみ更新
-- 観測地点は `ObservatoryProfile` と説明パネル内の20地点catalogで一元管理し、初期値を東京とする。実行中の選択は全員共通のGlobal状態とする
+- 観測地点は `ObservatoryProfile` と説明パネル内の22地点catalogで一元管理し、初期値を東京とする。実行中の選択は全員共通のGlobal状態とする
 - 星の背面には地平線の淡い空気遠近を表す三色gradient skyboxを置く。天頂の暗さを維持し、地平線のみ低彩度の青を加え、地面側は黒に近づける
 - AmbientはFlat、遠景は同系色のlinear fogとし、星・月・流星のAdditive描画を阻害しない
 
@@ -207,11 +207,23 @@ QvPenは公式VPM依存として復元する。UnyStylus本体は購入者向け
 
 PCとMobile（Android / iOS）の人数内訳は、各クライアントがビルド対象のUnity platform defineから自身をPC / Mobileの2分類で判定し、`PlayerData` の整数値として自動同期する。受信済みの値を全player分集計し、Laptop / Smartphoneの図形アイコンとともに表示する。未受信者は `WAITING` として合計人数との差を明示する。Android VRもAndroid buildであるためMobileへ数え、`IsUserInVR()` を端末OSの判定には用いない（根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRChat Player API](https://creators.vrchat.com/worlds/udon/players/)、確認日 2026-08-13、VRChat Worlds SDK 3.10.4）。
 
-説明パネル下端には観測地点のGlobal切替を追加する。重複見出しは置かず、操作列の中央上に「星空の基準地点 (global)」を中央揃えで1つだけ表示する。`◀` / `▶` は20地点を横送りし、現在地点の文字を押すと同じ20地点を3列タイルで上方向へ展開して直接選べる。一覧の視覚順はcatalogと逆順のSeoulからTokyoとし、Tokyoを一覧下端へ置く。ただし同期プロトコルであるcatalog indexは従来のTokyo=0からSeoul=19を維持する。誰でも操作でき、最後に選択された地点へ星、月、流星放射点を即時切り替える。選択地点番号だけをManual Syncし、緯度・東経は全クライアント共通のversioned catalogから適用する。途中参加者にも同じ地点を復元する。Global性は見出しの `(global)` で示し、見出し、選択中ラベル、20地点タイルの名称は本文と同じローカル言語設定に従って日本語 / English / 繁體中文 / 简体中文 / 한국어を表示する。表示言語は同期せず、異なる言語の利用者同士でも同じ地点indexを共有する。初期地点はTokyo、初期表示は日本語の「東京（日本）」。対象はTokyo、Sapporo、Osaka、Takamatsu (Kagawa)、Oita、Miyazaki、Naha (Okinawa)、Rome、Paris、Moscow、Washington D.C.、San Francisco、Los Angeles、Las Vegas、New York、Ottawa、Canberra、Jakarta、Beijing、Seoulの20地点とする。
+説明パネル下端には観測地点のGlobal切替を追加する。重複見出しは置かず、操作列の中央上に「星空の基準地点 (global)」を中央揃えで1つだけ表示する。`◀` / `▶` は22地点を横送りし、現在地点の文字を押すと同じ22地点を3列タイルで上方向へ展開して直接選べる。一覧の視覚順はcatalogと逆順とし、Tokyoを一覧下端へ置く。同期互換性のためTokyo=0からSeoul=19は維持し、Tottori=20、Matsue (Shimane)=21を末尾追加する。誰でも操作でき、最後に選択された地点へ星、月、流星放射点を即時切り替える。選択地点番号だけをManual Syncし、緯度・東経は全クライアント共通のversioned catalogから適用する。途中参加者にも同じ地点を復元する。Global性は見出しの `(global)` で示し、見出し、選択中ラベル、22地点タイルの名称は本文と同じローカル言語設定に従って日本語 / English / 繁體中文 / 简体中文 / 한국어を表示する。表示言語は同期せず、異なる言語の利用者同士でも同じ地点indexを共有する。初期地点はTokyo、初期表示は日本語の「東京（日本）」。対象はTokyo、Sapporo、Osaka、Takamatsu (Kagawa)、Oita、Miyazaki、Naha (Okinawa)、Rome、Paris、Moscow、Washington D.C.、San Francisco、Los Angeles、Las Vegas、New York、Ottawa、Canberra、Jakarta、Beijing、Seoul、Tottori、Matsue (Shimane)の22地点とする。
 
-観測地点の右側には、言語切替とデバッグパネルON/OFFを面一で横並びに置く。この表示切替、観測地点リストの開閉、本文の言語切替、履歴スクロールはローカル状態とし、観測地点だけをGlobal状態とする。パネルの生成位置は手作業確定値 `Position (1.471, 1.999, -26.29)` / `Y Rotation 202.2865°` を正本とする。Laptop / Smartphoneアイコンは手作業確定値 `x=0.79`、`y=0.584 / 0.456` を生成コードとScene検証で固定する。Debugパネルの初期位置は説明パネル右隣の `(-0.842, 1.45, -25.342)` とし、以前の位置から下げる。
+観測地点の右側には、言語切替とデバッグパネルON/OFFを面一で横並びに置く。言語ボタンは現在言語と次言語を `日→EN`、`EN→繁`、`繁→简`、`简→한`、`한→日` で示す。説明パネルの操作ボタン、地点一覧、履歴ScrollRectには `VRCUiShape` を用いたVRレーザー操作経路を持たせ、従来のUdon `Interact` も残す。この表示切替、観測地点リストの開閉、本文の言語切替、履歴スクロールはローカル状態とし、観測地点だけをGlobal状態とする。パネルの生成位置は手作業確定値 `Position (1.471, 1.999, -26.29)` / `Y Rotation 202.2865°` を正本とする。Laptop / Smartphoneアイコンは手作業確定値 `x=0.79`、`y=0.584 / 0.456` を生成コードとScene検証で固定する。Debugパネルの初期位置は説明パネル右隣の `(-0.842, 1.45, -25.342)` とし、以前の位置から下げる。
 
-### 9.2 プレイヤー移動
+### 9.2 木陰のローカル設定ボード
+
+一本木のそばに、初期状態では非表示のローカル設定ボードを置く。木に面一で取り付けた `SETTINGS / 設定` ボタンから各ユーザーが個別に表示する。ボードはPickup可能で、ドロップ10秒後に初期位置へ戻る。
+
+- ミラー: 上、下、左、右、天井の5方向から1つを選ぶ。同じボタンの再操作または全OFFで非表示にする。全ミラーは初期OFF、Player系Layerだけを低品質設定で反射する
+- ナイトモード: World Space UIの直線Sliderで、頭部を囲むローカル半透明オーバーレイの暗さを0〜90%で調整する。World Lightingや他ユーザーの見た目は変更しない
+- 日時・アラーム: クライアントのローカル日時を秒単位で表示し、時・分とON/OFFを設定する。発報音はローカル2D音声とする
+- ラジオ: 設定ボードでUSE可否を有効にした場合だけ、ピクニックのラジオをUSEしてYamaPlayer音声のラジオ側SpeakerをON/OFFできる。音量・MuteはYamaPlayer Controllerへ追従する
+- 保存: `SAVE / 保存` をONにした利用者だけ、VRChat PlayerDataへナイトモード、ミラー、アラーム、ラジオUSE可否を保存する。`OnPlayerRestored` 後に復元し、SAVE OFFでは次回入室へ設定を持ち越さない
+
+設定ボード、ミラー、ナイトモード、アラーム、ラジオSpeakerは同期変数を持たず、すべて各クライアントのローカル状態とする。根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRC Mirror Reflection](https://creators.vrchat.com/worlds/components/vrc_mirrorreflection/)、[VRC UI Shape](https://creators.vrchat.com/worlds/components/vrc_uishape/)（確認日 2026-08-15、VRChat Worlds SDK 3.10.4）。
+
+### 9.3 プレイヤー移動
 
 ワールド開始時にローカルプレイヤーへ歩行2m/s、走行4m/s、横移動2m/s、ジャンプ力3.2、重力1.0を明示設定する。スポーンは地表から0.4m上に置き、地面へ埋め込まない。
 
@@ -259,6 +271,12 @@ World
 │
 ├─ VideoSystem
 │  └─ YamaPlayer
+│
+├─ SettingsSystem
+│  ├─ LocalSettingsBoard
+│  ├─ LocalPicnicMirrors
+│  ├─ LocalNightModeOverlay
+│  └─ TreeSettingsToggle
 │
 └─ DrawingSystem
    └─ QvPen

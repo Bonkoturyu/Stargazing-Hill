@@ -49,6 +49,14 @@ namespace StargazingHill.Editor
         private const string ObservatorySelectorProgramPath = Root + "/Scripts/WorldObservatorySelector.asset";
         private const string ObservatoryButtonScriptPath = Root + "/Scripts/WorldObservatoryButton.cs";
         private const string ObservatoryButtonProgramPath = Root + "/Scripts/WorldObservatoryButton.asset";
+        private const string SettingsControllerScriptPath = Root + "/Scripts/WorldSettingsController.cs";
+        private const string SettingsControllerProgramPath = Root + "/Scripts/WorldSettingsController.asset";
+        private const string SettingsButtonScriptPath = Root + "/Scripts/WorldSettingsButton.cs";
+        private const string SettingsButtonProgramPath = Root + "/Scripts/WorldSettingsButton.asset";
+        private const string SettingsPickupScriptPath = Root + "/Scripts/WorldSettingsBoardPickup.cs";
+        private const string SettingsPickupProgramPath = Root + "/Scripts/WorldSettingsBoardPickup.asset";
+        private const string RadioSpeakerScriptPath = Root + "/Scripts/WorldRadioSpeaker.cs";
+        private const string RadioSpeakerProgramPath = Root + "/Scripts/WorldRadioSpeaker.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
         private const string ShowerCatalogPath = Root + "/Settings/IMO2026MajorShowers.asset";
         private const string GrassDiffusePath =
@@ -115,6 +123,8 @@ namespace StargazingHill.Editor
             EnsureProgramAsset(typeof(WorldPlayerSettings), PlayerSettingsScriptPath, PlayerSettingsProgramPath);
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
             EnsureDebugPanelProgramAssets();
+            EnsureInformationPanelProgramAssets();
+            EnsureSettingsSystemProgramAssets();
             // Source edits do not always lower CompiledVersion before a batch build. Compile explicitly so
             // newly added serialized fields exist before proxies are copied into generated scene objects.
             UdonSharpCompilerV1.CompileSync();
@@ -218,6 +228,7 @@ namespace StargazingHill.Editor
             // runs before the save, so a save-triggered install would never be present for it to check.
             WorldDebugPanelInstaller.InstallForBuild(scene);
             WorldInformationPanelInstaller.InstallForBuild(scene);
+            WorldSettingsSystemInstaller.InstallForBuild(scene);
 
             ValidateScene(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -879,6 +890,7 @@ namespace StargazingHill.Editor
             EnsureProgramAsset(typeof(MeteorController), MeteorControllerScriptPath, MeteorControllerProgramPath);
             EnsureDebugPanelProgramAssets();
             EnsureInformationPanelProgramAssets();
+            EnsureSettingsSystemProgramAssets();
             UdonSharpCompilerV1.CompileSync();
 
             Mesh groundMesh = SaveMesh(MeshRoot + "/GrassGround.asset", BuildGroundMesh());
@@ -899,6 +911,7 @@ namespace StargazingHill.Editor
             WorldDebugPanelInstaller.InstallForBuild(scene);
             WorldInformationPanelInstaller.InstallForBuild(scene);
             PicnicSceneInstaller.InstallForBuild(scene);
+            WorldSettingsSystemInstaller.InstallForBuild(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
@@ -916,6 +929,18 @@ namespace StargazingHill.Editor
                 ObservatorySelectorProgramPath);
             EnsureProgramAsset(typeof(WorldObservatoryButton), ObservatoryButtonScriptPath,
                 ObservatoryButtonProgramPath);
+        }
+
+        internal static void EnsureSettingsSystemProgramAssets()
+        {
+            EnsureProgramAsset(typeof(WorldSettingsController), SettingsControllerScriptPath,
+                SettingsControllerProgramPath);
+            EnsureProgramAsset(typeof(WorldSettingsButton), SettingsButtonScriptPath,
+                SettingsButtonProgramPath);
+            EnsureProgramAsset(typeof(WorldSettingsBoardPickup), SettingsPickupScriptPath,
+                SettingsPickupProgramPath);
+            EnsureProgramAsset(typeof(WorldRadioSpeaker), RadioSpeakerScriptPath,
+                RadioSpeakerProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -1937,6 +1962,7 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException("Pre-Quest landmark tree must not be in the scene.");
 
             PicnicSceneInstaller.ValidateScene();
+            WorldSettingsSystemInstaller.ValidateScene(scene);
 
             // The debug panel installs from a scene hook and previously failed halfway through, leaving a
             // panel root with no working buttons. Check a button actually carries its backing Udon program.
@@ -2150,16 +2176,16 @@ namespace StargazingHill.Editor
             Transform debugPanelToggle = informationPanel.transform.Find("Controls/DebugPanelToggle");
             Transform observatoryHeading = informationPanel.transform.Find("Controls/Observatory/ObservatoryHeading");
             Transform observatoryList = informationPanel.transform.Find("Controls/Observatory/ObservatoryLocationList");
-            Transform firstVisualLocation = observatoryList != null ? observatoryList.Find("Location_19") : null;
+            Transform firstVisualLocation = observatoryList != null ? observatoryList.Find("Location_21") : null;
             Transform lastVisualLocation = observatoryList != null ? observatoryList.Find("Location_00") : null;
-            if (observatorySelectors.Length != 1 || observatoryButtons.Length != 24 ||
+            if (observatorySelectors.Length != 1 || observatoryButtons.Length != 26 ||
                 UdonSharpEditorUtility.GetBackingUdonBehaviour(observatorySelectors[0]) == null ||
                 observatorySelectors[0].profileIds == null ||
                 observatorySelectors[0].profileIds.Length != WorldObservatorySelector.ExpectedLocationCount ||
-                observatorySelectors[0].displayNames == null || observatorySelectors[0].displayNames.Length != 20 ||
-                observatorySelectors[0].latitudeDegrees == null || observatorySelectors[0].latitudeDegrees.Length != 20 ||
+                observatorySelectors[0].displayNames == null || observatorySelectors[0].displayNames.Length != 22 ||
+                observatorySelectors[0].latitudeDegrees == null || observatorySelectors[0].latitudeDegrees.Length != 22 ||
                 observatorySelectors[0].longitudeDegreesEast == null ||
-                observatorySelectors[0].longitudeDegreesEast.Length != 20 ||
+                observatorySelectors[0].longitudeDegreesEast.Length != 22 ||
                 observatorySelectors[0].observatoryHeadingLabel == null ||
                 observatorySelectors[0].localizedHeadingLabels == null ||
                 observatorySelectors[0].localizedHeadingLabels.Length != 5 ||
@@ -2175,8 +2201,8 @@ namespace StargazingHill.Editor
                 firstVisualLocation == null || lastVisualLocation == null ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.x, 0f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.10f))
+                !Mathf.Approximately(lastVisualLocation.localPosition.x, -1.38f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.30f))
                 throw new InvalidOperationException("Global observatory selector validation failed.");
 
             for (int index = 0; index < observatoryButtons.Length; index++)

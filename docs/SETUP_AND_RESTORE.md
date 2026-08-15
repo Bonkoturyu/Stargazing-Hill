@@ -31,6 +31,7 @@
 | 説明パネルをHierarchyで選択 | `Stargazing Hill/Content/Information Panel/Select in Hierarchy` | 手編集の入口。生成階層を置換しない |
 | 説明パネルだけ検証 | `Stargazing Hill/Content/Information Panel/Validate` | 5言語、参照、階層、座標を検査する |
 | 説明パネルの保存済み座標を適用 | `Stargazing Hill/Content/Information Panel/Apply Saved Readability Layout` | 内容や子階層を再生成せず、確定済み配置だけを戻す |
+| 設定ボードを再生成 | `Stargazing Hill/Content/Settings Board/Rebuild...` | `World/SettingsSystem`とラジオ連携を置換する。説明・ピクニック生成後に実行する |
 | 生成機能を一括更新 | `Stargazing Hill/Advanced/Generated Content/Upgrade All Generated Features...` | Mesh、外部連携、各パネル、ピクニックをversioned sourceから置換する |
 | Sceneを全再生成 | `Stargazing Hill/Advanced/Generated Content/Rebuild Complete World (Destructive)...` | 未保存・未captureの手修正を失う可能性があるため、必要時だけ使う |
 | YamaPlayerのPlaylistを編集 | Inspectorの「プレイリストを編集する」または `YamaPlayer/Edit Playlist` | YamaPlayer標準機能。編集後はSceneを保存する |
@@ -53,10 +54,14 @@ WorldInformationPanel
 └─ Controls
    ├─ LanguageToggle
    ├─ DebugPanelToggle
-   └─ Observatory       # 見出し、前後、選択地点、20地点一覧
+   └─ Observatory       # 見出し、前後、選択地点、22地点一覧
 ```
 
 文言や見た目の調整は該当グループ内で行う。`Advanced/Generated Content/Rebuild InformationSystem (Replaces Children)...` は `InformationSystem` 全体を生成コードの値で置換するため、手編集を残したい場合は使わない。Editor起動時の自動置換は行わない。生成値自体を変更する場合は `WorldInformationPanelInstaller.cs` も更新し、再生成後に `Content/Information Panel/Validate` を通す。
+
+### SettingsSystemの編集境界
+
+`World/SettingsSystem` は `WorldSettingsSystemInstaller.cs` が生成するローカル機能である。ボードの座標・ボタン、5方向ミラー、ナイトモードsphere、木の表示ボタン、ラジオの追加Speakerを一括管理する。手作業で子を変更しても再生成時に失われるため、恒久変更はinstallerへ反映する。ピクニックのラジオ参照を使うので、個別再生成はInformationSystemとPicnicSpotが存在する状態で行う。
 
 ### YamaPlayerの編集境界
 

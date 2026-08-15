@@ -1,6 +1,7 @@
 using System;
 using UdonSharpEditor;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -34,7 +35,7 @@ namespace StargazingHill.Editor
         {
             "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki", "naha-okinawa",
             "rome", "paris", "moscow", "washington-dc", "san-francisco", "los-angeles", "las-vegas",
-            "new-york", "ottawa", "canberra", "jakarta", "beijing", "seoul"
+            "new-york", "ottawa", "canberra", "jakarta", "beijing", "seoul", "tottori", "matsue-shimane"
         };
         private static readonly string[] ObservatoryDisplayNames =
         {
@@ -42,7 +43,8 @@ namespace StargazingHill.Editor
             "Oita, Japan", "Miyazaki, Japan", "Naha, Okinawa, Japan", "Rome, Italy", "Paris, France",
             "Moscow, Russia", "Washington D.C., America", "San Francisco, America",
             "Los Angeles, America", "Las Vegas, America", "New York, America", "Ottawa, Canada",
-            "Canberra, Australia", "Jakarta, Indonesia", "Beijing, China", "Seoul, Korea"
+            "Canberra, Australia", "Jakarta, Indonesia", "Beijing, China", "Seoul, Korea",
+            "Tottori, Japan", "Matsue, Shimane, Japan"
         };
         private static readonly string[] ObservatoryDisplayNamesJapanese =
         {
@@ -51,21 +53,23 @@ namespace StargazingHill.Editor
             "モスクワ（ロシア）", "ワシントンD.C.（アメリカ）", "サンフランシスコ（アメリカ）",
             "ロサンゼルス（アメリカ）", "ラスベガス（アメリカ）", "ニューヨーク（アメリカ）",
             "オタワ（カナダ）", "キャンベラ（オーストラリア）", "ジャカルタ（インドネシア）",
-            "北京（中国）", "ソウル（韓国）"
+            "北京（中国）", "ソウル（韓国）", "鳥取（日本）", "松江・島根（日本）"
         };
         private static readonly string[] ObservatoryDisplayNamesTraditionalChinese =
         {
             "東京，日本", "札幌，日本", "大阪，日本", "高松（香川），日本", "大分，日本",
             "宮崎，日本", "那霸（沖繩），日本", "羅馬，義大利", "巴黎，法國", "莫斯科，俄羅斯",
             "華盛頓特區，美國", "舊金山，美國", "洛杉磯，美國", "拉斯維加斯，美國", "紐約，美國",
-            "渥太華，加拿大", "坎培拉，澳洲", "雅加達，印尼", "北京，中國", "首爾，韓國"
+            "渥太華，加拿大", "坎培拉，澳洲", "雅加達，印尼", "北京，中國", "首爾，韓國",
+            "鳥取，日本", "松江（島根），日本"
         };
         private static readonly string[] ObservatoryDisplayNamesSimplifiedChinese =
         {
             "东京，日本", "札幌，日本", "大阪，日本", "高松（香川），日本", "大分，日本",
             "宫崎，日本", "那霸（冲绳），日本", "罗马，意大利", "巴黎，法国", "莫斯科，俄罗斯",
             "华盛顿特区，美国", "旧金山，美国", "洛杉矶，美国", "拉斯维加斯，美国", "纽约，美国",
-            "渥太华，加拿大", "堪培拉，澳大利亚", "雅加达，印度尼西亚", "北京，中国", "首尔，韩国"
+            "渥太华，加拿大", "堪培拉，澳大利亚", "雅加达，印度尼西亚", "北京，中国", "首尔，韩国",
+            "鸟取，日本", "松江（岛根），日本"
         };
         private static readonly string[] ObservatoryDisplayNamesKorean =
         {
@@ -73,7 +77,7 @@ namespace StargazingHill.Editor
             "미야자키, 일본", "나하(오키나와), 일본", "로마, 이탈리아", "파리, 프랑스",
             "모스크바, 러시아", "워싱턴 D.C., 미국", "샌프란시스코, 미국", "로스앤젤레스, 미국",
             "라스베이거스, 미국", "뉴욕, 미국", "오타와, 캐나다", "캔버라, 호주",
-            "자카르타, 인도네시아", "베이징, 중국", "서울, 한국"
+            "자카르타, 인도네시아", "베이징, 중국", "서울, 한국", "돗토리, 일본", "마쓰에(시마네), 일본"
         };
         private static readonly string[] ObservatoryHeadingLabels =
         {
@@ -87,13 +91,13 @@ namespace StargazingHill.Editor
         {
             35.68f, 43.0618f, 34.6937f, 34.3428f, 33.2396f, 31.9077f, 26.2124f,
             41.9028f, 48.8566f, 55.7558f, 38.9072f, 37.7749f, 34.0522f, 36.1699f,
-            40.7128f, 45.4215f, -35.2809f, -6.2088f, 39.9042f, 37.5665f
+            40.7128f, 45.4215f, -35.2809f, -6.2088f, 39.9042f, 37.5665f, 35.5011f, 35.4681f
         };
         private static readonly float[] ObservatoryLongitudesEast =
         {
             139.76f, 141.3545f, 135.5023f, 134.0466f, 131.6093f, 131.4202f, 127.6809f,
             12.4964f, 2.3522f, 37.6173f, -77.0369f, -122.4194f, -118.2437f, -115.1398f,
-            -74.0060f, -75.6972f, 149.1300f, 106.8456f, 116.4074f, 126.9780f
+            -74.0060f, -75.6972f, 149.1300f, 106.8456f, 116.4074f, 126.9780f, 134.2351f, 133.0484f
         };
         // Kept in sync with the hand-adjusted scene placement so a future full refresh
         // does not put the information board back at its older generated position.
@@ -206,12 +210,13 @@ namespace StargazingHill.Editor
             Transform list = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryLocationList");
             Transform heading = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryHeading");
             Transform debugButton = panel.transform.Find(ControlsGroupPath + "/DebugPanelToggle");
-            Transform firstVisualLocation = list != null ? list.Find("Location_19") : null;
+            Transform firstVisualLocation = list != null ? list.Find("Location_21") : null;
             Transform lastVisualLocation = list != null ? list.Find("Location_00") : null;
 
             if (languageToggle == null || languageButton == null || presence == null ||
+                languageButton.GetComponentInChildren<VRCUiShape>(true) == null ||
                 presence.playerCountText == null || presence.historyText == null ||
-                presence.historyScrollRect == null || selector == null || buttons.Length != 24 ||
+                presence.historyScrollRect == null || selector == null || buttons.Length != 26 ||
                 UdonSharpEditorUtility.GetBackingUdonBehaviour(selector) == null ||
                 selector.profileIds == null || selector.profileIds.Length != WorldObservatorySelector.ExpectedLocationCount ||
                 selector.displayNames == null || selector.displayNames.Length != WorldObservatorySelector.ExpectedLocationCount ||
@@ -254,8 +259,8 @@ namespace StargazingHill.Editor
                 firstVisualLocation == null || lastVisualLocation == null ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.x, 0f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.10f))
+                !Mathf.Approximately(lastVisualLocation.localPosition.x, -1.38f) ||
+                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.30f))
                 throw new InvalidOperationException("World information panel global observatory controls are incomplete.");
 
             RectTransform countCanvas = presence.playerCountText.transform.parent as RectTransform;
@@ -280,9 +285,11 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException("Existing information panel UI coordinates changed unexpectedly.");
 
             for (int index = 0; index < buttons.Length; index++)
-                if (UdonSharpEditorUtility.GetBackingUdonBehaviour(buttons[index]) == null)
+                if (UdonSharpEditorUtility.GetBackingUdonBehaviour(buttons[index]) == null ||
+                    buttons[index].GetComponentInChildren<VRCUiShape>(true) == null)
                     throw new InvalidOperationException(
-                        "Observatory selector button has no backing Udon behaviour: " + buttons[index].name);
+                        "Observatory selector button has no backing Udon behaviour or VR UI beam target: " +
+                        buttons[index].name);
         }
 
         internal static void InstallForBuild(Scene scene)
@@ -387,7 +394,7 @@ namespace StargazingHill.Editor
             button.transform.localScale = LanguageToggleScale;
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
-            Text buttonLabel = CreateText(button.transform, "ENGLISH", new Vector3(0f, 0f, -0.53f),
+            Text buttonLabel = CreateText(button.transform, "日→EN", new Vector3(0f, 0f, -0.53f),
                 0.075f, TextAnchor.MiddleCenter, font, textMaterial, Color.white, true);
             WorldInfoLanguageToggle toggle = UdonSharpUndo.AddComponent<WorldInfoLanguageToggle>(button);
             toggle.japaneseText = japanese.transform.parent.gameObject;
@@ -403,6 +410,7 @@ namespace StargazingHill.Editor
                 backing.InteractionText = "Language / 言語";
                 backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
+                EnableUiBeamForInteraction(button, backing);
             }
             EditorUtility.SetDirty(toggle);
 
@@ -474,8 +482,8 @@ namespace StargazingHill.Editor
             GameObject listBackdrop = GameObject.CreatePrimitive(PrimitiveType.Cube);
             listBackdrop.name = "ListBackdrop";
             listBackdrop.transform.SetParent(listRoot.transform, false);
-            listBackdrop.transform.localPosition = new Vector3(0f, -0.50f, -0.042f);
-            listBackdrop.transform.localScale = new Vector3(4.18f, 1.50f, 0.022f);
+            listBackdrop.transform.localPosition = new Vector3(0f, -0.60f, -0.042f);
+            listBackdrop.transform.localScale = new Vector3(4.18f, 1.75f, 0.022f);
             listBackdrop.GetComponent<Renderer>().sharedMaterial = boardMaterial;
             UnityEngine.Object.DestroyImmediate(listBackdrop.GetComponent<Collider>());
 
@@ -531,9 +539,46 @@ namespace StargazingHill.Editor
                 backing.InteractionText = interactionText;
                 backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
+                EnableUiBeamForInteraction(button, backing);
             }
             EditorUtility.SetDirty(behaviour);
             return button;
+        }
+
+        /// <summary>
+        /// Adds the same VR laser-pointer interaction path used by VRChat world-space UI while retaining
+        /// the ordinary Udon Interact collider for desktop and direct-use input.
+        /// </summary>
+        internal static void EnableUiBeamForInteraction(GameObject button, UdonBehaviour backing)
+        {
+            Text label = button != null ? button.GetComponentInChildren<Text>(true) : null;
+            if (label == null || backing == null) return;
+            Canvas canvas = label.GetComponentInParent<Canvas>();
+            if (canvas == null) return;
+
+            GameObject canvasObject = canvas.gameObject;
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer >= 0)
+            {
+                canvasObject.layer = uiLayer;
+                label.gameObject.layer = uiLayer;
+            }
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            Vector3 size = button.transform.localScale;
+            canvasRect.sizeDelta = new Vector2(size.x / CanvasScale, size.y / CanvasScale);
+            label.rectTransform.sizeDelta = canvasRect.sizeDelta;
+            label.raycastTarget = true;
+            if (canvasObject.GetComponent<CanvasScaler>() == null) canvasObject.AddComponent<CanvasScaler>();
+            if (canvasObject.GetComponent<GraphicRaycaster>() == null) canvasObject.AddComponent<GraphicRaycaster>();
+            if (canvasObject.GetComponent<VRCUiShape>() == null) canvasObject.AddComponent<VRCUiShape>();
+
+            Button uiButton = label.GetComponent<Button>();
+            if (uiButton == null) uiButton = label.gameObject.AddComponent<Button>();
+            uiButton.targetGraphic = label;
+            uiButton.transition = Selectable.Transition.ColorTint;
+            uiButton.onClick = new Button.ButtonClickedEvent();
+            UnityEventTools.AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact");
+            EditorUtility.SetDirty(uiButton);
         }
 
         private static Transform CreateGroup(Transform parent, string name)

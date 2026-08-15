@@ -13,7 +13,7 @@ namespace StargazingHill
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class WorldObservatorySelector : UdonSharpBehaviour
     {
-        public const int ExpectedLocationCount = 20;
+        public const int ExpectedLocationCount = 22;
 
         [Header("Global Observatory Catalog")]
         public string[] profileIds;

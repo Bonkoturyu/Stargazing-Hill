@@ -51,6 +51,12 @@ TREE_MESH = JACARANDA_ROOT / "Jacaranda_Quest.asset"
 PICNIC_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/TinyTreats/PleasantPicnic"
 PICNIC_INSTALLER = ROOT / "Assets/StargazingHill/Editor/PicnicSceneInstaller.cs"
 PICNIC_LAYOUT = ROOT / "Assets/StargazingHill/Editor/Data/PicnicLayout.json"
+SETTINGS_INSTALLER = ROOT / "Assets/StargazingHill/Editor/WorldSettingsSystemInstaller.cs"
+SETTINGS_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsController.cs"
+SETTINGS_BUTTON = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsButton.cs"
+SETTINGS_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsBoardPickup.cs"
+RADIO_SPEAKER = ROOT / "Assets/StargazingHill/Scripts/WorldRadioSpeaker.cs"
+NIGHT_MODE_SHADER = ROOT / "Assets/StargazingHill/Shaders/NightModeOverlay.shader"
 WORLD_SCENE = ROOT / "Assets/StargazingHill/Scenes/StargazingHill.unity"
 LOCALIZED_READMES = [
     ROOT / "README.md",
@@ -402,6 +408,8 @@ def validate_picnic_spot() -> None:
         )
     assert "PicnicSceneInstaller.InstallForBuild(scene);" in builder
     assert "PicnicSceneInstaller.ValidateScene();" in builder
+    assert "MeshCollider blanketCollider" in installer
+    assert "collider.sharedMesh = asset" in installer
 
 
 def validate_redistributable_package_and_debug_pickup() -> None:
@@ -458,6 +466,9 @@ def validate_redistributable_package_and_debug_pickup() -> None:
         encoding="utf-8"
     )
     assert "EnsureProgramAsset(typeof(WorldDebugPanelPickup)" in builder
+    assert "EnsureSettingsSystemProgramAssets();" in builder
+    assert "WorldSettingsSystemInstaller.InstallForBuild(scene);" in builder
+    assert "WorldSettingsSystemInstaller.ValidateScene(scene);" in builder
     assert "internal const float PanelScale = 0.20f;" in installer
     assert "PanelPosition = new Vector3(-0.842f, 1.45f, -25.342f)" in installer
     assert 'LegacyToggleObjectName = "VRDebugPanelToggle"' in installer
@@ -491,6 +502,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "simplifiedChineseText" in info_toggle
     assert "koreanText" in info_toggle
     assert "observatorySelector.SetDisplayLanguage(_languageIndex)" in info_toggle
+    for label in ("日→EN", "EN→繁", "繁→简", "简→한", "한→日"):
+        assert label in info_toggle
     assert "VRCPlayerApi.GetPlayerCount()" in presence_board
     assert "DefaultMaximumCapacity = 80" in presence_board
     assert "DefaultRecommendedCapacity = 40" in presence_board
@@ -537,6 +550,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "ThirdParty/Fonts/NotoSansCJKkr-Regular.otf" in info_installer
     assert "東京の現在時刻" not in info_installer
     assert "current time in Tokyo" not in info_installer
+    assert "EnableUiBeamForInteraction(button, backing);" in info_installer
+    assert "VRCUiShape" in info_installer
 
     observatory_selector = OBSERVATORY_SELECTOR.read_text(encoding="utf-8")
     observatory_button = OBSERVATORY_BUTTON.read_text(encoding="utf-8")
@@ -557,7 +572,7 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "displayNamesKorean" in observatory_selector
     assert 'displayNames[selectedIndex] + "  (global)"' not in observatory_selector
     assert "debugPanelRoot.SetActive(!debugPanelRoot.activeSelf)" in observatory_selector
-    assert "ExpectedLocationCount = 20" in observatory_selector
+    assert "ExpectedLocationCount = 22" in observatory_selector
     assert "ActionSelectLocation = 3" in observatory_button
     assert "ActionToggleDebugPanel = 4" in observatory_button
     assert "selector.SelectPrevious()" in observatory_button
@@ -568,10 +583,22 @@ def validate_redistributable_package_and_debug_pickup() -> None:
         "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki",
         "naha-okinawa", "rome", "paris", "moscow", "washington-dc", "san-francisco",
         "los-angeles", "las-vegas", "new-york", "ottawa", "canberra", "jakarta",
-        "beijing", "seoul",
+        "beijing", "seoul", "tottori", "matsue-shimane",
     )
     for profile in expected_profiles:
         assert f'"{profile}"' in info_installer, f"missing observatory profile: {profile}"
+    profile_catalog = re.search(
+        r"private static readonly string\[\] ObservatoryProfileIds\s*=\s*\{(.*?)\};",
+        info_installer,
+        re.DOTALL,
+    )
+    assert profile_catalog, "missing observatory profile catalog"
+    actual_profiles = tuple(
+        re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', profile_catalog.group(1))
+    )
+    assert actual_profiles == expected_profiles, (
+        "observatory profile indices are persistent network state and must remain append-only"
+    )
     localized_catalogs = (
         "ObservatoryDisplayNames",
         "ObservatoryDisplayNamesJapanese",
@@ -586,14 +613,14 @@ def validate_redistributable_package_and_debug_pickup() -> None:
             re.DOTALL,
         )
         assert match, f"missing localized observatory catalog: {catalog_name}"
-        assert len(re.findall(r'"(?:[^"\\]|\\.)*"', match.group(1))) == 20, (
-            f"localized observatory catalog must contain 20 names: {catalog_name}"
+        assert len(re.findall(r'"(?:[^"\\]|\\.)*"', match.group(1))) == 22, (
+            f"localized observatory catalog must contain 22 names: {catalog_name}"
         )
     for translated_name in (
-        "東京（日本）", "ワシントンD.C.（アメリカ）", "ソウル（韓国）",
-        "東京，日本", "華盛頓特區，美國", "首爾，韓國",
-        "东京，日本", "华盛顿特区，美国", "首尔，韩国",
-        "도쿄, 일본", "워싱턴 D.C., 미국", "서울, 한국",
+        "東京（日本）", "鳥取（日本）", "松江・島根（日本）", "ワシントンD.C.（アメリカ）", "ソウル（韓国）",
+        "東京，日本", "鳥取，日本", "松江（島根），日本", "華盛頓特區，美國", "首爾，韓國",
+        "东京，日本", "鸟取，日本", "松江（岛根），日本", "华盛顿特区，美国", "首尔，韩国",
+        "도쿄, 일본", "돗토리, 일본", "마쓰에(시마네), 일본", "워싱턴 D.C., 미국", "서울, 한국",
     ):
         assert f'"{translated_name}"' in info_installer, f"missing observatory translation: {translated_name}"
     assert "toggle.observatorySelector = selector;" in info_installer
@@ -627,6 +654,27 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "InstallOrRefreshForBatchMode()" in info_installer
     assert "public static void ValidateForBatchMode()" in info_installer
     assert 'Debug.Log("World information panel validation passed.")' in info_installer
+
+    settings_installer = SETTINGS_INSTALLER.read_text(encoding="utf-8")
+    settings_controller = SETTINGS_CONTROLLER.read_text(encoding="utf-8")
+    settings_button = SETTINGS_BUTTON.read_text(encoding="utf-8")
+    settings_pickup = SETTINGS_PICKUP.read_text(encoding="utf-8")
+    radio_speaker = RADIO_SPEAKER.read_text(encoding="utf-8")
+    night_shader = NIGHT_MODE_SHADER.read_text(encoding="utf-8")
+    assert 'new GameObject("SettingsSystem")' in settings_installer
+    assert 'new GameObject("LocalSettingsBoard")' in settings_installer
+    assert "board.SetActive(false);" in settings_installer
+    assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
+    assert "VRCMirrorReflection" in settings_installer and "mirrors.Length != 5" in settings_installer
+    assert "CreateNightSlider" in settings_installer and "VRCUiShape" in settings_installer
+    assert "ConfigureRadioSpeaker" in settings_installer and "YamaPlayerSpeaker" in settings_installer
+    assert "PlayerData.TryGet" in settings_controller and "OnPlayerRestored" in settings_controller
+    assert "PlayerData.SetBool(SaveKey, true)" in settings_controller
+    assert "DateTime.Now" in settings_controller
+    assert "ReturnDelaySeconds = 10f" in settings_pickup
+    assert "BoardToggle = 8" in settings_button
+    assert "speakerSource.enabled = _useAllowed && _speakerOn" in radio_speaker
+    assert 'Shader "StargazingHill/NightModeOverlay"' in night_shader
 
 
 def validate_sky_reference() -> None:
@@ -812,6 +860,19 @@ def validate_public_documentation() -> None:
     assert 'MenuItem("Stargazing Hill/Advanced/Generated Content/Rebuild Complete World' in builder
     assert "Stargazing Hill/Integrations" not in builder
 
+    public_markdown_files = list(ROOT.glob("*.md")) + list((ROOT / "docs").rglob("*.md"))
+    forbidden_private_reference_patterns = (
+        r"VRChat-World_[A-Za-z0-9_-]+",
+        r"Assets/[A-Za-z0-9_-]*World/",
+    )
+    for markdown_file in public_markdown_files:
+        content = markdown_file.read_text(encoding="utf-8")
+        for private_reference_pattern in forbidden_private_reference_patterns:
+            assert re.search(private_reference_pattern, content) is None, (
+                f"private reference remains in public documentation: "
+                f"{markdown_file.relative_to(ROOT)}"
+            )
+
     language_links = (
         "README.md",
         "README.en.md",
@@ -848,6 +909,7 @@ def validate_public_documentation() -> None:
         assert required in notice, f"project notice is missing: {required}"
 
     guide = STARFIELD_GUIDE.read_text(encoding="utf-8")
+    assert "\\operatorname" not in guide, "GitHub does not render operatorname in this guide"
     for required in (
         "## 簡易説明",
         "## 詳細説明",

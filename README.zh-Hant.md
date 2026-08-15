@@ -2,24 +2,25 @@
 
 [日本語](README.md) | [English](README.en.md) | [繁體中文](README.zh-Hant.md) | [简体中文](README.zh-Hans.md) | [한국어](README.ko.md)
 
-這是一個為 VRChat 製作的寧靜草原世界。星空與月亮會依照目前時間與全體共享的20個觀測地點之一呈現。
+這是一個為 VRChat 製作的寧靜草原世界。星空與月亮會依照目前時間與全體共享的22個觀測地點之一呈現。
 
 ## 主要特色
 
-- 使用 HYG v4.1 的真實恆星資料，依 UTC 與全域選擇的20個地點之緯度、東經旋轉天球
+- 使用 HYG v4.1 的真實恆星資料，依 UTC 與全域選擇的22個地點之緯度、東經旋轉天球
 - 顯示目前月亮的視位置
 - 每個整點開始的流星事件，以及 IMO 2026 年曆中的 11 個主要流星群
 - 廣闊草原、小山丘、地標樹與 CC0 野餐區
 - YamaPlayer、QvPen 與 UnyStylus 區域
 - 可切換日文、英文、繁體中文、簡體中文與韓文的世界說明、觀測地點與除錯面板
 - 顯示目前實例人數與本機進出紀錄
+- 樹旁可手持的本機設定板：五方向鏡面、夜間模式滑桿、日期時間、鬧鐘、收音機操作與自選保存
 - 以 Windows、Android／一體式 VR、iOS 為目標平台
 
 星空會將 12,495 顆星預先烘焙成一個 Mesh、一個 Renderer 與一個 Additive Unlit Material。執行時只旋轉整個天球，不逐顆更新恆星。請參閱附圖解的[星空製作指南（日文）](docs/STARFIELD_IMPLEMENTATION_GUIDE.md)與規格正本 [Real Sky System（日文）](docs/REAL_SKY_SYSTEM.md)。
 
 ## 專案狀態
 
-環境、真實星空、大氣消散、全域共享的20地點選擇器、月亮計算、流星系統、YamaPlayer 標準播放清單流程、繪圖工具、五語面板、人數與進出紀錄、除錯控制及行動平台用 Shader 均已實作。ClientSim 多人測試與 Windows／Android／iOS 實機最終驗證尚未完成。
+環境、真實星空、大氣消散、全域共享的22地點選擇器、月亮計算、流星系統、YamaPlayer 標準播放清單流程、繪圖工具、五語面板、人數與進出紀錄、除錯控制及本機舒適度設定均已實作。新設定板已通過 Unity 編譯與儲存場景結構驗證；Windows／Android／iOS 實機最終驗證尚未完成。
 
 ## 使用全新 Clone
 

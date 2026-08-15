@@ -31,6 +31,7 @@
 | default branch | `main` | Confirmed |
 | branch ruleset | `main` を対象にPR経由、branch削除禁止、non-fast-forward禁止、squash mergeの既存rulesetを `active` 化 | Confirmed |
 | Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定。PR #28のpush / pull request runがともにPass | Confirmed |
+| Actions allowlist | 利用者が2026-08-15に `natsuneko-laboratory/create-unitypackage@*` 相当を許可リストへ追加。workflow本体は `0e02a37fdb702e893dc2a96603768ca7e7dd9b54` へ固定済み。次の `v*` tag実行でremote設定を実証する | Provisional |
 | Dependabot | security updatesを有効化し、open alert 0件を確認 | Confirmed |
 | Secret scanning | Secret scanningとPush protectionを有効化 | Confirmed |
 | CodeQL | Public化後に利用可能。設定と初回実行は未実施 | Pending Evidence |

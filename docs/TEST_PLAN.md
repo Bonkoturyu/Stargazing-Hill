@@ -273,7 +273,7 @@
 ## 2026-08-13 再配布用unitypackageと手持ちデバッグパネル
 
 - 要求: YamaPlayer、QvPen、UnyStylusをunitypackageへ同梱せず、デバッグパネルを手持ちサイズ・Pickup対応・ドロップ約10秒後の初期位置復帰にする
-- 参考: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` のローカルPickup復帰パターン
+- 参考: 非公開の既存VRChatプロジェクトで確認したローカルPickup復帰パターン
 - 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、Direct3D 11
 
 | 確認 | 結果 | 証拠・残課題 |
@@ -315,7 +315,7 @@
 ## 2026-08-13 Quest Playlist欠落・ワールド品質更新
 
 - 発端: QuestへuploadしたWorldでもYamaPlayerのリストが空で、AutoPlayが開始されなかった。併せて流星状態、STOPボタン、地面端、入退室表示、日英説明、mobile shader error、夜空の空気感を改善する
-- 参考: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae`。夜空gradientはClaude Opus 5の2026-08-13設計レビューも使用
+- 参考: 非公開の既存VRChatプロジェクト。夜空gradientはClaude Opus 5の2026-08-13設計レビューも使用
 - 環境: Unity 2022.3.22f1、VRChat SDK 3.10.4、YamaPlayer 2.0.0-beta.7、UnyStylus v1.3、Direct3D 11
 
 | 確認 | 結果 | 証拠・残課題 |
@@ -441,7 +441,7 @@
 ## 2026-08-14 恒星・流星の大気消散
 
 - 発端: 星Meshは肉眼限界`mag <= 6.8`を採用済みだが、現行Shaderは地平線fadeだけで、空気を通る距離による輝度低下を計算していなかった
-- 参照: `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` の`NightStarMeshBaker.cs`（確認日2026-08-14）
+- 参照: 非公開の既存VRChatプロジェクトの星Mesh生成処理（非公開local snapshot、確認日2026-08-14）
 
 | 確認 | 結果 | 証拠・残課題 |
 |---|---|---|
@@ -499,7 +499,7 @@
 |---|---|---|
 | 同期互換性 | Confirmed | catalog配列のTokyo=0からSeoul=19は不変。UI生成だけ `catalogIndex = count - 1 - visualIndex` とし、各ボタンへ元indexを設定 |
 | 観測地点見出し | Confirmed | `OBSERVATORY` / `SKY VIEW POINT`を廃止し、中央揃えの「星空の基準地点 (global)」へ一本化 |
-| 一覧レイアウト | Confirmed | 20地点を3列7行、SeoulからTokyoの視覚順で上方向へ展開。Scene validationはLocation_19の左上とLocation_00の最下段位置を検査 |
+| 一覧レイアウト | Confirmed | 当時の20地点を3列7行、SeoulからTokyoの視覚順で上方向へ展開。2026-08-15に鳥取・松江を末尾追加した22地点仕様へ更新済み |
 | 説明本文 | Confirmed | 日本語から「東京の」、英語から`in Tokyo`を除去。日本語初期表示で5言語をローカル循環切替 |
 | Debug表示 | Confirmed | 5言語のタイトル、説明、動的状態、11群名、再生/停止、sky操作を生成し、初期Yを`1.45`へ変更 |
 | 多言語フォント | Confirmed | 公式Noto Sans CJK KR RegularをOFL-1.1で同梱。SHA-256を静的検査と第三者素材台帳で固定 |
@@ -615,3 +615,33 @@
 | BOOTH draft ZIP | Pass | `StargazingHill-0.1.0-draft-BOOTH.zip`、25,443,648 bytes。unitypackage、5言語README、LICENSE、NOTICE、SHA256SUMSの5fileを収録。package SHA-256 `0e5ec9b9ea58c24fd21f9de572e1d01f1ddd195464666f59d6c3ddad0880afed` を再計算して一致 |
 | BOOTH clean import | Pending Evidence | 顧客向けZIP内のunitypackageをclean projectへimportし、VPM依存と購入済みUnyStylus復元後に確認する |
 | Static validation Action | Pass | repositoryのfull-SHA必須方針に合わせ、`actions/checkout`と`actions/setup-python`を公式v6 tagが指すcommit SHAへ固定。PR #28のpush run `31823686804` とpull request run `31823690056` がともにPass |
+
+## 2026-08-15 Quest実機負荷スモーク確認
+
+- 要求: `REAL_SKY_SYSTEM.md` のQuest / iOS実機負荷確認を、確認済みのQuestと未確認のiOSへ分離する
+- 証拠境界: 利用者がupload済みQuest版を実機確認。Profilerの数値測定ではなく、現行構成に目立つ負荷問題がないことのスモーク確認
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| Quest実機負荷 | Pass | 2026-08-15、利用者報告で現行構成に目立つ負荷問題なし。大きな描画変更時は再確認する |
+| iOS実機負荷 | Pending Evidence | iOS実機で別途確認する |
+
+## 2026-08-15 ローカル設定ボード・説明パネルVR操作・観測地点追加
+
+- 要求: 説明パネルのビーム操作、分かりやすい言語遷移、敷物Collider、鳥取・島根、木陰のミラー・ナイトモード・アラーム・日時・ラジオ・保存を追加する
+- 設計境界: 観測地点だけGlobal。設定ボード、ミラー、暗さ、アラーム、ラジオ、保存、説明パネル言語はLocal
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| 言語ボタン | Confirmed | Opus 5の文言レビューを採用し、`日→EN → EN→繁 → 繁→简 → 简→한 → 한→日`で現在言語と次言語を表示 |
+| 説明パネルVR操作 | Confirmed | 各操作ボタンへWorld Space Canvas、GraphicRaycaster、`VRCUiShape`、UI Buttonを追加。Udon `Interact`も維持 |
+| 観測地点catalog | Confirmed | Tokyo=0〜Seoul=19を維持し、Tottori=20、Matsue (Shimane)=21を末尾追加。5言語名と緯度・東経を22件同長で静的検査 |
+| ピクニックCollider | Confirmed | 地形追従後の敷物Meshへ非convex・非Trigger MeshColliderを1つ生成。その他の物理Colliderは0件。ラジオUSEはTriggerとして設定システム側で分離 |
+| 設定ボード | Confirmed | 初期OFF、木のローカルトグル、Pickup、ドロップ10秒復帰、面一ボタンとVRレーザー経路を生成コードへ実装 |
+| ミラー | Provisional | 5方向、初期OFF、最大1面、Player系Layer、AA 1を保存Sceneへ生成し構造検証Pass。向き、サイズ、Quest / iOS負荷は実機確認する |
+| ナイトモード | Pending Evidence | 頭部追従の内向き透明sphereと0〜90% Sliderを実装。両眼描画、アバターUIへの影響、モバイル負荷を実機確認する |
+| 日時・アラーム | Pending Evidence | ローカル日時表示、時分調整、ON/OFF、STOP、2D loop音源を実装。日跨ぎと再入室を確認する |
+| ラジオSpeaker | Pending Evidence | YamaPlayer Controller、Unity Video target、AVPro Speakerへ追加AudioSourceを接続。USE許可と出力ON/OFF、音量追従を各動画経路で確認する |
+| PlayerData保存 | Pending Evidence | SAVE ON時だけ `StargazingHill.Settings.*` を保存し、`OnPlayerRestored`後に復元。SAVE OFFを含む再入室試験が必要 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| Unity compile / Scene生成 | Pass | 2026-08-15、Unity 2022.3.22f1を通常Editor相当の非表示起動で実行。C# compile、4 Udon program asset生成、保存済みPicnic layoutからの再生成、敷物MeshCollider、設定ボード・5方向ミラー・ナイトモード・アラーム・ラジオSpeakerのScene保存が完了。Picnic 3,028 triangles、InformationSystem専用validation、設定システムvalidationがPass |

@@ -7,7 +7,7 @@
 
 従来の背景はほぼ一様な黒で、地面端と空の境界が硬く、星の明るさは保てても現実の夜空にある低空の空気層が感じられなかった。PCだけでなくQuest / AndroidとiOSでも同じ構図を成立させる必要がある。
 
-参照実装 `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` は、天頂と地平線の別色、地面側の暗色、遠景色を用いて純黒の断絶を避けている。2026-08-13のClaude Opus 5設計レビューでも、星のcontrastを保つため天頂を現状の暗さに固定し、青は低空へ限定する案が推奨された。
+非公開の既存VRChatプロジェクトの参照実装は、天頂と地平線の別色、地面側の暗色、遠景色を用いて純黒の断絶を避けている。2026-08-13のClaude Opus 5設計レビューでも、星のcontrastを保つため天頂を現状の暗さに固定し、青は低空へ限定する案が推奨された。
 
 ## Decision
 
@@ -25,5 +25,5 @@
 
 ## Evidence
 
-- 参照: `Assets/BonkotuWorld/Materials/Night/Shaders/BkW_NightSky.shader`、`Assets/BonkotuWorld/Editor/NightSkyBaker.cs`（上記commit、確認日2026-08-13）
+- 参照: 非公開local snapshotの夜空ShaderとEditor生成処理（確認日2026-08-13）
 - Unity 2022.3.22f1 Direct3D 11で説明パネル・デバッグパネル背景を1280×720描画し、星のcontrastと低空の青みを目視確認（2026-08-13）

@@ -9,14 +9,14 @@
 
 ## Decision
 
-- `WorldObservatorySelector` をManual Syncとし、20地点catalogの `selectedIndex` だけを `[UdonSynced]` にする。
+- `WorldObservatorySelector` をManual Syncとし、22地点catalogの `selectedIndex` だけを `[UdonSynced]` にする。
 - 操作者はselectorのOwnershipを取得して番号を更新し、即時ローカル適用後に `RequestSerialization()` する。
 - 受信側と途中参加者は番号からversioned catalogの緯度・東経を読み、`RealSkyController` と `MeteorController` へ適用する。
 - 星空回転と月位置は切替時に再計算し、流星放射点は次のruntime評価から新地点を使う。急な見た目の切替を許容し、補間しない。
 - 誰でも変更できるLast-writer-winsとする。Global操作であることは見出しとInteractionへ `(global)` と明記する。
-- 見出し、選択中ラベル、20地点タイルの名称は、説明本文と同じローカル言語indexに従い、日本語 / English / 繁體中文 / 简体中文 / 한국어のversioned catalogから表示する。名称と言語indexは同期しない。
+- 見出し、選択中ラベル、22地点タイルの名称は、説明本文と同じローカル言語indexに従い、日本語 / English / 繁體中文 / 简体中文 / 한국어のversioned catalogから表示する。名称と言語indexは同期しない。
 - リスト開閉、デバッグパネル表示、言語、履歴スクロールは同期しない。
-- catalog順のTokyo=0からSeoul=19は同期プロトコルとして維持する。選択一覧だけを逆順の3列タイルとして上方向へ展開し、視覚順と同期indexを分離する。
+- catalog順のTokyo=0からSeoul=19は同期プロトコルとして維持する。2026-08-15追加のTottori=20、Matsue (Shimane)=21は末尾へ置く。選択一覧だけを逆順の3列タイルとして上方向へ展開し、視覚順と同期indexを分離する。
 
 ## Consequences
 
