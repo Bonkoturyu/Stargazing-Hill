@@ -804,11 +804,11 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "DateTime.Now" in settings_controller
     assert "ReturnDelaySeconds = 10f" in settings_pickup
     assert "BoardToggle = 8" in settings_button
-    assert "TreeTogglePosition = new Vector3(8.053f, 2.331f, 7.59f)" in settings_installer
+    assert "TreeTogglePosition = new Vector3(8.261f, 2.331f, 7.755f)" in settings_installer
     assert "private const float TreeToggleScale = 0.46967f;" in settings_installer
     assert "0.627459f, 0.33232313f, -0.35606158f, 0.6075168f" in settings_installer
     assert 'CreateButton(dock.transform, "Toggle", string.Empty' in settings_installer
-    assert "BoardPosition = new Vector3(8.716f, 2.53f, 7.169f)" in settings_installer
+    assert "BoardPosition = new Vector3(8.515f, 2.778f, 7.217f)" in settings_installer
     assert "interactionCollider.center = new Vector3(0f, 0f, -1.15f);" in settings_installer
     assert "float colliderFaceSize = 0.30f / (0.24f * TreeToggleScale);" in settings_installer
     assert "interactionCollider.size = new Vector3(colliderFaceSize, colliderFaceSize, 2.60f);" in settings_installer

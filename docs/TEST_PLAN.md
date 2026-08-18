@@ -812,3 +812,17 @@
 | 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-J-Validate.log` |
 | USEの実機確認 | Pending Evidence | 呼び出し先の誤りは保存Sceneの中身として確定したが、実際に押せるかはVRChat実機で確認する。3パネルすべてのボタンと、Desktop / PCVRの両方が対象 |
 | Desktopのスライダー代替 | Pending Evidence | `−` / `＋` ボタンでナイトモードとラジオ音量を端から端まで動かせることをDesktopで確認する |
+
+### 2026-08-18 手調整Transformの生成正本への取り込み
+
+- 要求: 手作業で調整した座標に生成されるようにする
+- 方針: 手で決めた配置は生成コードとversioned layoutへ取り込み、再生成しても失われないようにする（[ADR 0014](adr/0014-versioned-generated-scene-layout.md)）
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 差分の抽出 | Pass | 保存Sceneと生成正本を突き合わせ、3か所の手調整を検出。設定ボード `(8.716, 2.530, 7.169)` / `Y 54°` → `(8.515, 2.778, 7.217)` / `Y 59.832°`、木の歯車 `(8.053, 2.331, 7.590)` → `(8.261, 2.331, 7.755)`、`PicnicRadio/Model` のローカル位置 `y -0.053` ほか。ピクニックの他7点に差分なし |
+| 回転値の取り込み | Pass | 保存Sceneのquaternion `(0, 0.4987327, 0, 0.86675584)` は `Y 59.832383°` に相当。生成側は `59.832°` とし、再生成後の誤差は0.0004°で検証許容の0.01°以内 |
+| ピクニックlayoutの再取得 | Pass | `PicnicSceneInstaller.CaptureCurrentLayoutForBatchMode` で `Editor/Data/PicnicLayout.json` を更新。`Logs/Claude-K-Capture.log`、終了コード0 |
+| 再生成後の一致 | Pass | `BuildForBatchMode` 後の保存Sceneで、設定ボードとトグルが手調整値と一致することを確認。`Logs/Claude-K-Build.log` |
+| 木の遮蔽・接地の再検証 | Pass | 板と歯車が動いた後も `ValidateTreeSettingsAccess` の `Physics.RaycastAll` はPass。ラジオを下げた後の `ValidateTerrainContact` もPass。`Logs/Claude-K-Validate.log`、終了コード0 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`。座標定数とlayout JSONの一致を含む |

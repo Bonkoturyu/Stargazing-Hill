@@ -38,16 +38,16 @@ namespace StargazingHill.Editor
         private const float MirrorCeilingHeight = 2.55f;
         // Docked beside the tree base and facing the picnic blanket.  Text and controls render
         // toward local -Z, so this yaw intentionally points -Z toward the blanket.
-        private static readonly Vector3 BoardEuler = new Vector3(0f, 54f, 0f);
+        private static readonly Vector3 BoardEuler = new Vector3(0f, 59.832f, 0f);
         // Captured from the user's hand-adjusted saved scene.  Keep the complete transform as the
         // generator baseline; the small visible gear gets a separately compensated hit target.
         private const float TreeToggleScale = 0.46967f;
-        private static readonly Vector3 TreeTogglePosition = new Vector3(8.053f, 2.331f, 7.59f);
+        private static readonly Vector3 TreeTogglePosition = new Vector3(8.261f, 2.331f, 7.755f);
         private static readonly Quaternion TreeToggleRotation = new Quaternion(
             0.627459f, 0.33232313f, -0.35606158f, 0.6075168f);
         // Keep the board at its established dock beside the tree. The toggle transform above is the
         // user-adjusted source of truth and is intentionally independent from this board position.
-        private static readonly Vector3 BoardPosition = new Vector3(8.716f, 2.53f, 7.169f);
+        private static readonly Vector3 BoardPosition = new Vector3(8.515f, 2.778f, 7.217f);
 
         [MenuItem("Stargazing Hill/Content/Settings Board/Rebuild...", false, 40)]
         public static void InstallMenu()
