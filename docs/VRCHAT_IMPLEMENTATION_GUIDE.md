@@ -37,6 +37,8 @@
 - `Confirmed`: 共有する方位磁石は `VRCPickup` と `VRCObjectSync` を付ける一方、針は同期せず各クライアントでワールド北へ向ける。復帰時は現在のownerだけが `Respawn()` を呼ぶ。初期位置はティーポットからworld X方向へ0.30m離した接地平面で、高さは真下へのレイキャストで決める。用途別の同期境界は [ADR 0017](adr/0017-local-comfort-settings-board.md)、操作性と設置基準の更新は [ADR 0018](adr/0018-settings-board-usability-fixes.md) を正本とする。
 - `Confirmed`: **ワールドUIをUIレイヤー(5)へ置いてはいけない。** `VRC.SDK3.ClientSim.ClientSimInteractiveLayerProvider` はメニューを閉じている間の操作対象を `~(1 << UI_LAYER) & ~(1 << UI_MENU_LAYER) & ~(1 << PLAYER_LOCAL_LAYER) & ~(1 << MIRROR_REFLECTION_LAYER)` で組み立てる。UIレイヤーは通常プレイ中の操作対象から外れ、ワールドカメラの写真にも写らない。Defaultレイヤー(0)へ置く。
 - `Confirmed`: ワールドUIのCanvasは、Canvasと同寸のtrigger `BoxCollider` とSceneのEventSystemが揃って初めて操作できる。VRChatはColliderへ当ててからGraphicRaycasterへ渡すため、`VRCUiShape` とGraphicRaycasterだけでは表示のみで反応しない。動作実績は `net.kwxxw.yama-stream` のControlBar Canvas（レイヤー0 + BoxCollider）と、VRChat default world sceneのEventSystemで確認した。
+- `Confirmed`: ワールドUIの `Button.onClick` からUdonを呼ぶときは `UdonBehaviour.Interact()` を指定する。UdonSharpの `public override void Interact()` はUdonのエントリポイント `_interact` へコンパイルされるため、`SendCustomEvent("Interact")` は存在しないイベントを指し、クリックが黙って捨てられる。VRChatの `UnityEventFilter` は両方を許可するので誤りに気付きにくい。
+- `Confirmed`: Desktopではマウス移動がカメラ操作なので、ワールド空間のSliderはドラッグできない。Sliderを置く場合は同じ値を動かすボタンを併設する。
 - `Confirmed`: 3Dキューブのボタンへビームを出すには、ボタン面にUI Canvasを重ねる。ラベルがuGUI Textならそのラベル用Canvasを流用し、ラベルがTextMeshなら不可視の `UiBeamTarget` Canvasを別途生成して `Button.onClick` からUdon `Interact` を送る。Udon Interact用Colliderだけではビームは出ない。
 - `Confirmed`: 頭部追従のローカルUIは `PlayerLocal` レイヤーへ置く。本人だけに見え、鏡にも他人の写真にも写らない。逆に、写真へ残したい常設UIをこのレイヤーへ置いてはいけない。
 - `Confirmed`: YamaPlayerの追加Speakerへローカル音量を掛けるときは、YamaPlayerマスター（既定 `0.1`）への倍率にしない。倍率にすると実効音量が桁で下がる。追加Speakerだけに掛かる絶対音量とし、Muteのみ追従する。

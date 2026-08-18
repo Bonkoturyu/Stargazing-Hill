@@ -198,6 +198,14 @@ namespace StargazingHill.Editor
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             Slider slider = CreateNightSlider(board.transform, textMaterial, accentMaterial);
             Text[] actionButtonTexts = new Text[10];
+            // Desktop players steer the camera with the mouse, so a world-space slider cannot
+            // realistically be dragged. These give the same range in 10% steps.
+            CreateButton(board.transform, "NightDown", "−", new Vector3(-0.37f, -0.76f, -0.0125f),
+                new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
+                controller, WorldSettingsButton.NightAdjust, -10, "Night mode -10%");
+            CreateButton(board.transform, "NightUp", "＋", new Vector3(-0.11f, -0.76f, -0.0125f),
+                new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
+                controller, WorldSettingsButton.NightAdjust, 10, "Night mode +10%");
 
             Text notifyState = CreateText(board.transform, "入退室通知  音 ON / 表示 ON",
                 new Vector3(-1.30f, -0.92f, -0.028f), 0.042f, TextAnchor.UpperLeft,
@@ -247,8 +255,14 @@ namespace StargazingHill.Editor
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             radioVolumeText.transform.parent.name = "RadioVolumeCanvas";
             Slider radioVolumeSlider = CreateSlider(board.transform, "RadioVolumeSliderCanvas",
-                new Vector3(0.78f, -0.76f, -0.032f), new Vector2(440f, 40f),
+                new Vector3(0.56f, -0.76f, -0.032f), new Vector2(320f, 40f),
                 textMaterial, accentMaterial, WorldRadioSpeaker.DefaultLocalVolume);
+            CreateButton(board.transform, "RadioVolumeDown", "−", new Vector3(1.02f, -0.76f, -0.0125f),
+                new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
+                controller, WorldSettingsButton.RadioVolumeAdjust, -10, "Radio volume -10%");
+            CreateButton(board.transform, "RadioVolumeUp", "＋", new Vector3(1.28f, -0.76f, -0.0125f),
+                new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
+                controller, WorldSettingsButton.RadioVolumeAdjust, 10, "Radio volume +10%");
             Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
                 new Vector3(0.20f, -0.92f, -0.028f), 0.044f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
@@ -324,7 +338,7 @@ namespace StargazingHill.Editor
                 ? treeGearIcon.GetComponent<MeshRenderer>() : null;
             VRCPickup boardPickup = board != null ? board.GetComponent<VRCPickup>() : null;
             if (controller == null || board == null || board.activeSelf ||
-                buttons.Length != 19 ||
+                buttons.Length != 23 ||
                 controller.nightSlider == null || controller.mirrorsLow == null || controller.mirrorsLow.Length != 5 ||
                 controller.mirrorsHigh == null || controller.mirrorsHigh.Length != 5 ||
                 controller.radioSpeaker == null || controller.alarmAudio == null ||
@@ -952,7 +966,7 @@ namespace StargazingHill.Editor
         private static Slider CreateNightSlider(Transform parent, Material uiMaterial, Material accentMaterial)
         {
             return CreateSlider(parent, "NightModeSliderCanvas",
-                new Vector3(-0.67f, -0.76f, -0.032f), new Vector2(520f, 44f),
+                new Vector3(-0.90f, -0.76f, -0.032f), new Vector2(380f, 44f),
                 uiMaterial, accentMaterial, 0f);
         }
 

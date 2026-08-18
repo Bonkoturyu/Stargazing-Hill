@@ -675,7 +675,11 @@ namespace StargazingHill.Editor
             // The 3D button already draws the visible face, so no colour tint on top of it.
             uiButton.transition = Selectable.Transition.None;
             uiButton.onClick = new Button.ButtonClickedEvent();
-            UnityEventTools.AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact");
+            // Call Interact() rather than SendCustomEvent("Interact"). UdonSharp compiles an
+            // Interact() override into the Udon entry point named "_interact", so a custom event
+            // called "Interact" does not exist and the click silently went nowhere. Both methods
+            // are on VRChat's UnityEvent allow-list; only this one reaches the behaviour.
+            UnityEventTools.AddVoidPersistentListener(uiButton.onClick, backing.Interact);
             EditorUtility.SetDirty(uiButton);
         }
 

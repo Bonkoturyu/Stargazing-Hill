@@ -794,3 +794,21 @@
 | 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode` で `Saved scene validation passed`。`Logs/Claude-I-Validate.log` |
 | 押しやすさの実機確認 | Pending Evidence | 寸法は数値で確保したが、実際に押しやすいかはDesktopとPCVRの両方で確認が要る。ボタンの当たり判定そのものが成立するかも同時に確認する（前回の階層修正が効いたかどうか） |
 | 通知の実機確認 | Pending Evidence | 位置とフェードの見え方、受付窓の集約を実機で確認する |
+
+### 2026-08-18 ビームは出るがUSEが通らない／Desktopでスライダーが動かせない
+
+- 要求: どのパネルもごく狭い範囲しか触れない、Desktopでナイトモードとラジオ音量を変えられない、選択ビームは出ているのにUSEができない
+- 設計判断: [ADR 0018](adr/0018-settings-board-usability-fixes.md) の2026-08-18追記3
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| USEが通らない原因 | Pass | 利用者のスクリーンショットで、Interactのツールチップとハイライト、UIのビームがいずれも出ていることを確認。届いていないのはクリックの先だった。生成済みSceneのButtonを読むと `m_MethodName: SendCustomEvent` / `m_StringArgument: Interact` になっていた。**UdonSharpは `public override void Interact()` をUdonのエントリポイント `_interact` へコンパイルするため、`Interact` という名前のカスタムイベントは存在しない。** クリックは送られていたが宛先が無く、黙って捨てられていた。前回までの「ボタンが反応しない」もこれが原因で、レイヤーと階層の修正だけでは解けていなかった |
+| 許可リストの確認 | Pass | `Packages/com.vrchat.worlds/Runtime/VRCSDK/SDK3/UnityEventFilter.cs` は `UdonBehaviour` の `RunProgram` / `SendCustomEvent` / `Interact` を許可する。どちらを書いても検閲で消えないため、誤りが表面化しにくい |
+| 修正 | Pass | `Button.onClick` を `UdonBehaviour.Interact()` の直接呼び出しへ変更。再生成後の保存Sceneで `m_MethodName: Interact` / `m_Mode: 1`（引数なし）が **65件**、当方の生成物に `SendCustomEvent` の呼び出しが0件であることを確認（残る18件はYamaPlayerのprefab由来） |
+| Desktopでスライダーが動かせない | Pass | これはバグではなく操作系の制約だった。Desktopではマウス移動がカメラ操作に割り当てられるため、ワールド空間のSliderをドラッグする操作が成立しない。VRでのみ動いていたのはこのため |
+| Desktop向けの代替操作 | Pass | 各Sliderの隣へ `−` / `＋` の10%刻みボタンを追加（ナイトモード、ラジオ音量）。Sliderは残し、VRではどちらでも操作できる。ナイトモードの見出しへ現在値の百分率を表示。設定ボードのボタンは19→23 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`。`SendCustomEvent("Interact")` を書き戻せないよう否定条件も追加 |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-J-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-J-Validate.log` |
+| USEの実機確認 | Pending Evidence | 呼び出し先の誤りは保存Sceneの中身として確定したが、実際に押せるかはVRChat実機で確認する。3パネルすべてのボタンと、Desktop / PCVRの両方が対象 |
+| Desktopのスライダー代替 | Pending Evidence | `−` / `＋` ボタンでナイトモードとラジオ音量を端から端まで動かせることをDesktopで確認する |

@@ -722,13 +722,23 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "EnsureEventSystem(scene);" in settings_installer
     assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
     assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
-    assert "new Vector2(520f, 44f)" in settings_installer
-    assert "new Vector2(440f, 40f)" in settings_installer
+    assert "new Vector2(380f, 44f)" in settings_installer
+    assert "new Vector2(320f, 40f)" in settings_installer
     # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
     assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];" in settings_installer
     assert "controller.mirrorButtonTexts.Length != 7" in settings_installer
     assert "controller.actionButtonTexts.Length != 10" in settings_installer
-    assert "buttons.Length != 19" in settings_installer
+    assert "buttons.Length != 23" in settings_installer
+    # Sliders cannot be dragged on desktop, so each has step buttons alongside.
+    assert 'CreateButton(board.transform, "NightDown"' in settings_installer
+    assert 'CreateButton(board.transform, "RadioVolumeUp"' in settings_installer
+    assert "public void AdjustNight(int deltaPercent)" in settings_controller
+    assert "public void AdjustRadioVolume(int deltaPercent)" in settings_controller
+    assert "NightAdjust = 13" in settings_button
+    # UdonSharp compiles Interact() to the "_interact" entry point, so the click must call
+    # UdonBehaviour.Interact directly; SendCustomEvent("Interact") reaches nothing.
+    assert "AddVoidPersistentListener(uiButton.onClick, backing.Interact)" in info_installer
+    assert 'AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact")' not in info_installer
     # Local join/leave chime and head-following toast, each switchable, neither synced.
     assert "CreatePresenceNotifier(system.transform, font, textMaterial)" in settings_installer
     assert 'CreateButton(board.transform, "NotifySoundToggle"' in settings_installer

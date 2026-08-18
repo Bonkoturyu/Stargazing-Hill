@@ -267,6 +267,28 @@ namespace StargazingHill
             SaveIfEnabled();
         }
 
+        /// <summary>
+        /// Step buttons beside each slider. On desktop the mouse drives the camera, so a
+        /// world-space slider cannot practically be dragged; these give the same control.
+        /// </summary>
+        public void AdjustNight(int deltaPercent)
+        {
+            _nightAmount = Mathf.Clamp01(_nightAmount + deltaPercent * 0.01f);
+            if (nightSlider != null) nightSlider.value = _nightAmount;
+            ApplyNightAmount();
+            UpdateLabels();
+            SaveIfEnabled();
+        }
+
+        public void AdjustRadioVolume(int deltaPercent)
+        {
+            _radioVolume = Mathf.Clamp01(_radioVolume + deltaPercent * 0.01f);
+            if (radioVolumeSlider != null) radioVolumeSlider.value = _radioVolume;
+            ApplyRadioVolume();
+            UpdateLabels();
+            SaveIfEnabled();
+        }
+
         public void ToggleNotifySound()
         {
             _notifySound = !_notifySound;
@@ -488,7 +510,8 @@ namespace StargazingHill
             }
 
             if (titleText != null) titleText.text = title;
-            if (nightModeText != null) nightModeText.text = night;
+            if (nightModeText != null)
+                nightModeText.text = night + "  " + Mathf.RoundToInt(_nightAmount * 100f) + "%";
             if (languageButtonText != null) languageButtonText.text = language;
             // 0-4 are the per-direction ON/OFF toggles, 5 clears them all, and 6 switches the
             // quality every enabled mirror runs at.

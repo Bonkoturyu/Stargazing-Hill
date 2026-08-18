@@ -18,6 +18,8 @@ namespace StargazingHill
         public const int MirrorQuality = 10;
         public const int NotifySoundToggle = 11;
         public const int NotifyDisplayToggle = 12;
+        public const int NightAdjust = 13;
+        public const int RadioVolumeAdjust = 14;
 
         public WorldSettingsController controller;
         public int action;
@@ -31,6 +33,8 @@ namespace StargazingHill
             else if (action == MirrorQuality) controller.ToggleMirrorQuality();
             else if (action == NotifySoundToggle) controller.ToggleNotifySound();
             else if (action == NotifyDisplayToggle) controller.ToggleNotifyDisplay();
+            else if (action == NightAdjust) controller.AdjustNight(value);
+            else if (action == RadioVolumeAdjust) controller.AdjustRadioVolume(value);
             else if (action == AlarmHour) controller.AdjustAlarmHour(value);
             else if (action == AlarmMinute) controller.AdjustAlarmMinute(value);
             else if (action == AlarmToggle) controller.ToggleAlarm();
