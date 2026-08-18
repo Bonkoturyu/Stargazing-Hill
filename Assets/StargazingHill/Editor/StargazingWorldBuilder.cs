@@ -57,6 +57,8 @@ namespace StargazingHill.Editor
         private const string SettingsPickupProgramPath = Root + "/Scripts/WorldSettingsBoardPickup.asset";
         private const string RadioSpeakerScriptPath = Root + "/Scripts/WorldRadioSpeaker.cs";
         private const string RadioSpeakerProgramPath = Root + "/Scripts/WorldRadioSpeaker.asset";
+        private const string PresenceNotifierScriptPath = Root + "/Scripts/WorldPresenceNotifier.cs";
+        private const string PresenceNotifierProgramPath = Root + "/Scripts/WorldPresenceNotifier.asset";
         private const string CompassNeedleScriptPath = Root + "/Scripts/LocalCompassNeedle.cs";
         private const string CompassNeedleProgramPath = Root + "/Scripts/LocalCompassNeedle.asset";
         private const string ObservatoryProfilePath = Root + "/Settings/TokyoObservatory.asset";
@@ -639,6 +641,25 @@ namespace StargazingHill.Editor
             panel.SetActive(wasActive);
         }
 
+        /// <summary>Renders the compact local-settings board head on for UI overlap review.</summary>
+        public static void RenderSettingsPanelPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldSettingsSystemInstaller.ValidateScene(scene);
+            GameObject panel = GameObject.Find("World/SettingsSystem/LocalSettingsBoard");
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (panel == null || camera == null)
+                throw new InvalidOperationException("Local settings board or reference camera is missing.");
+
+            bool wasActive = panel.activeSelf;
+            panel.SetActive(true);
+            Vector3 viewing = -panel.transform.forward;
+            camera.transform.position = panel.transform.position + viewing * 0.72f;
+            camera.transform.LookAt(panel.transform.position);
+            RenderCameraToPng(camera, "stargazing-hill-settings-panel.png");
+            panel.SetActive(wasActive);
+        }
+
         /// <summary>
         /// Renders the world information panel head on so the five-language copy, presence display,
         /// and flush language button can be reviewed without entering Play Mode.
@@ -701,6 +722,47 @@ namespace StargazingHill.Editor
             RenderCameraToPng(camera, "stargazing-hill-information-panel-korean.png");
             observatoryList.gameObject.SetActive(true);
             RenderCameraToPng(camera, "stargazing-hill-information-panel-list-korean.png");
+        }
+
+        /// <summary>
+        /// Renders the tree-mounted settings toggle from its usable side. This catches mirrored icons,
+        /// overlapping geometry, and interaction surfaces accidentally left inside the tree collider.
+        /// </summary>
+        public static void RenderTreeSettingsTogglePreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldSettingsSystemInstaller.ValidateScene(scene);
+            Transform toggle = GameObject.Find("World/SettingsSystem/TreeSettingsToggle")?.transform;
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (toggle == null || camera == null)
+                throw new InvalidOperationException("Tree settings toggle or reference camera is missing.");
+
+            Vector3 viewing = -toggle.forward;
+            camera.transform.position = toggle.position + viewing * 0.80f + Vector3.up * 0.02f;
+            camera.transform.LookAt(toggle.position);
+            RenderCameraToPng(camera, "stargazing-hill-tree-settings-toggle.png");
+        }
+
+        /// <summary>Renders the open settings board together with its tree toggle.</summary>
+        public static void RenderOpenSettingsLayoutPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldSettingsSystemInstaller.ValidateScene(scene);
+            Transform toggle = GameObject.Find("World/SettingsSystem/TreeSettingsToggle")?.transform;
+            GameObject board = GameObject.Find("World/SettingsSystem/LocalSettingsBoard");
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (toggle == null || board == null || camera == null)
+                throw new InvalidOperationException("Open settings layout preview dependencies are missing.");
+
+            board.SetActive(true);
+            Vector3 midpoint = (toggle.position + board.transform.position) * 0.5f;
+            // The toggle can be tilted independently by the author, so frame the
+            // combined preview from the board face instead of the toggle normal.
+            Vector3 viewing = -board.transform.forward;
+            camera.transform.position = midpoint + viewing * 1.50f + Vector3.up * 0.70f;
+            camera.transform.LookAt(midpoint + Vector3.up * 0.12f);
+            RenderCameraToPng(camera, "stargazing-hill-open-settings-layout.png");
+            board.SetActive(false);
         }
 
         public static void RenderPicnicPreviewForBatchMode()
@@ -945,6 +1007,8 @@ namespace StargazingHill.Editor
                 RadioSpeakerProgramPath);
             EnsureProgramAsset(typeof(LocalCompassNeedle), CompassNeedleScriptPath,
                 CompassNeedleProgramPath);
+            EnsureProgramAsset(typeof(WorldPresenceNotifier), PresenceNotifierScriptPath,
+                PresenceNotifierProgramPath);
         }
 
         private static void EnsureProgramAsset(Type behaviourType, string scriptPath, string programPath)
@@ -2180,8 +2244,9 @@ namespace StargazingHill.Editor
             Transform debugPanelToggle = informationPanel.transform.Find("Controls/DebugPanelToggle");
             Transform observatoryHeading = informationPanel.transform.Find("Controls/Observatory/ObservatoryHeading");
             Transform observatoryList = informationPanel.transform.Find("Controls/Observatory/ObservatoryLocationList");
-            Transform firstVisualLocation = observatoryList != null ? observatoryList.Find("Location_21") : null;
-            Transform lastVisualLocation = observatoryList != null ? observatoryList.Find("Location_00") : null;
+            Transform firstVisualLocation = observatoryList != null ? observatoryList.Find("Location_01") : null;
+            Transform lastJapaneseLocation = observatoryList != null ? observatoryList.Find("Location_06") : null;
+            Transform lastVisualLocation = observatoryList != null ? observatoryList.Find("Location_19") : null;
             if (observatorySelectors.Length != 1 || observatoryButtons.Length != 26 ||
                 UdonSharpEditorUtility.GetBackingUdonBehaviour(observatorySelectors[0]) == null ||
                 observatorySelectors[0].profileIds == null ||
@@ -2190,6 +2255,8 @@ namespace StargazingHill.Editor
                 observatorySelectors[0].latitudeDegrees == null || observatorySelectors[0].latitudeDegrees.Length != 22 ||
                 observatorySelectors[0].longitudeDegreesEast == null ||
                 observatorySelectors[0].longitudeDegreesEast.Length != 22 ||
+                observatorySelectors[0].selectionOrder == null ||
+                observatorySelectors[0].selectionOrder.Length != 22 ||
                 observatorySelectors[0].observatoryHeadingLabel == null ||
                 observatorySelectors[0].localizedHeadingLabels == null ||
                 observatorySelectors[0].localizedHeadingLabels.Length != 5 ||
@@ -2202,11 +2269,13 @@ namespace StargazingHill.Editor
                 panelSheet == null || panelSheet.localScale.y < 3.09f ||
                 observatoryPrevious == null || observatorySelected == null || observatoryNext == null ||
                 observatoryHeading == null || debugPanelToggle == null ||
-                firstVisualLocation == null || lastVisualLocation == null ||
+                firstVisualLocation == null || lastJapaneseLocation == null || lastVisualLocation == null ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
-                !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.y, -1.10f) ||
+                !Mathf.Approximately(lastJapaneseLocation.localPosition.x, 1.38f) ||
+                !Mathf.Approximately(lastJapaneseLocation.localPosition.y, -0.70f) ||
                 !Mathf.Approximately(lastVisualLocation.localPosition.x, -1.38f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.30f))
+                !Mathf.Approximately(lastVisualLocation.localPosition.y, 0.30f))
                 throw new InvalidOperationException("Global observatory selector validation failed.");
 
             for (int index = 0; index < observatoryButtons.Length; index++)

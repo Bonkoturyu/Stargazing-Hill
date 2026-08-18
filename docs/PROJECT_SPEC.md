@@ -91,7 +91,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 
 ### 3.4 木陰のピクニックスポット
 
-一本木の下に、Tiny Treats `Pleasant Picnic 1.0` のCC0素材から青い敷物、ラジオ、ティーポット、マグ、青系クッション2点をまとめて配置する。休憩地点の視覚的な目印とする。敷物には沈み込み防止用の静的な非Trigger `MeshCollider` を1つだけ付け、ラジオ、ティーポット、マグ、クッション、枕には物理Colliderを付けない。ラジオのUSE判定だけは、音声切替用のTriggerとして別管理する。
+一本木の下に、Tiny Treats `Pleasant Picnic 1.0` のCC0素材から青い敷物、ラジオ、ティーポット、マグ、青系クッション2点をまとめて配置する。休憩地点の視覚的な目印とする。敷物には沈み込み防止用の静的な非Trigger `MeshCollider` を1つだけ付け、ラジオ、ティーポット、マグ、クッション、枕には物理ColliderやUSE判定を付けない。ラジオ音声は木陰のローカル設定ボードだけから切り替える。
 
 - runtime Scene: `World/Environment/PicnicSpot`
 - 生成配置正本: `Assets/StargazingHill/Editor/Data/PicnicLayout.json`。8 Anchorのworld Transformと各`Model`子のlocal Transformを保持し、Scene上の手修正をEditorメニューからcaptureする
@@ -104,7 +104,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - 形状予算: 上流6種OBJ合計2,360 triangles、8 Scene itemと地形追従Meshを含む最終合計3,028 triangles
 - 対象: PC / Android / iOSで同じ構成を使用
 
-木陰には、星座を探すときの方角確認用としてOpenGameArtのCC0方位磁石を置く。本体はproximity 0.4mの `VRCPickup` と `VRCObjectSync` で持ち運びを共有するが、針は同期せず、各クライアントで天文系と同じワールド+Z（北）へ向け直す。したがって、磁石を持つ人は本体を水平にして赤い針と自分の向きを見比べることで、星空の北と方位をローカルに確認できる。機種名やプレイヤー向きをネットワーク送信しない。ドロップ10秒後は現在のownerだけが `VRCObjectSync.Respawn()` を実行し、初期位置へ戻す。
+木陰には、星座を探すときの方角確認用としてOpenGameArtのCC0方位磁石を置く。本体はproximity 0.4mの `VRCPickup` と `VRCObjectSync` で持ち運びを共有するが、針は同期せず、各クライアントで天文系と同じワールド+Z（北）へ向け直す。したがって、磁石を持つ人は本体を水平にして赤い針と自分の向きを見比べることで、星空の北と方位をローカルに確認できる。機種名やプレイヤー向きをネットワーク送信しない。ドロップ10秒後は現在のownerだけが `VRCObjectSync.Respawn()` を実行し、初期位置へ戻す。初期位置はティーポットとの干渉を避けるため従来位置からworld X方向へ0.30m離した接地平面 `X 7.52 / Z 7.48` とする。高さは手入力せず、その真下の面（敷物があれば敷物、なければ地形）へ生成時に降ろす。モデルは底面が原点に来るよう正規化してあるため、方位磁石は常に接地して見える。
 
 ポリゴン削減は行わない。削減による形状劣化や保守用の派生データを増やすほどの負荷ではないため、上流FBXを追跡可能なまま用いる。全Scene再生成と局所feature updateは同じ配置正本を読み、手作業確定後のSceneと生成結果が乖離しないことを検証する。
 
@@ -209,19 +209,23 @@ QvPenは公式VPM依存として復元する。UnyStylus本体は購入者向け
 
 PCとMobile（Android / iOS）の人数内訳は、各クライアントがビルド対象のUnity platform defineから自身をPC / Mobileの2分類で判定し、`PlayerData` の整数値として自動同期する。受信済みの値を全player分集計し、Laptop / Smartphoneの図形アイコンとともに表示する。未受信者は `WAITING` として合計人数との差を明示する。Android VRもAndroid buildであるためMobileへ数え、`IsUserInVR()` を端末OSの判定には用いない（根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRChat Player API](https://creators.vrchat.com/worlds/udon/players/)、確認日 2026-08-13、VRChat Worlds SDK 3.10.4）。
 
-説明パネル下端には観測地点のGlobal切替を追加する。重複見出しは置かず、操作列の中央上に「星空の基準地点 (global)」を中央揃えで1つだけ表示する。`◀` / `▶` は22地点を横送りし、現在地点の文字を押すと同じ22地点を3列タイルで上方向へ展開して直接選べる。一覧の視覚順はcatalogと逆順とし、Tokyoを一覧下端へ置く。同期互換性のためTokyo=0からSeoul=19は維持し、Tottori=20、Matsue (Shimane)=21を末尾追加する。誰でも操作でき、最後に選択された地点へ星、月、流星放射点を即時切り替える。選択地点番号だけをManual Syncし、緯度・東経は全クライアント共通のversioned catalogから適用する。途中参加者にも同じ地点を復元する。Global性は見出しの `(global)` で示し、見出し、選択中ラベル、22地点タイルの名称は本文と同じローカル言語設定に従って日本語 / English / 繁體中文 / 简体中文 / 한국어を表示する。表示言語は同期せず、異なる言語の利用者同士でも同じ地点indexを共有する。初期地点はTokyo、初期表示は日本語の「東京（日本）」。対象はTokyo、Sapporo、Osaka、Takamatsu (Kagawa)、Oita、Miyazaki、Naha (Okinawa)、Rome、Paris、Moscow、Washington D.C.、San Francisco、Los Angeles、Las Vegas、New York、Ottawa、Canberra、Jakarta、Beijing、Seoul、Tottori、Matsue (Shimane)の22地点とする。
+説明パネル下端には観測地点のGlobal切替を追加する。重複見出しは置かず、操作列の中央上に「星空の基準地点 (global)」を中央揃えで1つだけ表示する。`◀` / `▶` は22地点を横送りし、現在地点の文字を押すと同じ22地点を3列タイルで上方向へ展開して直接選べる。一覧の最下段はselector列より0.245m以上上へ離し、タイルやHover表示が下の矢印へ重ならない余白を確保する。一覧は日本の地点を先頭へまとめ、北から `Sapporo → Tokyo → Tottori → Matsue (Shimane) → Osaka → Takamatsu (Kagawa) → Oita → Miyazaki → Naha (Okinawa)` の順に置き、その後へ海外地点をcatalog順で並べる。同期互換性のためcatalog自体のTokyo=0からSeoul=19は維持し、Tottori=20、Matsue (Shimane)=21も末尾のままとする。誰でも操作でき、最後に選択された地点へ星、月、流星放射点を即時切り替える。選択地点番号だけをManual Syncし、緯度・東経は全クライアント共通のversioned catalogから適用する。途中参加者にも同じ地点を復元する。Global性は見出しの `(global)` で示し、見出し、選択中ラベル、22地点タイルの名称は本文と同じローカル言語設定に従って日本語 / English / 繁體中文 / 简体中文 / 한국어を表示する。表示言語は同期せず、異なる言語の利用者同士でも同じ地点indexを共有する。初期地点と初期選択indexはTokyo=0、初期表示は日本語の「東京（日本）」のまま維持する。対象はTokyo、Sapporo、Osaka、Takamatsu (Kagawa)、Oita、Miyazaki、Naha (Okinawa)、Rome、Paris、Moscow、Washington D.C.、San Francisco、Los Angeles、Las Vegas、New York、Ottawa、Canberra、Jakarta、Beijing、Seoul、Tottori、Matsue (Shimane)の22地点とする。
 
 観測地点の右側には、言語切替とデバッグパネルON/OFFを面一で横並びに置く。言語ボタンは現在言語と次言語を `日→EN`、`EN→繁`、`繁→简`、`简→한`、`한→日` で示す。説明パネルの操作ボタン、地点一覧、履歴ScrollRectには `VRCUiShape` を用いたVRレーザー操作経路を持たせ、従来のUdon `Interact` も残す。この表示切替、観測地点リストの開閉、本文の言語切替、履歴スクロールはローカル状態とし、観測地点だけをGlobal状態とする。パネルの生成位置は手作業確定値 `Position (1.471, 1.999, -26.29)` / `Y Rotation 202.2865°` を正本とする。Laptop / Smartphoneアイコンは手作業確定値 `x=0.79`、`y=0.584 / 0.456` を生成コードとScene検証で固定する。Debugパネルの初期位置は説明パネル右隣の `(-0.842, 1.45, -25.342)` とし、以前の位置から下げる。
 
 ### 9.2 木陰のローカル設定ボード
 
-一本木のそばに、初期状態では非表示のローカル設定ボードを置く。木に面一で取り付けた `SETTINGS / 設定` ボタンから各ユーザーが個別に表示する。ボードは約0.48 × 0.41mの手持ちサイズとし、上端の細いグリップだけをproximity 0.35mのPickup領域にすることで、板面のUI操作と持ち運びを分離する。`VRCObjectSync`は付けず、ボードのTransformとドロップ10秒後の初期位置復帰もローカルに処理する。時計・状態を上段、ミラーと暗さを左列、アラーム・ラジオ・保存を右列へまとめる。
+一本木のそばに、初期状態では非表示のローカル設定ボードを置く。木に面一で取り付けた小型の歯車ボタンから各ユーザーが個別に表示する。ボタンは利用者がScene上で確定した `Position (8.053, 2.331, 7.590)`、`Rotation Quaternion (0.627459, 0.332323, -0.356062, 0.607517)`、`Scale 0.46967` を生成正本とする。文字フォントに依存しない単一メッシュの歯車形状を使い、見た目は小さいまま、操作面だけをworld約0.30m角へ逆スケール補正する。操作表示は `設定を開く / Open local settings` とする。ボードは `Position (8.716, 2.530, 7.169)` / `Y Rotation 54°` を生成値とし、約0.48 × 0.41mの手持ちサイズにする。ボタンとボードの位置は独立した確定値として保持する。上端の細いグリップだけをproximity 0.35mのPickup領域にすることで、板面のUI操作と持ち運びを分離する。`VRCObjectSync`は付けず、ボードのTransformとドロップ10秒後の初期位置復帰もローカルに処理する。時計・状態を上段、ミラーと暗さを左列、アラーム・ラジオ・保存を右列へまとめる。初期表示は日本語とし、右上の言語ボタンで日本語 / English / 繁體中文 / 简体中文 / 한국어をローカルに循環する。
 
-- ミラー: 上、下、左、右、天井の5方向から1つを選ぶ。同じボタンの再操作または全OFFで非表示にする。全ミラーは初期OFF、Player系Layerだけを低品質設定で反射する
+- ミラー: 上、下、左、右、天井それぞれにON/OFFボタンを1つ置き、押すたびにその面だけを切り替える。ONの面は丸印で示し、上部にON数とHQ高負荷の注意を表示する。加えて全OFFボタンと、ON中の全面へ一括適用する `画質 LQ / HQ` ボタンを1つ置く。全ミラーは初期OFF、画質の初期値はLQ。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4とし、Default / Environment / Pickup / Walkthrough / Player / PlayerLocal / MirrorReflectionを反射する
+- ミラー配置: 4面は敷物の実メッシュから測った各辺に沿って立て、辺の長さと同じ幅、辺から0.06m外側、真下の地形へ接地させる。敷物の保存Transformは実際のマット中心からずれるため、配置基準にしない。天井面は敷物中心の2.55m上に敷物の平面寸法で置く
 - ナイトモード: World Space UIの直線Sliderで、頭部を囲むローカル半透明オーバーレイの暗さを0〜90%で調整する。World Lightingや他ユーザーの見た目は変更しない
 - 日時・アラーム: クライアントのローカル日時を秒単位で表示し、時・分とON/OFFを設定する。発報音はローカル2D音声とする
-- ラジオ: 設定ボードでUSE範囲を有効にした場合だけ、ピクニックのラジオへ実形状に沿うUSE Triggerと現在のON/OFF表示を出し、0.6m以内からYamaPlayer音声のラジオ側SpeakerをON/OFFできる。無効時はTrigger Colliderと状態表示を止め、VRビーム、Hover表示、USE操作を出さない。音量・MuteはYamaPlayer Controllerへ追従する
-- 保存: `SAVE / 保存` をONにした利用者だけ、VRChat PlayerDataへナイトモード、ミラー、アラーム、ラジオUSE可否を保存する。`OnPlayerRestored` 後に復元し、SAVE OFFでは次回入室へ設定を持ち越さない
+- ラジオ: ピクニックのラジオ本体にはCollider、Hover、ビーム、USE操作、状態表示を置かない。設定ボードの「ラジオ音声 ON/OFF」がYamaPlayerの追加ローカルSpeakerを直接切り替える。0〜100% Sliderはこの追加Speakerだけに掛かる絶対ローカル音量であり、YamaPlayer本体や他ユーザーの音量は変更しない。YamaPlayerのマスター音量へ掛ける倍率にはしない。マスターの既定値が0.1のため、倍率方式ではラジオがほぼ無音になったためである。MuteだけはYamaPlayerへ追従する。初期値はON / 85%、空間音響はNear 1.5m / Far 22mとし、敷物の上を全音量域に収める
+- 入退室通知: 通知音と画面表示を別々にON/OFFする。初期値は両方ON。音は生成した2音チャイム（入室は660→990 Hzの上行、退室は880→587 Hzの下行、0.40秒）で、`spatialBlend 0` のローカル2D音声とする。表示は頭部追従のトーストで、前方1.5m・視線から0.42m下、1行5秒、最大3行、`PlayerLocal` レイヤーとする。自分自身の入退室と、入室直後に再生される既存プレイヤー分の一斉通知は鳴らさない
+- 保存: `SAVE / 保存` をONにした利用者だけ、VRChat PlayerDataへナイトモード、5方向それぞれのミラーON/OFF、共通のミラー画質、アラーム、ラジオ音声ON/OFF、ラジオ音量、入退室の通知音と画面表示を保存する。`OnPlayerRestored` 後に復元し、SAVE OFFでは次回入室へ設定を持ち越さない。旧 `RadioUse` 保存値は新しいラジオ音声ON/OFFへ、方向ごとにLQ/HQが混在した旧保存値は共通画質へ一度だけ読み替える
+
+ワールドUIのCanvasは、説明パネル・設定ボード・デバッグパネルを通じて次の3条件を満たす。(1) レイヤーはDefault(0)とし、UIレイヤーへ置かない。VRChatはメニューを閉じている間、操作対象レイヤーからUIレイヤーを除外し、ワールドカメラも同レイヤーを写さない。(2) Canvasと同じ寸法のtrigger BoxColliderを持たせる。VRChatはColliderに当ててからGraphicRaycasterへ渡すため、Colliderがないと表示だけで操作できない。奥行は `lossyScale` から逆算してworld 4mmに揃える。(3) SceneへEventSystemを1つ置き、uGUIのdragイベント経路を確保する。ラベルがuGUI Textのボタンはそのラベル用Canvasをビーム面として使い、ラベルがTextMeshのデバッグパネルには不可視の `UiBeamTarget` Canvasを生成する。つまみの寸法は従来の半分（ナイトモード255 × 41、ラジオ音量180 × 32 canvas units）とする。
 
 設定ボード、ミラー、ナイトモード、アラーム、ラジオSpeakerは同期変数を持たず、すべて各クライアントのローカル状態とする。設定ボードには `VRCPickup` だけを付け、Transform同期を担う `VRCObjectSync` を付けない。根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRC Mirror Reflection](https://creators.vrchat.com/worlds/components/vrc_mirrorreflection/)、[VRC UI Shape](https://creators.vrchat.com/worlds/components/vrc_uishape/)、[VRC Pickup](https://creators.vrchat.com/worlds/components/vrc_pickup/)、[VRC Object Sync](https://creators.vrchat.com/worlds/components/vrc_objectsync/)（確認日 2026-08-15、VRChat Worlds SDK 3.10.4）。
 
@@ -278,7 +282,8 @@ World
 │  ├─ LocalSettingsBoard
 │  ├─ LocalPicnicMirrors
 │  ├─ LocalNightModeOverlay
-│  └─ TreeSettingsToggle
+│  ├─ TreeSettingsToggle
+│  └─ CompassPickup
 │
 └─ DrawingSystem
    └─ QvPen

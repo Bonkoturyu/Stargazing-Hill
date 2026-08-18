@@ -20,4 +20,6 @@
 | [0014](0014-versioned-generated-scene-layout.md) | Accepted | 手作業確定配置のversioned captureと再現可能なScene生成 |
 | [0015](0015-runtime-atmospheric-extinction.md) | Accepted | 回転する天球へ星・流星共通の大気消散を実行時適用 |
 | [0016](0016-global-observatory-selector.md) | Accepted | 説明パネルの22観測地点番号だけをGlobal同期し、星・月・流星へ即時適用 |
-| [0017](0017-local-comfort-settings-board.md) | Accepted | 木陰の手持ちローカル設定ボード、ミラー、ナイトモード、アラーム、ラジオ、任意PlayerData保存 |
+| [0017](0017-local-comfort-settings-board.md) | Amended | 木陰の手持ちローカル設定ボード、ミラー、ナイトモード、アラーム、ラジオ、任意PlayerData保存（ミラーUI・ラジオ音量・設置基準は0018で更新） |
+| [0018](0018-settings-board-usability-fixes.md) | Accepted | ラジオ音量の絶対化、ワールドUIのDefaultレイヤー統一とCollider、ミラーON/OFF化、実測基準の設置 |
+| [0019](0019-local-presence-notifications.md) | Accepted | 入退室の通知音と頭部追従トースト、音と表示を別々にON/OFF |

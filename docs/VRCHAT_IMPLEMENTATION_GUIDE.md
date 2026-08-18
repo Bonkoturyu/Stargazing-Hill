@@ -31,7 +31,15 @@
 - `Provisional`: World-space Canvasは背景面から十分離し、Z-fightingを実機で確認する。初期目安は0.05m以上。
 - `Provisional`: TMPのフォールバック、モバイル対応Shader、透明描画コストをQuest/iOSで確認する。
 - `Confirmed`: ローカル専用デバッグリモコンは `VRCPickup` と重力なし `Rigidbody` を使い、同期コンポーネントを付けない。ドロップからの復帰待ち中に再取得された場合、古い遅延eventを状態検査で無効化する。詳細は [ADR 0011](adr/0011-local-handheld-debug-panel.md)。
-- `Confirmed`: ローカル設定ボードも `VRCPickup` だけを使い、Transform同期を行う `VRCObjectSync` は付けない。共有する方位磁石は両方を付け、復帰時は現在のownerだけが `Respawn()` を呼ぶ。用途別の同期境界は [ADR 0017](adr/0017-local-comfort-settings-board.md) を正本とする。
+- `Confirmed`: ローカル設定ボードも `VRCPickup` だけを使い、Transform同期を行う `VRCObjectSync` は付けない。操作面とPickup判定を重ねず、上端の細いグリップだけをPickup対象にする。ボード本体、5言語切替、各設定、10秒復帰は利用者ごとのローカル状態とする。
+- `Confirmed`: 5方向ミラーはピクニック敷物のレンダリング済みメッシュの実寸を基準に生成し、VRChat mirrorの反射面であるQuadのlocal `-Z`を敷物側へ向ける。4面は各辺に沿って辺長と同じ幅で立て、辺から0.06m外側、真下の地形へ接地させる。敷物の保存Transformは実マット中心からずれるため基準にしない。UIは方向ごとのON/OFFと共通の `画質 LQ/HQ` とし初期OFF、複数HQの実機負荷は未検証としてUIと試験計画に残す。
+- `Confirmed`: YamaPlayerのラジオSpeakerは専用 `AudioSource` と `VRCSpatialAudioSource` を明示して追加する。ラジオ本体にはUSE Triggerや状態表示を作らず、設定ボードのローカルON/OFFからSpeaker gainを直接切り替える。音声経路は無効化せず、OFF時はvolumeを0にする。専用音量はYamaPlayerマスター音量へ掛けるローカル倍率とし、元プレイヤーや他ユーザーの音量を変更しない。
+- `Confirmed`: 共有する方位磁石は `VRCPickup` と `VRCObjectSync` を付ける一方、針は同期せず各クライアントでワールド北へ向ける。復帰時は現在のownerだけが `Respawn()` を呼ぶ。初期位置はティーポットからworld X方向へ0.30m離した接地平面で、高さは真下へのレイキャストで決める。用途別の同期境界は [ADR 0017](adr/0017-local-comfort-settings-board.md)、操作性と設置基準の更新は [ADR 0018](adr/0018-settings-board-usability-fixes.md) を正本とする。
+- `Confirmed`: **ワールドUIをUIレイヤー(5)へ置いてはいけない。** `VRC.SDK3.ClientSim.ClientSimInteractiveLayerProvider` はメニューを閉じている間の操作対象を `~(1 << UI_LAYER) & ~(1 << UI_MENU_LAYER) & ~(1 << PLAYER_LOCAL_LAYER) & ~(1 << MIRROR_REFLECTION_LAYER)` で組み立てる。UIレイヤーは通常プレイ中の操作対象から外れ、ワールドカメラの写真にも写らない。Defaultレイヤー(0)へ置く。
+- `Confirmed`: ワールドUIのCanvasは、Canvasと同寸のtrigger `BoxCollider` とSceneのEventSystemが揃って初めて操作できる。VRChatはColliderへ当ててからGraphicRaycasterへ渡すため、`VRCUiShape` とGraphicRaycasterだけでは表示のみで反応しない。動作実績は `net.kwxxw.yama-stream` のControlBar Canvas（レイヤー0 + BoxCollider）と、VRChat default world sceneのEventSystemで確認した。
+- `Confirmed`: 3Dキューブのボタンへビームを出すには、ボタン面にUI Canvasを重ねる。ラベルがuGUI Textならそのラベル用Canvasを流用し、ラベルがTextMeshなら不可視の `UiBeamTarget` Canvasを別途生成して `Button.onClick` からUdon `Interact` を送る。Udon Interact用Colliderだけではビームは出ない。
+- `Confirmed`: 頭部追従のローカルUIは `PlayerLocal` レイヤーへ置く。本人だけに見え、鏡にも他人の写真にも写らない。逆に、写真へ残したい常設UIをこのレイヤーへ置いてはいけない。
+- `Confirmed`: YamaPlayerの追加Speakerへローカル音量を掛けるときは、YamaPlayerマスター（既定 `0.1`）への倍率にしない。倍率にすると実効音量が桁で下がる。追加Speakerだけに掛かる絶対音量とし、Muteのみ追従する。
 
 ## 配布
 

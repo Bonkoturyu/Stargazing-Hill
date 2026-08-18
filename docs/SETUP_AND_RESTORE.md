@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-14
+最終確認日: 2026-08-15
 
 ## 前提
 
@@ -61,7 +61,7 @@ WorldInformationPanel
 
 ### SettingsSystemの編集境界
 
-`World/SettingsSystem` は `WorldSettingsSystemInstaller.cs` が生成するローカル機能である。ボードの座標・ボタン、5方向ミラー、ナイトモードsphere、木の表示ボタン、ラジオの追加Speakerを一括管理する。手作業で子を変更しても再生成時に失われるため、恒久変更はinstallerへ反映する。ピクニックのラジオ参照を使うので、個別再生成はInformationSystemとPicnicSpotが存在する状態で行う。
+`World/SettingsSystem` は `WorldSettingsSystemInstaller.cs` が生成するローカル機能である。ボードの座標・5言語UI、5方向ミラーの個別ON/OFFと共通LQ/HQ、ナイトモードsphere、木の小型歯車ボタン、設定ボード直結のラジオ追加Speaker ON/OFF・専用音量Sliderを一括管理する。ミラー4面は敷物メッシュの実寸から辺へ沿わせて接地させ、入退室の通知音・頭部追従トーストと2つのON/OFFボタンも同じrootへ生成する。ワールドUIのCanvasはDefaultレイヤーで操作用trigger Colliderを持ち、SceneにはEventSystemを1つ生成する。ラジオ本体にはUSE Triggerを生成しない。`CompassSceneInstaller.cs` は同じrootへ、共有Pickup本体とローカル針を持つ方位磁石を生成する。手作業で子を変更しても再生成時に失われるため、恒久変更はinstallerへ反映する。木の歯車は保存Sceneで確定したTransform全体を生成値へ取り込み、見た目を拡大せずColliderだけをworld約0.30m角へ補正する。ピクニックの敷物とラジオ参照を使うので、個別再生成はInformationSystemとPicnicSpotが存在する状態で行う。
 
 ### YamaPlayerの編集境界
 

@@ -4,11 +4,11 @@
 
 ## 日本語
 
-このunitypackageには、Stargazing Hill固有のアセットと、再配布根拠をリポジトリに記録した第三者CC0ファイルだけが含まれます。
+このunitypackageには、Stargazing Hill固有のアセットと、再配布根拠・ライセンスをリポジトリに記録した第三者ファイルだけが含まれます。
 
 Stargazing Hill固有部分は同梱の `LICENSE.md` に記載したMIT Licenseです。第三者素材の適用ライセンスと収録場所は `NOTICE.md` を確認してください。
 
-Tiny Treatsのピクニック素材はCC0-1.0です。固定した上流revision、hash、原文ライセンスは `ThirdParty/TinyTreats/PleasantPicnic/NOTICE.md` に記録しています。
+同梱する第三者ファイルは、HYG派生星表（CC BY-SA 4.0）、Poly HavenとTiny TreatsとOpenGameArt方位磁石（CC0-1.0）、Noto Sans CJK（SIL OFL 1.1）です。出典、固定revision、hash、原文ライセンスは各 `NOTICE` と `LICENSE` に記録しています。
 
 次の外部依存は意図的に同梱していません。
 
@@ -26,11 +26,11 @@ PlaylistはYamaPlayer標準Inspectorのボタン、または `YamaPlayer/Edit Pl
 
 ## English
 
-This unitypackage contains only Stargazing Hill project assets and third-party CC0 files whose redistribution evidence is recorded in the repository.
+This unitypackage contains only Stargazing Hill project assets and third-party files whose redistribution evidence and licenses are recorded in the repository.
 
 Stargazing Hill's original portions are licensed under the MIT License in `LICENSE.md`. See `NOTICE.md` for the applicable third-party licenses and their bundled locations.
 
-The included Tiny Treats picnic files are CC0-1.0; their fixed upstream revision, hashes, and original license are recorded in `ThirdParty/TinyTreats/PleasantPicnic/NOTICE.md`.
+Bundled third-party files are the HYG-derived star catalog (CC BY-SA 4.0), Poly Haven, Tiny Treats, and the OpenGameArt compass (CC0-1.0), plus Noto Sans CJK (SIL OFL 1.1). Sources, fixed revisions, hashes, and original license texts are recorded in the adjacent `NOTICE` and `LICENSE` files.
 
 It intentionally does **not** bundle these external dependencies:
 
@@ -48,11 +48,11 @@ The saved scene is ready to open after the dependencies above are restored; a fu
 
 ## 繁體中文
 
-此unitypackage只包含Stargazing Hill自身資產，以及已在repository記錄再散布依據的第三方CC0檔案。
+此unitypackage只包含Stargazing Hill自身資產，以及已在repository記錄再散布依據與授權的第三方檔案。
 
 Stargazing Hill原創部分採用 `LICENSE.md` 所載的MIT License。第三方素材的適用授權與收錄位置請參閱 `NOTICE.md`。
 
-Tiny Treats野餐素材採用CC0-1.0。固定的上游revision、hash與原始授權條款記錄於 `ThirdParty/TinyTreats/PleasantPicnic/NOTICE.md`。
+內含第三方檔案包括HYG衍生星表（CC BY-SA 4.0）、Poly Haven、Tiny Treats與OpenGameArt方位磁石（CC0-1.0），以及Noto Sans CJK（SIL OFL 1.1）。來源、固定revision、hash與原始授權條款記錄於各自的 `NOTICE` 與 `LICENSE`。
 
 下列外部相依項目不會包含在package內：
 
@@ -70,11 +70,11 @@ Playlist請使用YamaPlayer Inspector內建按鈕或 `YamaPlayer/Edit Playlist` 
 
 ## 简体中文
 
-此unitypackage只包含Stargazing Hill自身资源，以及已在repository记录再分发依据的第三方CC0文件。
+此unitypackage只包含Stargazing Hill自身资源，以及已在repository记录再分发依据和许可的第三方文件。
 
 Stargazing Hill原创部分采用 `LICENSE.md` 中的MIT License。第三方素材的适用许可和收录位置请参阅 `NOTICE.md`。
 
-Tiny Treats野餐素材采用CC0-1.0。固定的上游revision、hash和原始许可记录在 `ThirdParty/TinyTreats/PleasantPicnic/NOTICE.md`。
+内含第三方文件包括HYG衍生星表（CC BY-SA 4.0）、Poly Haven、Tiny Treats和OpenGameArt方位磁石（CC0-1.0），以及Noto Sans CJK（SIL OFL 1.1）。来源、固定revision、hash和原始许可记录在各自的 `NOTICE` 与 `LICENSE` 中。
 
 以下外部依赖不会包含在package中：
 
@@ -92,11 +92,11 @@ Playlist请使用YamaPlayer Inspector内置按钮或 `YamaPlayer/Edit Playlist` 
 
 ## 한국어
 
-이 unitypackage에는 Stargazing Hill 자체 에셋과, 재배포 근거가 repository에 기록된 제3자 CC0 파일만 포함됩니다.
+이 unitypackage에는 Stargazing Hill 자체 에셋과, 재배포 근거 및 라이선스가 repository에 기록된 제3자 파일만 포함됩니다.
 
 Stargazing Hill의 자체 제작 부분은 `LICENSE.md`에 포함된 MIT License를 따릅니다. 제3자 소재의 적용 라이선스와 포함 위치는 `NOTICE.md`를 확인하세요.
 
-Tiny Treats 피크닉 소재는 CC0-1.0입니다. 고정된 upstream revision, hash, 원문 라이선스는 `ThirdParty/TinyTreats/PleasantPicnic/NOTICE.md`에 기록되어 있습니다.
+포함된 제3자 파일은 HYG 파생 별 목록(CC BY-SA 4.0), Poly Haven·Tiny Treats·OpenGameArt 나침반(CC0-1.0), Noto Sans CJK(SIL OFL 1.1)입니다. 출처, 고정 revision, hash, 원문 라이선스는 각 `NOTICE`와 `LICENSE`에 기록되어 있습니다.
 
 다음 외부 의존성은 의도적으로 포함하지 않습니다.
 

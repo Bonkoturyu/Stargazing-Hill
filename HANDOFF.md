@@ -1,25 +1,29 @@
 # Handoff
 
-更新日: 2026-08-15
+更新日: 2026-08-16
 
 ## 現在地
 
 - 仕様の正本は `docs/PROJECT_SPEC.md` と `docs/REAL_SKY_SYSTEM.md`。公開入口は5言語のルートREADME、VRChat SDK用Descriptionは `docs/WORLD_DESCRIPTION.md` を正本とする。
 - HYG v4.1の12,495星を1 Meshへベイクし、肉眼限界6.8等級、地平線の空気遠近、`0.23 mag/airmass`の大気消散を実装済み。
-- VRChatの共通時刻とGlobal同期された22観測地点から、星空、topocentric月位置、流星群放射点を各クライアントで決定的に再現する。Tokyo=0〜Seoul=19を維持し、鳥取=20・松江/島根=21を末尾追加した。
+- VRChatの共通時刻とGlobal同期された22観測地点から、星空、topocentric月位置、流星群放射点を各クライアントで決定的に再現する。Tokyo=0〜Seoul=19を維持し、鳥取=20・松江/島根=21を末尾追加した。タイル表示だけは日本の地点を札幌から沖縄まで北→南へまとめ、Tokyo=0の既定選択は維持する。
 - IMO 2026主要11群と散在流星、毎時180秒イベント、25秒・20本のローカルDebugプレビューを実装済み。
 - ±250mの草原、単一Colliderの小丘、Poly HavenのCC0一本木、versioned layoutで再生成できるTiny TreatsのCC0ピクニックスポットを実装済み。敷物だけに静的MeshColliderを追加する生成コードへ更新した。
 - 説明パネルは日本語初期表示で5言語対応。Global観測地点、現在人数、PC/Mobile内訳、ローカル入退室履歴、Debug表示切替を備え、直接USEとVRレーザーを併用する。Debugパネルも5言語、Pickup、ドロップ10秒後復帰に対応する。
-- 木陰のローカル設定ボード、5方向ミラー、ナイトモード、日時・アラーム、YamaPlayerラジオSpeaker、任意PlayerData保存を生成コードへ実装した。ボードは約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、ObjectSyncなしのローカルPickup、2列UIへ整理した。dividerと操作targetを修正し、ラジオUSE禁止時はColliderと状態表示を無効にする。Unity 2022.3.22f1通常Editor相当経路で保存Scene再生成、C# / UdonSharp compile、構造validationまでPass。
-- OpenGameArtのCC0方位磁石を木陰へ追加した。本体はPickup/ObjectSync、針は各クライアントで天文上の北（ワールド+Z）を指すローカル計算とし、owner限定のドロップ10秒後Respawnを追加。保存Scene構造validationまでPass。
+- 木陰のローカル設定ボード、5方向ミラー、ナイトモード、日時・アラーム、YamaPlayerラジオSpeaker・専用音量、任意PlayerData保存を生成コードへ実装した。ボードは約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、ObjectSyncなしのローカルPickup、2列UI。ラジオ本体のUSE Trigger・状態表示は廃止し、設定ボードのローカルON/OFFが追加Speakerを直接切り替える。木の歯車は手調整後Transformを生成正本とし、小さい見た目のままworld約0.30m角の操作面を維持する。
+- 2026-08-16（続き）、実機で「触れない・ビームが出ない・写真に写らない」の3症状が単一原因だと判明した。VRChat公式SDKの `ClientSimInteractiveLayerProvider` は、メニューを閉じている間の操作対象レイヤーを `~(1 << UI_LAYER) & ...` で組み立てる。**UIレイヤー(5)は通常プレイ中の操作対象から外れ、ワールドカメラも写さない。** ワールドUIのCanvasをすべてDefaultレイヤー(0)へ移し、Canvas同寸のtrigger Colliderを必ず持たせる `ConfigureWorldUiCanvas` へ集約した。ラベルがTextMeshのデバッグパネルには不可視の `UiBeamTarget` Canvasを生成し、3パネルすべてにビームが出るようにした。再生成後の保存Sceneで `VRCUiShape` を持つCanvas 65個すべてが適合、非適合0件。詳細は [ADR 0018](docs/adr/0018-settings-board-usability-fixes.md)。
+- 入退室の通知音と頭部追従トーストを `WorldPresenceNotifier` として追加した（[ADR 0019](docs/adr/0019-local-presence-notifications.md)）。音は生成2音チャイムのローカル2D、表示は前方1.5m・視線下0.42m・1行5秒・最大3行の `PlayerLocal` レイヤー。音と表示は設定ボードから別々にON/OFFでき、PlayerDataへ任意保存する。自分の入室時に既存プレイヤー分が一斉に鳴らないよう、ローカルプレイヤー自身の `OnPlayerJoined` を受け取るまで通知しない。
+- 2026-08-16、実機で使えなかった4点を [ADR 0018](docs/adr/0018-settings-board-usability-fixes.md) として修正した。(1) ラジオ音量はYamaPlayerマスター（既定0.1）への倍率をやめ、追加Speakerだけに掛かる絶対ローカル音量にした。初期ON / 85%、Near 1.5m / Far 22m。MuteだけYamaPlayerへ追従し、他ユーザーの音量は変えない。(2) 両SliderのCanvasへCanvas同寸のtrigger BoxColliderを、SceneへEventSystem + StandaloneInputModuleを生成した。VRChatはColliderへ当ててからGraphicRaycasterへ渡すため、これが無いと表示だけで触れない。つまみは半分の寸法にした。(3) ミラーUIを方向ごとのON/OFF 5個＋全OFF＋共通の画質LQ/HQの計7個へ置き換え、ボード全体のボタンは25→17。(4) ミラー4面は敷物のレンダリング済みメッシュから測った辺に沿って立て、真下の地形へ接地させ、方位磁石の高さも真下へのレイキャストで決めるようにした。
+- OpenGameArtのCC0方位磁石を木陰へ追加した。本体はPickup/ObjectSync、針は各クライアントで天文上の北（ワールド+Z）を指すローカル計算とし、owner限定のドロップ10秒後Respawnを追加。初期位置はティーポットからworld X方向へ0.30m離した接地平面 `X 7.52 / Z 7.48` を正本とし、高さは生成時に真下の面（敷物または地形）から決める。再生成後は `y=2.4047` で敷物に接地する。
 - YamaPlayer 2.0.0-beta.7は標準Playlist Editorを正本とし、QvPen 3.3.15と購入済みUnyStylus v1.3を含む外部依存は配布用unitypackageへ同梱しない。
-- 既存機能と2026-08-15追加機能のUdonSharp/C# compile、保存Scene生成・構造検証はPass。新しい設定UIのClientSim / PCVR / Quest / iOS操作と負荷はPending Evidence。詳細は `docs/TEST_PLAN.md` に集約する。
+- 今回差分はUnity 2022.3.22f1で `CheckUdonSharpProgramAssetsForBatchMode`、`BuildForBatchMode`、`ValidateForBatchMode`、`TestSkyAndMeteorForBatchMode` をすべて終了コード0で通し、保存Sceneを再生成済みである（`Logs/Claude-*.log`）。静的検査 `python Tools/Validate-StargazingImplementation.py` もPassし、絶対音量・Slider Collider・EventSystem・ミラー7ボタン・実測接地を不変条件として追加した。結果の正本は `docs/TEST_PLAN.md` の最新節とする。エージェントからUnityを起動するときはサンドボックス内のheadless実行ではlicense machine bindingが一致しないため、ホスト環境で通常Editor相当の `-quit -projectPath -executeMethod -logFile` を使う。ClientSim / PCVR / Quest / iOS操作はPending Evidence。
 
 ## 次の安全な一手
 
-1. ClientSim複数人でGlobal観測地点の同期・途中参加、人数内訳、履歴スクロール、5言語切替、設定ボードのローカル性を確認する。
-2. YamaPlayer標準Editorで保存した4 Playlist / 15 TrackとAutoPlay、ラジオSpeakerをClientSim、Windows、Android、iOSの新buildで再確認する。
-3. PCVR、Android/standalone VR、iOSで星・月・流星、UI、動画・音声、描画ペン、各Pickup、方位磁石の北表示、ミラー、ナイトモード、アラーム、PlayerData復元、性能を確認し、結果を `docs/TEST_PLAN.md` へ追記する。
-4. VRChat SDKの残存警告を第三者依存・対応可能・実機確認対象に分類して公開候補判定を行う。
+1. ClientSimまたはVRChat実機で、ラジオの実音声、つまみの実操作、3パネルの選択ビーム、VRChatカメラの写真へのUI写り込み、ミラーの新ON/OFFと敷物沿いの配置、入退室通知の実挙動を確認する。ここが今回修正の唯一の未証明部分である。
+2. ClientSim複数人でGlobal観測地点の同期・途中参加、人数内訳、履歴スクロール、5言語切替、設定ボードのローカル性を確認する。
+3. YamaPlayer標準Editorで保存した4 Playlist / 15 TrackとAutoPlay、ラジオSpeakerをClientSim、Windows、Android、iOSの新buildで再確認する。
+4. PCVR、Android/standalone VR、iOSで星・月・流星、UI、動画・音声、描画ペン、各Pickup、方位磁石の北表示、ミラー、ナイトモード、アラーム、PlayerData復元、性能を確認し、結果を `docs/TEST_PLAN.md` へ追記する。
+5. VRChat SDKの残存警告を第三者依存・対応可能・実機確認対象に分類して公開候補判定を行う。
 
 一時的な作業状況だけをここへ置き、仕様判断は必ず該当する正本またはADRへ反映する。

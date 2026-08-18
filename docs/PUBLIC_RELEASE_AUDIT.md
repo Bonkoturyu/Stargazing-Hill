@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-14
+確認日: 2026-08-15
 
 この文書は、GitHub repositoryをPrivateからPublicへ変更する前の確認結果、2026-08-14の公開実施結果、公開後も維持する境界を記録する。コード・仕様の正本ではなく、公開判断のチェックリストである。
 
@@ -17,7 +17,7 @@
 | VRChat user/group/avatar ID | `usr_`、`grp_`、`avtr_` を検出せず | Confirmed |
 | Blueprint ID | 保存Sceneにproduction worldの `wrld_...` が1件ある。秘密情報ではないが、clone利用者向け注意が必要 | Confirmed |
 | QvPen / YamaPlayer / UnyStylus | package本体は追跡されていない。VPM manifestのpackage名と固定version、局所patch、復元手順だけを公開する | Confirmed |
-| 第三者asset | HYG、Poly Haven、Tiny Treats、Noto Sans CJKは権利記録と隣接license/NOTICEを保持する | Confirmed |
+| 第三者asset | HYG、Poly Haven、Tiny Treats、OpenGameArt方位磁石、Noto Sans CJKは権利記録と隣接license/NOTICEを保持する | Confirmed |
 | VRChat VPM resolver | `Packages/com.vrchat.core.vpm-resolver` はVRChat Distro License付きで追跡される。root MITの例外であり、無償公開とする | Confirmed |
 | 大容量履歴 | 最大の到達blobは旧Jacaranda mesh約37.1 MiB。GitHubの単一file 100 MiB制限未満だが、clone容量には残る | Confirmed |
 

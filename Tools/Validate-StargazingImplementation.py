@@ -56,6 +56,7 @@ SETTINGS_CONTROLLER = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsControl
 SETTINGS_BUTTON = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsButton.cs"
 SETTINGS_PICKUP = ROOT / "Assets/StargazingHill/Scripts/WorldSettingsBoardPickup.cs"
 RADIO_SPEAKER = ROOT / "Assets/StargazingHill/Scripts/WorldRadioSpeaker.cs"
+PRESENCE_NOTIFIER = ROOT / "Assets/StargazingHill/Scripts/WorldPresenceNotifier.cs"
 COMPASS_ROOT = ROOT / "Assets/StargazingHill/ThirdParty/OpenGameArt/Compass"
 COMPASS_INSTALLER = ROOT / "Assets/StargazingHill/Editor/CompassSceneInstaller.cs"
 COMPASS_NEEDLE = ROOT / "Assets/StargazingHill/Scripts/LocalCompassNeedle.cs"
@@ -560,6 +561,12 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "current time in Tokyo" not in info_installer
     assert "EnableUiBeamForInteraction(button, backing);" in info_installer
     assert "VRCUiShape" in info_installer
+    assert "1, 0, 20, 21, 2, 3, 4, 5, 6" in info_installer
+    assert "int catalogIndex = ObservatoryVisualOrder[visualIndex];" in info_installer
+    assert 'observatoryList.Find("Location_01")' in builder
+    assert 'observatoryList.Find("Location_06")' in builder
+    assert 'observatoryList.Find("Location_19")' in builder
+    assert 'observatoryList.Find("Location_21")' not in builder
 
     observatory_selector = OBSERVATORY_SELECTOR.read_text(encoding="utf-8")
     observatory_button = OBSERVATORY_BUTTON.read_text(encoding="utf-8")
@@ -586,6 +593,9 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "selector.SelectPrevious()" in observatory_button
     assert "selector.SelectNext()" in observatory_button
     assert "selector.SelectLocation(locationIndex)" in observatory_button
+    assert "public int[] selectionOrder;" in observatory_selector
+    assert "CommitGlobalSelection(selectionOrder[nextOrderIndex]);" in observatory_selector
+    assert "selector.selectionOrder = ObservatoryVisualOrder;" in info_installer
 
     expected_profiles = (
         "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki",
@@ -645,11 +655,14 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert '"星空の基準地点 / SKY VIEWPOINT"' not in info_installer
     assert '"Tokyo, Japan  (global)"' not in info_installer
     assert 'new GameObject("ObservatoryLocationList")' in info_installer
-    assert "int catalogIndex = ObservatoryDisplayNames.Length - 1 - visualIndex;" in info_installer
+    assert "int catalogIndex = ObservatoryVisualOrder[visualIndex];" in info_installer
     assert "int row = visualIndex / 3;" in info_installer
     assert "int column = visualIndex % 3;" in info_installer
     assert "float x = -1.38f + column * 1.38f;" in info_installer
-    assert "float y = 0.10f - row * 0.20f;" in info_installer
+    assert "private const float ObservatoryListBottomY = -1.10f;" in info_installer
+    assert "private const float ObservatoryListRowSpacing = 0.20f;" in info_installer
+    assert "private const float ObservatoryListBackdropY = -0.40f;" in info_installer
+    assert "float y = ObservatoryListBottomY + row * ObservatoryListRowSpacing;" in info_installer
     assert '"ObservatoryPrevious", "◀"' in info_installer
     assert '"ObservatoryNext", "▶"' in info_installer
     assert '"DebugPanelToggle", "DEBUG: OFF"' in info_installer
@@ -683,20 +696,132 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "pickup.proximity = 0.35f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
-    assert "VRCMirrorReflection" in settings_installer and "mirrors.Length != 5" in settings_installer
+    assert "VRCMirrorReflection" in settings_installer
+    assert "mirrorsLow.Length != 5" in settings_installer
+    assert "mirrorsHigh.Length != 5" in settings_installer
+    assert '"maximumAntialiasing", antialiasing' in settings_installer
+    assert '"m_DisablePixelLights", disablePixelLights' in settings_installer
     assert "CreateNightSlider" in settings_installer and "VRCUiShape" in settings_installer
+    assert '"RadioVolumeSliderCanvas"' in settings_installer
+    # VRChat resolves world-space UI through a collider before the GraphicRaycaster, and uGUI only
+    # emits drag events when an EventSystem exists. Both knobs were inert without these.
+    assert "WorldInformationPanelInstaller.ConfigureWorldUiCanvas(canvas);" in settings_installer
+    assert "ValidateWorldUiTarget(controller.nightSlider.gameObject);" in settings_installer
+    assert "ValidateWorldUiTarget(controller.radioVolumeSlider.gameObject);" in settings_installer
+    # VRChat drops the UI layer from its interactive mask while the menu is closed, and its camera
+    # does not photograph that layer, so world UI stays on Default with a collider to hit.
+    assert "internal const int WorldUiLayer = 0;" in info_installer
+    assert "internal static BoxCollider ConfigureWorldUiCanvas(Canvas canvas)" in info_installer
+    assert "internal static void ValidateWorldUiTargets(GameObject root)" in info_installer
+    assert "ValidateWorldUiTargets(panel);" in info_installer
+    assert 'LayerMask.NameToLayer("UI")' not in info_installer
+    assert 'LayerMask.NameToLayer("UI")' not in settings_installer
+    assert 'private const string BeamTargetName = "UiBeamTarget";' in info_installer
+    assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in installer
+    assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(languageButton, languageBacking);" in installer
+    assert "EnsureEventSystem(scene);" in settings_installer
+    assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
+    assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
+    assert "new Vector2(255f, 41f)" in settings_installer
+    assert "new Vector2(180f, 32f)" in settings_installer
+    # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
+    assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];" in settings_installer
+    assert "controller.mirrorButtonTexts.Length != 7" in settings_installer
+    assert "controller.actionButtonTexts.Length != 10" in settings_installer
+    assert "buttons.Length != 19" in settings_installer
+    # Local join/leave chime and head-following toast, each switchable, neither synced.
+    assert "CreatePresenceNotifier(system.transform, font, textMaterial)" in settings_installer
+    assert 'CreateButton(board.transform, "NotifySoundToggle"' in settings_installer
+    assert 'CreateButton(board.transform, "NotifyDisplayToggle"' in settings_installer
+    assert "EnsureChimeClip(JoinChimePath, 660f, 990f)" in settings_installer
+    assert "EnsureChimeClip(LeaveChimePath, 880f, 587f)" in settings_installer
+    assert "Local join/leave notifier must stay local" in settings_installer
+    assert "NotifySoundToggle = 11" in settings_button
+    assert "NotifyDisplayToggle = 12" in settings_button
+    assert "public void ToggleNotifySound()" in settings_controller
+    assert "public void ToggleNotifyDisplay()" in settings_controller
+    assert 'NotifySoundKey = "StargazingHill.Settings.NotifySound"' in settings_controller
+    assert 'NotifyDisplayKey = "StargazingHill.Settings.NotifyDisplay"' in settings_controller
+    presence_notifier = PRESENCE_NOTIFIER.read_text(encoding="utf-8")
+    assert "UdonBehaviourSyncMode(BehaviourSyncMode.None)" in presence_notifier
+    assert "public override void OnPlayerJoined(VRCPlayerApi player)" in presence_notifier
+    assert "public override void OnPlayerLeft(VRCPlayerApi player)" in presence_notifier
+    # The initial join replay must not fire a burst of chimes in a busy instance.
+    assert "if (Utilities.IsValid(player) && player.isLocal)" in presence_notifier
+    assert "_live = true;" in presence_notifier
+    assert "public void SetSoundEnabled(bool enabled)" in presence_notifier
+    assert "public void SetDisplayEnabled(bool enabled)" in presence_notifier
+    assert "EnsureProgramAsset(typeof(WorldPresenceNotifier)" in builder
+    assert 'CreateButton(board.transform, "MirrorsAllOff"' in settings_installer
+    assert 'CreateButton(board.transform, "MirrorQualityToggle"' in settings_installer
+    assert "WorldSettingsButton.MirrorQuality" in settings_installer
+    assert "MirrorQuality = 10" in settings_button
+    assert "public void ToggleMirror(int mirrorIndex)" in settings_controller
+    assert "public void ToggleMirrorQuality()" in settings_controller
+    assert 'MirrorHighQualityKey = "StargazingHill.Settings.MirrorHighQuality"' in settings_controller
+    # The mirrors are measured from the rendered mat instead of the off-centre saved anchor.
+    assert "ResolveBlanketFrame(out center, out forward, out right, out halfForward, out halfRight);" in settings_installer
+    assert "private const float MirrorEdgeMargin = 0.06f;" in settings_installer
+    assert "private const float MirrorGroundClearance = 0.02f;" in settings_installer
+    assert "footing.y = MirrorBaseHeight(footing) + MirrorHeight * 0.5f;" in settings_installer
+    assert "private const float MirrorHeight = 2.15f;" in settings_installer
+    assert "private const float MirrorCeilingHeight = 2.55f;" in settings_installer
+    assert "Picnic mirror is not aligned to the mat edge at index" in settings_installer
     assert "ConfigureRadioSpeaker" in settings_installer and "YamaPlayerSpeaker" in settings_installer
     assert "PlayerData.TryGet" in settings_controller and "OnPlayerRestored" in settings_controller
     assert "PlayerData.SetBool(SaveKey, true)" in settings_controller
     assert "DateTime.Now" in settings_controller
     assert "ReturnDelaySeconds = 10f" in settings_pickup
     assert "BoardToggle = 8" in settings_button
-    assert "speakerSource.enabled = _useAllowed && _speakerOn" in radio_speaker
-    assert "interactionCollider.enabled = _useAllowed;" in radio_speaker
-    assert "stateText.gameObject.SetActive(_useAllowed);" in radio_speaker
-    assert "backing.proximity = 0.6f;" in settings_installer
+    assert "TreeTogglePosition = new Vector3(8.053f, 2.331f, 7.59f)" in settings_installer
+    assert "private const float TreeToggleScale = 0.46967f;" in settings_installer
+    assert "0.627459f, 0.33232313f, -0.35606158f, 0.6075168f" in settings_installer
+    assert 'CreateButton(dock.transform, "Toggle", string.Empty' in settings_installer
+    assert "BoardPosition = new Vector3(8.716f, 2.53f, 7.169f)" in settings_installer
+    assert "interactionCollider.center = new Vector3(0f, 0f, -1.15f);" in settings_installer
+    assert "float colliderFaceSize = 0.30f / (0.24f * TreeToggleScale);" in settings_installer
+    assert "interactionCollider.size = new Vector3(colliderFaceSize, colliderFaceSize, 2.60f);" in settings_installer
+    assert "CreateGearIcon(dock.transform, iconMaterial);" in settings_installer
+    assert 'new GameObject("GearIcon")' in settings_installer
+    assert "EnsureGearIconMesh()" in settings_installer
+    assert 'shader.name != "Unlit/Color"' in settings_installer
+    assert "DestroyImmediate(interactionCanvas.gameObject)" in settings_installer
+    assert "ValidateTreeSettingsAccess(" in settings_installer
+    assert 'new Vector3(0f, 0f, -0.040f)' in settings_installer
+    assert "RenderTreeSettingsTogglePreviewForBatchMode" in builder
+    assert "RenderOpenSettingsLayoutPreviewForBatchMode" in builder
+    assert 'CreateCube("GearSpoke"' not in settings_installer
+    assert "speakerSource.enabled = true" in radio_speaker
+    # The YamaPlayer master volume defaults to 0.1, so scaling by it left the radio inaudible.
+    # The board volume is an absolute local gain; only mute still follows the main speaker.
+    assert "speakerSource.volume = _speakerEnabled ? _localVolume : 0f;" in radio_speaker
+    assert "referenceSource.volume * _localVolume" not in radio_speaker
+    assert "public const float DefaultLocalVolume = 0.85f;" in radio_speaker
+    assert "private bool _speakerEnabled = true;" in radio_speaker
+    assert "private bool _radioEnabled = true;" in settings_controller
+    assert "source.minDistance = 1.5f;" in settings_installer
+    assert 'near.floatValue = 1.5f;' in settings_installer
+    assert "SetLocalVolume(float volume)" in radio_speaker
+    assert "SetSpeakerEnabled(bool enabled)" in radio_speaker
+    assert "public override void Interact()" not in radio_speaker
+    assert 'new GameObject("RadioUseTrigger")' not in settings_installer
+    assert "backing.InteractionText = string.Empty;" in settings_installer
+    assert "backing.proximity = 0f;" in settings_installer
+    assert "RadioToggle = 6" in settings_button
+    assert "ToggleRadio()" in settings_controller
+    assert 'RadioEnabledKey = "StargazingHill.Settings.RadioEnabled"' in settings_controller
+    assert 'LegacyRadioUseKey = "StargazingHill.Settings.RadioUse"' in settings_controller
+    assert 'RadioVolumeKey = "StargazingHill.Settings.RadioVolume"' in settings_controller
+    assert "PlayerData.SetFloat(RadioVolumeKey, _radioVolume)" in settings_controller
+    assert 'MirrorQuality4Key = "StargazingHill.Settings.MirrorQuality4"' in settings_controller
     assert "CompassSceneInstaller.InstallForBuild(scene);" in settings_installer
     assert 'new GameObject("LocalNorthCompass")' in compass_installer
+    # Only the ground plan is authored; the resting height is measured from the surface below,
+    # which is what stopped the compass from hovering above the picnic mat.
+    assert "CompassGroundPosition = new Vector2(7.52f, 7.48f)" in compass_installer
+    assert "private const float CompassRestClearance = 0.002f;" in compass_installer
+    assert "ResolveCompassPosition(null)" in compass_installer
+    assert "Physics.RaycastAll(" in compass_installer
     assert "pickup.proximity = 0.4f;" in compass_installer
     assert "compass.AddComponent<VRCPickup>()" in compass_installer
     assert "compass.AddComponent<VRCObjectSync>()" in compass_installer

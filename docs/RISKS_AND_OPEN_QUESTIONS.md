@@ -13,11 +13,12 @@
 | Confirmed | UnyStylus v1.3の復元手順 | 購入済みVN3素材としてローカル導入。本体は再配布せず、`SETUP_AND_RESTORE.md` に期待Prefabと手順を記録済み。実機動作は別項目 |
 | Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |
 | Open | 手持ちデバッグパネルの実機操作 | 約0.47 × 0.41mの文字可読性、片手保持中の別手ボタン操作、ドロップ10秒後のdock復帰、復帰待ち中の再取得キャンセルをPCVR / Questで確認する。iOSは画面操作と負荷を確認する |
-| Provisional | 木陰のローカル設定ボード | 約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、2列UIとしてUnity 2022.3.22f1でC# / UdonSharp compile、保存Scene再生成、構造validationがPass。Opus 5の複数人競合懸念は、公式VRC Pickup / Object Sync仕様を確認し、ボードへObjectSyncを付けないローカル設計のため該当しないと判断。中央線、ボタン範囲・間隔は修正済み。PCVR / Quest / iOSでUI、Pickup、10秒復帰、両眼描画を確認してConfirmedへ上げる |
-| Open | ローカルミラーとナイトモード負荷 | ミラーは初期OFF・1面のみ・Player系Layer・AA 1に制限。ナイトモードは内向き透明sphere。Quest / iOSでGPU負荷、透明描画、視界の快適性を確認する |
+| Provisional | 木陰のローカル設定ボード | 約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、2列UIとして実装。歯車は単一Udon Interact Colliderとし、利用者がSceneで手調整した位置・回転・scaleを生成正本へ取り込んだ。小さい見た目に対してColliderはworld約0.30m角を維持する。位置変更後のUnity Physics first-hit、ボードUI、Pickup、10秒復帰、両眼描画をPCVR / Quest / iOSで再確認してConfirmedへ上げる |
+| Open | 頭部追従トーストのVR快適性 | 入退室表示は前方1.5m・視線から0.42m下の頭部追従UIで、1行5秒・最大3行、非表示時はGameObjectごと停止する。頭部追従UIは酔いの原因になり得るため、PCVR / Questで距離・位置・滞留時間の快適性と、人数の多いインスタンスでの煩わしさを確認する。通知音と表示は別々にOFFできる |
+| Open | ローカルミラーとナイトモード負荷 | ミラーは初期OFF。方向ごとにON/OFFし、画質は全面共通でLQ/HQを切り替える。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4。複数面、とくにHQは高負荷になり得ることをUIに表示した。Quest / iOSで組み合わせ別GPU負荷、透明描画、視界の快適性を確認する |
 | Open | アラームとPlayerData復元 | `OnPlayerRestored`後のSAVE ON復元、SAVE OFFの非復元、日跨ぎ再発報、インスタンス再入室を実機確認する |
-| Open | YamaPlayerラジオSpeaker | USE禁止時は実モデルBounds由来のTrigger Colliderと状態表示が無効になり、Hover・ビーム・USE表示が消える構造まで確認済み。有効時だけ状態表示を戻す。Unity / AVPro両経路の再生、音量・Mute追従、実機操作をPC / Android / iOSで確認する |
-| Provisional | 手持ちローカル方位磁石 | CC0素材、本体Pickup/ObjectSync、針の非同期ローカル計算、天文上の北=ワールド+Z、owner限定のドロップ10秒後Respawnを保存Sceneと静的検査で確認済み。Opus 5静的レビューでも針計算と同期境界は妥当。PCVR / Questで水平保持、赤針の読みやすさ、落下復帰、物理挙動、星座探索への有用性を確認する |
+| Open | YamaPlayerラジオSpeaker | ラジオ本体のUSE Trigger・状態表示を廃止し、設定ボードのローカルON/OFFから追加Speakerを直接切り替える。YamaPlayerマスター音量へ0〜100%のラジオ専用ローカル倍率を掛け、ON/OFFと音量をSAVE対象に含める。Unity / AVPro両経路の再生、音量・Mute追従、実機操作と再入室復元をPC / Android / iOSで確認する |
+| Provisional | 手持ちローカル方位磁石 | CC0素材、本体Pickup/ObjectSync、針の非同期ローカル計算、天文上の北=ワールド+Z、owner限定のドロップ10秒後Respawnを保存Sceneと静的検査で確認済み。Opus 5静的レビューでも針計算と同期境界は妥当。ティーポットとの干渉を避けるため初期位置をworld X方向へ0.30m離し、高さは真下の面へのレイキャストで決めて浮きを解消した。PCVR / Questで水平保持、赤針の読みやすさ、落下復帰、物理挙動、星座探索への有用性を確認する |
 | Open | iOSで利用可能なShaderと動画経路 | 対象Unity/SDK版でBuild & Test |
 | Confirmed | 月位置の許容誤差 | USNO APIの東京5日時を基準に、高度・方位とも0.10°以内（実測最大0.0495°）。静的CIとUnity試験でPass |
 | Confirmed | 流星群データの一次出典 | IMO Meteor Shower Calendar 2026 Table 5、確認日2026-08-12。主要11群をcatalog化 |

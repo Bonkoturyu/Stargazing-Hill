@@ -1,8 +1,8 @@
 # BOOTH配布準備
 
-状態: `In Progress`
+状態: `Open`
 
-確認日: 2026-08-14
+確認日: 2026-08-15
 
 この文書は、BOOTHへ登録する顧客向けZIPを作るための作業正本である。価格、サポート範囲、商品ページ文面はまだ `Open` とする。
 
@@ -10,7 +10,7 @@
 
 - Stargazing Hill固有部分はMIT Licenseで、販売を含む利用が可能。配布物には著作権表示とMIT本文を残す。
 - HYG由来データはCC BY-SA 4.0。package内の `Editor/Data/NOTICE.md` とライセンスを保持する。
-- Poly HavenとTiny TreatsはCC0、Noto Sans CJKはSIL Open Font License 1.1。隣接NOTICE・ライセンスを保持する。
+- Poly Haven、Tiny Treats、OpenGameArtの方位磁石はCC0、Noto Sans CJKはSIL Open Font License 1.1。隣接NOTICE・ライセンスを保持する。
 - YamaPlayer、QvPen、購入品UnyStylusの本体は商品へ同梱しない。
 
 状態は `Confirmed`。権利の正本は [legal/THIRD_PARTY_ASSETS.md](legal/THIRD_PARTY_ASSETS.md) と [legal/THIRD_PARTY_DEPENDENCIES.md](legal/THIRD_PARTY_DEPENDENCIES.md) とする。

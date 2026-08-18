@@ -393,6 +393,7 @@ namespace StargazingHill.Editor
                 languageBacking.InteractionText = "Language / 言語";
                 languageBacking.proximity = 2.5f;
                 EditorUtility.SetDirty(languageBacking);
+                WorldInformationPanelInstaller.EnableUiBeamForInteraction(languageButton, languageBacking);
             }
             EditorUtility.SetDirty(languageToggle);
 
@@ -520,6 +521,9 @@ namespace StargazingHill.Editor
                 // UdonBehaviour.proximity, which is what ClientSim and the client both read.
                 backing.proximity = 2.5f;
                 EditorUtility.SetDirty(backing);
+                // These labels are TextMesh, so this adds a dedicated invisible UI surface and the
+                // pointer beam follows, matching the information and settings panels.
+                WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);
             }
             EditorUtility.SetDirty(behaviour);
         }

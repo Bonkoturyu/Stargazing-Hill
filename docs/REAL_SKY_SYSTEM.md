@@ -2,7 +2,7 @@
 
 作成日: 2026-08-11
 
-## 実装状況（2026-08-14）
+## 実装状況（2026-08-15）
 
 - HYG Stellar Database v4.1から `mag <= 6.8` の12,495星を抽出し、赤経・赤緯・等級・色指数だけを追跡する。
 - `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。

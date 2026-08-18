@@ -1,48 +1,55 @@
 using UdonSharp;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace StargazingHill
 {
-    /// <summary>Local opt-in switch for the YamaPlayer speaker placed inside the picnic radio.</summary>
+    /// <summary>Board-controlled local YamaPlayer speaker placed inside the picnic radio.</summary>
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class WorldRadioSpeaker : UdonSharpBehaviour
     {
-        public AudioSource speakerSource;
-        public Text stateText;
-        public Collider interactionCollider;
+        public const float DefaultLocalVolume = 0.85f;
 
-        private bool _useAllowed;
-        private bool _speakerOn;
+        public AudioSource speakerSource;
+        public AudioSource referenceSource;
+
+        // The radio is audible on join; the settings board turns it off again per client.
+        private bool _speakerEnabled = true;
+        private float _localVolume = DefaultLocalVolume;
 
         private void Start()
         {
-            ApplyState();
+            ApplyGain();
         }
 
-        public override void Interact()
+        private void Update()
         {
-            if (!_useAllowed) return;
-            _speakerOn = !_speakerOn;
-            ApplyState();
+            ApplyGain();
         }
 
-        public void SetUseAllowed(bool allowed)
+        public void SetSpeakerEnabled(bool enabled)
         {
-            _useAllowed = allowed;
-            if (!allowed) _speakerOn = false;
-            ApplyState();
+            _speakerEnabled = enabled;
+            ApplyGain();
         }
 
-        private void ApplyState()
+        public void SetLocalVolume(float volume)
         {
-            if (interactionCollider != null) interactionCollider.enabled = _useAllowed;
-            if (speakerSource != null) speakerSource.enabled = _useAllowed && _speakerOn;
-            if (stateText != null)
-            {
-                stateText.gameObject.SetActive(_useAllowed);
-                stateText.text = !_useAllowed ? "RADIO LOCKED" : (_speakerOn ? "RADIO ON" : "RADIO OFF");
-            }
+            _localVolume = Mathf.Clamp01(volume);
+            ApplyGain();
+        }
+
+        private void ApplyGain()
+        {
+            if (speakerSource == null) return;
+            // Keep the speaker registered and enabled so both AVPro and Unity video handlers
+            // continue routing audio to it.  YamaPlayer rewrites the volume of every AudioSource
+            // it owns whenever its master value changes, so the local gain is re-applied each
+            // frame.  It is deliberately absolute rather than a multiplier on that master: the
+            // YamaPlayer master defaults to 0.1, which left this speaker inaudible.  Mute is the
+            // one master state the radio still follows, so silencing YamaPlayer silences it too.
+            speakerSource.enabled = true;
+            speakerSource.volume = _speakerEnabled ? _localVolume : 0f;
+            speakerSource.mute = referenceSource != null && referenceSource.mute;
         }
     }
 }

@@ -5,11 +5,11 @@
 - [PROJECT_SPEC.md](PROJECT_SPEC.md): ワールド全体の要件とMVP
 - [REAL_SKY_SYSTEM.md](REAL_SKY_SYSTEM.md): 星空、月、流星群の技術仕様
 - [STARFIELD_IMPLEMENTATION_GUIDE.md](STARFIELD_IMPLEMENTATION_GUIDE.md): 図解、仕組み、座標変換、恒星時、Shader式を簡易説明から詳細説明の順で解説
-- [VRCHAT_IMPLEMENTATION_GUIDE.md](VRCHAT_IMPLEMENTATION_GUIDE.md): Unity / VRChat実装の注意事項
+- [VRCHAT_IMPLEMENTATION_GUIDE.md](VRCHAT_IMPLEMENTATION_GUIDE.md): Unity / VRChat実装、ローカル設定UI、Pickup、音声、同期境界の注意事項
 - [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md): 実装順序と完了条件
 - [TEST_PLAN.md](TEST_PLAN.md): 検証方針とテスト記録
 - [SETUP_AND_RESTORE.md](SETUP_AND_RESTORE.md): クリーンclone、VPM依存、購入品UnyStylusの復元手順
-- [WORLD_DESCRIPTION.md](WORLD_DESCRIPTION.md): VRChat SDKへ貼り付ける日英Descriptionの正本
+- [WORLD_DESCRIPTION.md](WORLD_DESCRIPTION.md): VRChat SDKへ貼り付ける日英Descriptionと、5言語ワールド内説明の意味合わせ
 - [PUBLIC_RELEASE_AUDIT.md](PUBLIC_RELEASE_AUDIT.md): Public化前の秘密情報・権利・Blueprint・Release artifact監査
 - [BOOTH_RELEASE_GUIDE.md](BOOTH_RELEASE_GUIDE.md): BOOTH向け配布範囲、依存明示、顧客向けZIP作成、販売前確認
 - [RISKS_AND_OPEN_QUESTIONS.md](RISKS_AND_OPEN_QUESTIONS.md): 未解決事項とリスク

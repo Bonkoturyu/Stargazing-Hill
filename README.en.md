@@ -13,7 +13,7 @@ A quiet grassland world for VRChat, built around a real star field and Moon alig
 - YamaPlayer, QvPen, and UnyStylus areas
 - Japanese, English, Traditional Chinese, Simplified Chinese, and Korean information, observatory, and debug panels
 - Current instance population and a local join/leave history
-- A handheld local settings board by the tree: five mirror views, night-mode slider, clock, alarm, radio control, and opt-in persistence
+- A handheld local settings board by the tree: per-direction ON/OFF for five mirror views with one shared LQ/HQ switch, night-mode slider, clock, alarm, direct radio-speaker ON/OFF and volume, separately switchable join/leave chime and toast, and opt-in persistence
 - A movable CC0 compass whose needle locally points toward the star field's north
 - Designed for Windows, Android/standalone VR, and iOS
 

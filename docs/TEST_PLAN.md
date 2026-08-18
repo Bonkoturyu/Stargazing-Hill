@@ -493,7 +493,7 @@
 
 ## 2026-08-14 観測地点UI再構成と5言語化
 
-- 要求: 観測地点見出しの重複をなくし、一覧を逆順3列タイルへ変更する。説明・Debugを日本語、英語、繁体字、簡体字、韓国語へ対応し、Debugパネルを低くする
+- 当時の要求: 観測地点見出しの重複をなくし、一覧を逆順3列タイルへ変更する。2026-08-15の北→南表示順への変更が現在仕様である。説明・Debugを日本語、英語、繁体字、簡体字、韓国語へ対応し、Debugパネルを低くする
 
 | 確認項目 | 状態 | 証拠 |
 |---|---|---|
@@ -503,7 +503,7 @@
 | 説明本文 | Confirmed | 日本語から「東京の」、英語から`in Tokyo`を除去。日本語初期表示で5言語をローカル循環切替 |
 | Debug表示 | Confirmed | 5言語のタイトル、説明、動的状態、11群名、再生/停止、sky操作を生成し、初期Yを`1.45`へ変更 |
 | 多言語フォント | Confirmed | 公式Noto Sans CJK KR RegularをOFL-1.1で同梱。SHA-256を静的検査と第三者素材台帳で固定 |
-| 静的検査 | Pass | `Validate-StargazingImplementation.py`で地点catalog、逆順index割当、3列式、5言語参照、Noto SHA-256を確認。`git diff --check`もPass |
+| 静的検査 | Pass | 当時の `Validate-StargazingImplementation.py` で地点catalog、逆順index割当、3列式、5言語参照、Noto SHA-256を確認。現在の表示順は後述の2026-08-15調整で置き換えた |
 | Unity compile / Scene再生成 | Pass | Unity 2022.3.22f1でUdonSharp 100 scripts compile後、Debug→Informationを再生成。Noto fontと`.meta`をimportしScene保存成功 |
 | 説明パネル描画 | Pass | 通常・3列一覧・英語・繁体字・簡体字・韓国語を1280×720描画。中央見出しのUpperCenter pivotずれを検出・修正し、文字欠け・一覧重なりなしを目視確認 |
 | Debugパネル描画 | Pass | Debug固有検証で15ボタン、板下端の地上高1.24m、手持ちサイズ0.47×0.41mを確認。日本語・英語・繁体字・簡体字・韓国語を描画し文字欠け・重なりなし |
@@ -635,15 +635,119 @@
 |---|---|---|
 | 言語ボタン | Confirmed | Opus 5の文言レビューを採用し、`日→EN → EN→繁 → 繁→简 → 简→한 → 한→日`で現在言語と次言語を表示 |
 | 説明パネルVR操作 | Confirmed | 各操作ボタンへWorld Space Canvas、GraphicRaycaster、`VRCUiShape`、UI Buttonを追加。Udon `Interact`も維持 |
-| 観測地点catalog | Confirmed | Tokyo=0〜Seoul=19を維持し、Tottori=20、Matsue (Shimane)=21を末尾追加。5言語名と緯度・東経を22件同長で静的検査 |
-| ピクニックCollider | Confirmed | 地形追従後の敷物Meshへ非convex・非Trigger MeshColliderを1つ生成。その他の物理Colliderは0件。ラジオUSEはTriggerとして設定システム側で分離 |
-| 設定ボード | Confirmed | 初期OFF、木のローカルトグル、ObjectSyncなしのローカルPickup、ドロップ10秒復帰を実装。約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、時計を上段・ミラー/暗さを左列・アラーム/ラジオ/保存を右列とした保存Scene構造を検証Pass。中央dividerと3列目の重なりを解消し、ラジオ・SAVE操作targetも拡大 |
-| ミラー | Provisional | 5方向、初期OFF、最大1面、Player系Layer、AA 1を保存Sceneへ生成し構造検証Pass。向き、サイズ、Quest / iOS負荷は実機確認する |
+| 観測地点catalog | Confirmed | Tokyo=0〜Seoul=19を維持し、Tottori=20、Matsue (Shimane)=21を末尾追加。同期用indexとTokyo=0の既定値は変えず、表示だけを日本9地点の北→南、その後に海外地点の順へ分離した。5言語名と緯度・東経を22件同長で静的検査 |
+| ピクニックCollider | Confirmed | 地形追従後の敷物Meshへ非convex・非Trigger MeshColliderを1つ生成。その他の物理Colliderは0件。ラジオ本体にもColliderやUSE Triggerを置かない |
+| 設定ボード | Confirmed | 初期OFF、木のローカルトグル、ObjectSyncなしのローカルPickup、ドロップ10秒復帰を実装。約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、時計を上段・ミラー/暗さを左列・アラーム/ラジオ/保存を右列とした保存Scene構造を検証Pass。中央dividerと3列目の重なりを解消し、ラジオ・SAVE操作targetも拡大。木のトグルは利用者がScene上で確定したTransform `(8.053, 2.331, 7.590)` / Quaternion `(0.627459, 0.332323, -0.356062, 0.607517)` / Scale `0.46967` を生成正本とし、単一歯車メッシュとworld約0.30m角の操作面を使う |
+| ミラー | Provisional | 5方向それぞれにOFF/LQ/HQを明示し、選択中セル、LQ/HQ有効数、HQ高負荷の注意を表示。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4として各5面を生成し、全OFF初期値・向き・構造検証Pass。複数面、とくにHQのPCVR / Quest / iOS負荷は実機確認する |
 | ナイトモード | Pending Evidence | 頭部追従の内向き透明sphereと0〜90% Sliderを実装。両眼描画、アバターUIへの影響、モバイル負荷を実機確認する |
 | 日時・アラーム | Pending Evidence | ローカル日時表示、時分調整、ON/OFF、STOP、2D loop音源を実装。日跨ぎと再入室を確認する |
-| ラジオSpeaker | Pending Evidence | YamaPlayer Controller、Unity Video target、AVPro Speakerへ追加AudioSourceを接続。Triggerはラジオ実モデルのRenderer Boundsから作成し、操作距離を0.6mへ制限。USE禁止時にColliderと状態表示が無効、有効時だけ状態表示が復帰する構造を検証Pass。出力ON/OFF、音量追従を各動画経路で確認する |
-| 手持ち方位磁石 | Provisional | OpenGameArtのCC0モデルと権利記録を導入。本体にBoxCollider / Rigidbody / proximity 0.4mのVRCPickup / VRCObjectSync、針に非同期Udonを設定し、天文上の北と同じワールド+Zをローカルで指す。ownerだけがドロップ10秒後にRespawnする保存Scene構造、Udon compile、素材hashを検証Pass。PCVR / Questで水平保持、赤針の読みやすさ、物理挙動と復帰を確認する |
-| PlayerData保存 | Pending Evidence | SAVE ON時だけ `StargazingHill.Settings.*` を保存し、`OnPlayerRestored`後に復元。SAVE OFFを含む再入室試験が必要 |
+| ラジオSpeaker | Pending Evidence | YamaPlayer Controller、Unity Video target、AVPro Speakerへ追加AudioSourceを接続。ラジオ本体のCollider、Hover、ビーム、USE Trigger、状態表示を廃止し、設定ボードのローカルON/OFFからSpeaker gainを直接切り替える構造を検証Pass。YamaPlayerマスター音量へ掛けるローカル専用音量Slider（初期65%）とPlayerData保存も生成・参照検証Pass。出力ON/OFF、Unity/AVPro経路の音量変化と再入室復元を実機確認する |
+| 手持ち方位磁石 | Provisional | OpenGameArtのCC0モデルと権利記録を導入。本体にBoxCollider / Rigidbody / proximity 0.4mのVRCPickup / VRCObjectSync、針に非同期Udonを設定し、天文上の北と同じワールド+Zをローカルで指す。ownerだけがドロップ10秒後にRespawnする保存Scene構造、Udon compile、素材hashを検証Pass。ティーポットとの干渉を避けるため初期位置を `(7.52, 2.43, 7.48)` へ0.30m離した。PCVR / Questで水平保持、赤針の読みやすさ、物理挙動と復帰を確認する |
+| PlayerData保存 | Pending Evidence | SAVE ON時だけ `StargazingHill.Settings.*` へナイトモード、5方向のミラー品質、アラーム、ラジオ音声ON/OFF・音量を保存し、`OnPlayerRestored`後に復元。旧単一ミラーkeyはLQへ、旧 `RadioUse` keyはラジオ音声ON/OFFへ一度だけ移行する。SAVE OFFを含む再入室試験が必要 |
 | 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
-| Unity compile / Scene生成 | Pass | 2026-08-15、Unity 2022.3.22f1を通常Editor相当の非表示起動で再実行。C# compile、105 UdonSharp scripts、保存済みPicnic layoutからの再生成、敷物MeshCollider、設定ボード・5方向ミラー・ナイトモード・アラーム・ラジオSpeaker・手持ち方位磁石のScene保存が完了。コンパスRespawn参照とproximity 0.4m、InformationSystem専用validation、設定システムvalidationがPass。ログ `Logs/CompassSettingsFinalValidateNormal.log`、終了コード0 |
+| Unity compile / Scene生成 | Pass | 2026-08-15、Unity 2022.3.22f1でC# compile、105 UdonSharp scripts、保存済みPicnic layoutからの再生成、敷物MeshCollider、設定ボード、LQ/HQ各5面ミラー、ナイトモード、アラーム、空間音響付きラジオSpeaker・専用音量、手持ち方位磁石のScene保存が完了。設定システムvalidationがPassし、設定パネルとPicnicSpotのEditor previewを目視確認。ログ `Temp/settings-radio-volume-2.log`、`Temp/settings-preview-render.log`、`Temp/picnic-preview-render.log`、終了コード0（Tempログは非配布） |
 | 設定UIの外部レビュー | Pass | 2026-08-15、固定モデル`claude-opus-5`で5実装ファイルの静的レビューを取得。コンパスの北向き計算と「本体同期・針ローカル」の境界は妥当。抽出されたラジオ状態表示、中央線との重なり、操作target間隔、コンパス落下復帰は修正済み。設定ボードPickupの複数人競合懸念は、公式VRC Pickup / Object Sync仕様（確認日2026-08-15、Worlds SDK 3.10.4）からObjectSyncなしのローカル設計には該当しないと判断。Unity Sceneと実機はレビュー対象外 |
+
+### 2026-08-15 表示順・設定トグル・コンパス配置の追調整
+
+| 確認項目 | 状態 | 証拠・残課題 |
+|---|---|---|
+| 観測地点の表示順 | Confirmed | 同期用catalog indexを変更せず、3列タイルを下段左→右、その後上段へ進む順にした。日本9地点はSapporo→Tokyo→Tottori→Matsue→Osaka→Takamatsu→Oita→Miyazaki→Naha、その後に海外地点。左右ボタンにも同じ順序配列を適用し、Tokyoはindex 0かつ既定値のまま。生成コード、保存Scene、静的validator、1280×720 Unity renderで確認 |
+| コンパス離隔 | Provisional | 初期位置を `(7.52, 2.43, 7.48)` とし、ティーポットからworld X方向へ0.30m離した。生成コードと保存Sceneで確認。実際のPickup時の見た目はClientSim / 実機で確認する |
+| 木の設定トグル | Superseded | 位置 `(8.57, 2.75, 7.71)` と透明UI操作面を使った案は、木の非Trigger CapsuleColliderによるray遮蔽を解消できなかった。後段の「木Collider遮蔽修正」を正本とする |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| 最新差分のUnity再生成 | Pass | 2026-08-15、ホスト環境からUnity 2022.3.22f1を通常Editor相当の `-quit -projectPath -executeMethod -logFile` で起動。105 UdonSharp scriptsのCompileSync、Information / Picnic / Settings / Compass再生成、保存Scene validationを完了。別起動の再読込validationもPassし、例外0。`Logs/UpgradeLatestFeaturesNormal.log`、`Logs/ValidateLatestFeaturesNormal.log`。サンドボックス内の `-batchmode -nographics` はUnity licenseのmachine bindingが異なり失敗するため、この環境の検証経路には使わない |
+
+### 2026-08-15 観測地点巡回順と木の設定トグル再修正
+
+| 項目 | 結果 | 証拠・残件 |
+|---|---|---|
+| 静的回帰検査 | Superseded | 専用UI操作面を使う旧案の記録。後段の「木Collider遮蔽修正」を正本とする |
+| Unity再生成 | Pass | Unity 2022.3.22f1で105 UdonSharp scripts compile、設定システムvalidation、Scene保存を完了。`Logs/UpgradeInteractionSurfaceFix.log`、終了コード0 |
+| 保存Scene独立検証 | Superseded | 透明UI面を使う旧案の記録。後段の「木Collider遮蔽修正」で単一Udon Interact Colliderへ置換した |
+| 見た目 | Pass | 観測地点一覧と木の歯車を1280×720で正面render。順序は下段左→右→上、歯車は単一面で文字化け・重複なし |
+| 実際のクリック | Superseded | 二経路案は廃止。後段の単一Collider案で再確認する |
+
+### 2026-08-15 設定トグル判定と開く位置の分離
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 判定範囲 | Superseded | 約0.24m角Colliderと透明UI面の旧案。木Collider遮蔽を解消できなかったため後段の単一Collider案へ置換した |
+| 開く位置 | Pass | `LocalSettingsBoard`を設定トグルの閲覧者右方向へ0.52m、上へ0.03m配置。1280×720 Unity renderでボタンとパネルが重ならず、パネル全体が右側へ収まることを確認 |
+| Unity再生成 | Superseded | ボード右配置の寸法確認としては有効だが、操作判定は後段の木Collider遮蔽修正で再生成・再検証した |
+| 実際のクリック | Superseded | 二経路案は廃止。後段の単一Collider案で再確認する |
+
+### 2026-08-15 設定トグルの木Collider遮蔽修正
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| Opus 5反証レビュー | Pass | 固定モデル`claude-opus-5`でScene座標、Collider、ClientSimのfirst-hit条件を独立レビュー。`World/Environment/LandmarkTreeCollider`の非Trigger CapsuleColliderが操作rayを歯車より先に受けることを原因と特定した。旧透明UI面はUI layerとGraphicRaycasterの経路上、根本対策にならないとの指摘を採用 |
+| 実装修正 | Pass | 歯車を`(8.41, 2.50, 7.59)`、ボードを`(8.716, 2.53, 7.169)`へ一組で移動。歯車周囲約0.30m角のTrigger ColliderからUdon `Interact`へ直接接続し、木の歯車から`TextCanvas` / `VRCUiShape`を除去。ボードは閲覧者右へ0.52m、上へ0.03mの関係を維持 |
+| Physics到達検証 | Pass | 生成後に`Physics.RaycastAll`で閲覧位置から最初に当たるColliderが歯車であることを検証。さらに開いたボードの中央と四隅へrayを飛ばし、木Colliderが遮らないことを検証。`Local settings system validation passed` |
+| Unity再生成 | Pass | Unity 2022.3.22f1で105 UdonSharp scripts compile、Scene再生成、設定システムvalidation、保存を完了。`Logs/UpgradeSettingsTreeOcclusionFix.log`、終了コード0 |
+| 保存Scene独立検証 | Pass | 別Unity起動の`ValidateForBatchMode`で再読込したSceneの同じPhysics条件と参照を検証。`Logs/ValidateSettingsTreeOcclusionFix.log`、終了コード0 |
+| 見た目 | Pass | 開いた状態を1280×720で描画し、歯車が木の手前、設定ボード全体が右側に収まり、相互に重ならないことを確認。`Logs/RenderSettingsTreeOcclusionFix.log`、終了コード0 |
+| 実際のクリック | Pending Evidence | Unity Physics上のfirst-hitは歯車で確定した。ClientSimまたはVRChat実機で歯車へカーソルを合わせて開けること、開いたボードの各UIを操作できることを確認する |
+
+### 2026-08-16 観測地点一覧・設定ボタン・ラジオ操作の同期
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 観測地点一覧の余白 | Pass | 一覧の最下段を `y=-1.10`、selector列を `y=-1.52` とし、表示上の端どうしに約0.245mの隙間を確保した。3列×7段の最上段は `y=0.30`。生成コード、保存Scene validation、1280×720 Unity renderで、下矢印・中央selector・言語/Debug列へ被らないことを確認。`Logs/RenderLatestInformationPanel.log` |
+| 設定ボタンの基準位置 | Pass | 利用者がScene上で確定したTransform `Position (8.053, 2.331, 7.590)` / Quaternion `(0.627459, 0.332323, -0.356062, 0.607517)` / Scale `0.46967` をinstaller定数へ反映。再生成後の保存Sceneで完全一致を検証し、Colliderは逆スケール補正でworld約0.30m角を維持した |
+| ラジオ操作経路 | Pass | ラジオ本体のCollider、Hover、ビーム、USE Trigger、状態表示を生成しない。設定ボードの `RadioToggle` から `WorldSettingsController.ToggleRadio()` を呼び、`WorldRadioSpeaker.SetSpeakerEnabled(bool)` へ直接反映する参照構造を検証した。旧 `RadioUse` PlayerData keyは読み取り移行専用とした |
+| Unity再生成 | Pass | Unity 2022.3.22f1で105 UdonSharp scriptsをcompileし、Information / Settings / Picnicを再生成、設定システムvalidationとScene保存を完了。`Logs/UpgradeLatestUiRadio.log`、終了コード0 |
+| 保存Scene独立検証 | Pass | 別Unity起動で保存Sceneを再読込し、一覧座標、設定ボタンTransform、Physics first-hit、ラジオ参照、旧Trigger不在を検証。`Logs/ValidateLatestUiRadio.log`、終了コード0 |
+| 見た目 | Pass | 観測地点一覧と設定歯車を1280×720で描画。一覧と下段操作列の離隔、単一メッシュ歯車の文字化け・多重面ちらつきがないことを確認。設定ボタンの位置は利用者の手調整値を優先した |
+| ラジオ実音声 | Pending Evidence | 構造とUdon compileはPass。ClientSim / VRChat実機で設定ボードのON/OFFと0〜100%音量がUnity / AVPro両経路の追加Speakerへ反映され、ラジオ本体にUSEが出ないことを確認する |
+| Opus 5レビュー | Pending Evidence | 2026-08-16の独立レビューは接続中断後に利用上限へ達し、完了しなかった。通知されたresetはAsia/Tokyo 02:00。今回はUnity再生成、保存Scene独立検証、Physics、静的検査、renderで代替し、外部レビュー完了とは扱わない |
+
+### 2026-08-16 ラジオ実音声・Slider操作・ミラーON/OFF・接地の実測化
+
+- 要求: ラジオから音が出ない、ナイトモードとラジオ音量のつまみを触れない、ミラーを面ごとにON/OFFしたい、つまみが大きすぎる、方位磁石が浮いている、ミラーを敷物に沿わせたい
+- 設計判断: [ADR 0018](adr/0018-settings-board-usability-fixes.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| ラジオ無音の原因 | Pass | YamaPlayer 2.0.0-beta.7の `Controller.prefab` はマスター `_volume: 0.1`。旧実装の「マスター×ローカル倍率0.65」は実効0.065で、空間減衰後はほぼ無音だった。加えてSpeaker初期値がOFFだった |
+| ラジオ音量の定義変更 | Pass | `WorldRadioSpeaker` を追加Speakerだけに掛かる絶対ローカル音量へ変更し、Muteのみ主Speakerへ追従。初期値ON / 85%、`minDistance 1.5` / `maxDistance 22`、`VRCSpatialAudioSource` Near 1.5 / Far 22。YamaPlayer本体と他ユーザーの音量は変更しない。保存Sceneで `m_Volume 0.85` / `MinDistance 1.5` / `MaxDistance 22` / `Near 1.5` / `Far 22` と `videoPlayer`・`controller`・`speakerSource` 参照を確認 |
+| Slider操作不能の原因 | Pass | Slider CanvasにColliderが無く、SceneにEventSystemも無かった。VRChatのワールドUIはColliderへ当ててからGraphicRaycasterへ渡す。動作実績のある `Packages/net.kwxxw.yama-stream/Prefabs/ControlBar.prefab` のCanvasはCanvasと同寸のtrigger `BoxCollider` を持ち、`VRCDefaultWorldScene.unity` はEventSystemを持つ |
+| Slider操作の修正 | Pass | 両SliderのCanvasへCanvas同寸・奥行30 canvas unitsのtrigger `BoxCollider` を生成し、Sceneへ `EventSystem` + `StandaloneInputModule` を1つ生成。保存Sceneで `m_IsTrigger 1` / size `255,41,30` と `180,32,30`、EventSystemの存在を確認 |
+| つまみの寸法 | Pass | ナイトモード `510 × 82` → `255 × 41`、ラジオ音量 `360 × 64` → `180 × 32` canvas unitsへ半減。位置はナイトモード `(-0.85, -0.76)`、ラジオ音量 `(0.70, -0.73)` とし、隣接ボタンと重ならないことを保存Sceneで確認 |
+| ミラーUI | Pass | 方向ごとの3択15ボタンを、ON/OFF 5個＋全OFF 1個＋共通 `画質 LQ/HQ` 1個の計7個へ置換。設定ボード全体のボタンは25→17。初期値は全OFF・LQのままで、LQ/HQの描画設定（pixel light、AA、反射layer）は変更なし |
+| ミラー配置 | Pass | 敷物の保存Transformではなくレンダリング済みメッシュから水平方向の実寸を測り、4面を各辺に沿って辺長と同じ幅で立て、辺から0.06m外、各面の真下の地形へ接地させた。天井面は敷物中心の2.55m上。保存Sceneの `Mirror_Up_LQ (8.218, 3.401, 7.485)` ほか4面について、接地高さが `EvaluateTerrainHeight + 0.02` と一致することをScene検証で確認。敷物は斜面に沿うため4面の高さは互いに異なる |
+| 方位磁石の接地 | Pass | 高さの手入力を廃止し、接地平面 `X 7.52 / Z 7.48` の真下へレイキャストして得た面から決める方式へ変更。旧 `y=2.43` に対し再生成後は `y=2.4047` で、敷物表面に接地した。検証時は方位磁石自身のColliderを除外する |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`。新しい不変条件（絶対音量、Slider Collider、EventSystem、ミラー7ボタン、実測接地）を追加 |
+| Unity compile | Pass | Unity 2022.3.22f1、`CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-UdonSharp.log` |
+| Unity再生成 | Pass | `BuildForBatchMode` でScene全体を再生成し、設定システムvalidationを含めPass。`Logs/Claude-Build2.log`、終了コード0 |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode` で `Saved scene validation passed`。`Logs/Claude-Validate.log`、終了コード0 |
+| 星空・流星数値回帰 | Pass | `TestSkyAndMeteorForBatchMode`、終了コード0。`Logs/Claude-SkyMeteor.log` |
+| ラジオ実音声 | Pending Evidence | 構造・参照・数値はPass。ClientSim / VRChat実機で実際に音が鳴ること、0〜100%が体感音量に一致すること、Unity / AVPro両経路で同じことを確認する |
+| Slider実操作 | Pending Evidence | Colliderとイベント経路は生成・検証済み。Desktop、PCVR、Quest、iOSでナイトモードとラジオ音量のつまみを掴んで動かせることを確認する |
+| ミラーON/OFFの見た目と負荷 | Pending Evidence | 5面同時ON、とくにHQのPCVR / Quest / iOS負荷と、敷物に沿った新配置の見え方を実機確認する |
+| 方位磁石の見た目 | Pending Evidence | 浮きの解消は数値で確認した。実機で敷物上の接地とPickup・落下復帰を目視確認する |
+
+### 2026-08-16 ワールドUIレイヤー是正・3パネルの選択ビーム・入退室通知
+
+- 要求: 説明ボード/設定パネル/デバッグパネルにも選択ビームを出す、ナイトモードとラジオ音量のつまみがまだ触れない、履歴や設定パネルのUIが写真に写らない、入退室の通知音と画面表示（それぞれON/OFF付き）
+- 設計判断: [ADR 0018](adr/0018-settings-board-usability-fixes.md)（レイヤー是正を追記）、[ADR 0019](adr/0019-local-presence-notifications.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| つまみが触れない真因 | Pass | 前回追加したColliderだけでは不足だった。`Packages/com.vrchat.worlds/Integrations/ClientSim/Runtime/System/ClientSimInteractiveLayerProvider.cs` は、メニューを閉じている間の操作対象を `~(1 << UI_LAYER) & ~(1 << UI_MENU_LAYER) & ~(1 << PLAYER_LOCAL_LAYER) & ~(1 << MIRROR_REFLECTION_LAYER)` として構築する。**UIレイヤー(5)は通常プレイ中の操作対象から除外される。** 修正前の保存Sceneでは、ビームが出ていたYamaPlayer ControlBar Canvasだけがレイヤー0 + Collider、当方のCanvas 46個はレイヤー5だった |
+| ビームが出ない・写真に写らない | Pass | 同一原因。VRChatのワールドカメラもUIレイヤーを写さない。3つの症状がレイヤー統一で同時に解ける |
+| レイヤー統一 | Pass | `EnableUiBeamForInteraction` からUIレイヤー指定を削除し、`ConfigureWorldUiCanvas` へ集約。Defaultレイヤー(0)、CanvasScaler、GraphicRaycaster、`VRCUiShape`、Canvas同寸のtrigger `BoxCollider`（奥行は `lossyScale` から逆算しworld 4mm）を保証する。再生成後の保存Sceneで `VRCUiShape` を持つCanvas **65個すべて** がレイヤー0かつtrigger Collider付き、非適合0件を確認 |
+| デバッグパネルのビーム | Pass | ラベルがTextMeshでUI Canvasを持たなかったため、不可視Image（alpha 0.004）の `UiBeamTarget` Canvasをボタン面へ生成し、`Button.onClick` からUdon `Interact` を送る。保存Sceneに16個（デバッグ15ボタン + 言語トグル）を確認 |
+| EventSystem | Pass | Scene直下に `EventSystem` + `StandaloneInputModule` を1つ生成。VRChat default world sceneと同構成 |
+| 入退室の通知音 | Pass | 生成2音チャイム（入室660→990 Hz、退室880→587 Hz、0.40秒、raised-cosine包絡）を `Generated/Audio/PresenceJoinChime.wav` / `PresenceLeaveChime.wav` として生成。`spatialBlend 0`、`EnableSpatialization` オフ、`playOnAwake` オフの2D音源2つを検証Pass |
+| 入退室の画面表示 | Pass | 頭部追従トースト（前方1.5m、視線下0.42m、1行5秒、最大3行、`PlayerLocal` レイヤー、初期非アクティブ）を生成。表示開始フレームで位置を確定させ、旧位置での1フレーム表示を避ける |
+| 一斉通知の抑止 | Pass | ローカルプレイヤー自身の `OnPlayerJoined` を受け取るまで通知しない。VRChatは既存プレイヤー分のjoinを再生してから最後にローカルを通知するため、これがライブ開始の合図になる。自分自身の入退室は通知しない |
+| 通知のON/OFF | Pass | 設定ボード左列下段へ `通知音 ON/OFF` と `入退室表示 ON/OFF` の2ボタンと状態行を追加。ボード全体のボタンは17→19、`actionButtonTexts` は8→10。5言語のラベルと `StargazingHill.Settings.NotifySound` / `NotifyDisplay` のPlayerData保存を静的検査でPass |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`。レイヤー統一、ビーム面、通知機能の不変条件を追加 |
+| Unity compile | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-F-Udon.log` |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-F-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode` で `Saved scene validation passed`。`VRCUiShape` を持つ全Canvasのレイヤーとcollider、通知機能のローカル性・初期非表示・2D音声を検証する条件を追加。`Logs/Claude-F-Validate.log` |
+| 星空・流星数値回帰 | Pass | `TestSkyAndMeteorForBatchMode`、終了コード0。`Logs/Claude-F-Sky.log` |
+| 実機のビーム・操作 | Pending Evidence | レイヤーとColliderは生成・検証済み。Desktop / PCVR / Quest / iOSで、3パネルへビームが出ること、つまみを掴んで動かせることを確認する |
+| 実機の写真 | Pending Evidence | UIレイヤーからの退避は完了。VRChatカメラで撮影し、説明パネルの履歴・設定パネルが実際に写ることを確認する |
+| 入退室通知の実挙動 | Pending Evidence | 複数人インスタンスで、自分の入室時に一斉通知が鳴らないこと、他者の入退室で鳴ること、音と表示を別々にOFFできること、VRでの頭部追従の快適性を確認する |

@@ -23,6 +23,10 @@ namespace StargazingHill.Editor
         private const string ControlsGroupPath = "Controls";
         private const string ObservatoryGroupPath = "Controls/Observatory";
         private const float CanvasScale = 0.002f;
+        // World-space UI stays on the Default layer; see ConfigureWorldUiCanvas for why.
+        internal const int WorldUiLayer = 0;
+        internal const float UiTargetWorldDepth = 0.004f;
+        private const string BeamTargetName = "UiBeamTarget";
         private const float PresenceTop = 0.88f;
         private const float HistoryTop = 0.31f;
         private const float HistoryHeightPixels = 610f;
@@ -31,6 +35,11 @@ namespace StargazingHill.Editor
         private const float PanelTop = 1.25f;
         private const float PanelBottom = -1.85f;
         private const float ObservatoryControlY = -1.52f;
+        // Leave a clear strip above the selector row so the lowest tile and its hover text do not
+        // cover the previous/selected/next controls when the three-column list is open.
+        private const float ObservatoryListBottomY = -1.10f;
+        private const float ObservatoryListRowSpacing = 0.20f;
+        private const float ObservatoryListBackdropY = -0.40f;
         private static readonly string[] ObservatoryProfileIds =
         {
             "tokyo", "sapporo", "osaka", "takamatsu-kagawa", "oita", "miyazaki", "naha-okinawa",
@@ -98,6 +107,13 @@ namespace StargazingHill.Editor
             139.76f, 141.3545f, 135.5023f, 134.0466f, 131.6093f, 131.4202f, 127.6809f,
             12.4964f, 2.3522f, 37.6173f, -77.0369f, -122.4194f, -118.2437f, -115.1398f,
             -74.0060f, -75.6972f, 149.1300f, 106.8456f, 116.4074f, 126.9780f, 134.2351f, 133.0484f
+        };
+        // UI order is independent from the stable synchronized catalog index. Keep Tokyo at index 0
+        // as the default while grouping Japan first from north to south in the expanded tile list.
+        private static readonly int[] ObservatoryVisualOrder =
+        {
+            1, 0, 20, 21, 2, 3, 4, 5, 6,
+            7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
         };
         // Kept in sync with the hand-adjusted scene placement so a future full refresh
         // does not put the information board back at its older generated position.
@@ -210,8 +226,9 @@ namespace StargazingHill.Editor
             Transform list = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryLocationList");
             Transform heading = panel.transform.Find(ObservatoryGroupPath + "/ObservatoryHeading");
             Transform debugButton = panel.transform.Find(ControlsGroupPath + "/DebugPanelToggle");
-            Transform firstVisualLocation = list != null ? list.Find("Location_21") : null;
-            Transform lastVisualLocation = list != null ? list.Find("Location_00") : null;
+            Transform firstVisualLocation = list != null ? list.Find("Location_01") : null;
+            Transform lastJapaneseLocation = list != null ? list.Find("Location_06") : null;
+            Transform lastVisualLocation = list != null ? list.Find("Location_19") : null;
 
             if (languageToggle == null || languageButton == null || presence == null ||
                 languageButton.GetComponentInChildren<VRCUiShape>(true) == null ||
@@ -231,6 +248,8 @@ namespace StargazingHill.Editor
                 selector.latitudeDegrees == null || selector.latitudeDegrees.Length != WorldObservatorySelector.ExpectedLocationCount ||
                 selector.longitudeDegreesEast == null ||
                 selector.longitudeDegreesEast.Length != WorldObservatorySelector.ExpectedLocationCount ||
+                selector.selectionOrder == null ||
+                selector.selectionOrder.Length != WorldObservatorySelector.ExpectedLocationCount ||
                 selector.observatoryHeadingLabel == null ||
                 selector.localizedHeadingLabels == null || selector.localizedHeadingLabels.Length != 5 ||
                 selector.selectedLocationLabel == null ||
@@ -256,11 +275,15 @@ namespace StargazingHill.Editor
                 languageToggle.traditionalChineseText == null ||
                 languageToggle.simplifiedChineseText == null || languageToggle.koreanText == null ||
                 languageToggle.observatorySelector != selector ||
-                firstVisualLocation == null || lastVisualLocation == null ||
+                firstVisualLocation == null || lastJapaneseLocation == null || lastVisualLocation == null ||
                 !Mathf.Approximately(firstVisualLocation.localPosition.x, -1.38f) ||
-                !Mathf.Approximately(firstVisualLocation.localPosition.y, 0.10f) ||
+                !Mathf.Approximately(firstVisualLocation.localPosition.y, ObservatoryListBottomY) ||
+                !Mathf.Approximately(lastJapaneseLocation.localPosition.x, 1.38f) ||
+                !Mathf.Approximately(lastJapaneseLocation.localPosition.y,
+                    ObservatoryListBottomY + 2f * ObservatoryListRowSpacing) ||
                 !Mathf.Approximately(lastVisualLocation.localPosition.x, -1.38f) ||
-                !Mathf.Approximately(lastVisualLocation.localPosition.y, -1.30f))
+                !Mathf.Approximately(lastVisualLocation.localPosition.y,
+                    ObservatoryListBottomY + 7f * ObservatoryListRowSpacing))
                 throw new InvalidOperationException("World information panel global observatory controls are incomplete.");
 
             RectTransform countCanvas = presence.playerCountText.transform.parent as RectTransform;
@@ -290,6 +313,37 @@ namespace StargazingHill.Editor
                     throw new InvalidOperationException(
                         "Observatory selector button has no backing Udon behaviour or VR UI beam target: " +
                         buttons[index].name);
+            ValidateWorldUiTargets(panel);
+
+            // The debug panel is a scene root and is inactive by default, so it is looked up rather
+            // than found through the hierarchy above.
+            GameObject debugPanel = null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int index = 0; index < roots.Length; index++)
+                if (roots[index].name == "VRDebugPanel") debugPanel = roots[index];
+            if (debugPanel != null) ValidateWorldUiTargets(debugPanel);
+        }
+
+        /// <summary>
+        /// Every VRChat UI surface under a panel must sit on an interactive layer and carry a collider.
+        /// The UI layer is removed from the interactive mask whenever the main menu is closed, so a
+        /// canvas left there is dead to the pointer and absent from in-game photographs.
+        /// </summary>
+        internal static void ValidateWorldUiTargets(GameObject root)
+        {
+            VRCUiShape[] shapes = root.GetComponentsInChildren<VRCUiShape>(true);
+            if (shapes.Length == 0)
+                throw new InvalidOperationException("Panel has no VRChat UI surfaces: " + root.name);
+            for (int index = 0; index < shapes.Length; index++)
+            {
+                GameObject canvasObject = shapes[index].gameObject;
+                BoxCollider target = canvasObject.GetComponent<BoxCollider>();
+                if (canvasObject.layer != WorldUiLayer || target == null || !target.isTrigger)
+                    throw new InvalidOperationException(
+                        "World UI surface is unreachable by the VRChat pointer: " +
+                        root.name + "/" + canvasObject.name + " (layer " + canvasObject.layer +
+                        ", collider " + (target != null) + ").");
+            }
         }
 
         internal static void InstallForBuild(Scene scene)
@@ -449,6 +503,7 @@ namespace StargazingHill.Editor
             selector.displayNamesKorean = ObservatoryDisplayNamesKorean;
             selector.latitudeDegrees = ObservatoryLatitudes;
             selector.longitudeDegreesEast = ObservatoryLongitudesEast;
+            selector.selectionOrder = ObservatoryVisualOrder;
             selector.observatoryHeadingLabel = heading;
             selector.localizedHeadingLabels = ObservatoryHeadingLabels;
             selector.skyController = sky;
@@ -482,7 +537,7 @@ namespace StargazingHill.Editor
             GameObject listBackdrop = GameObject.CreatePrimitive(PrimitiveType.Cube);
             listBackdrop.name = "ListBackdrop";
             listBackdrop.transform.SetParent(listRoot.transform, false);
-            listBackdrop.transform.localPosition = new Vector3(0f, -0.60f, -0.042f);
+            listBackdrop.transform.localPosition = new Vector3(0f, ObservatoryListBackdropY, -0.042f);
             listBackdrop.transform.localScale = new Vector3(4.18f, 1.75f, 0.022f);
             listBackdrop.GetComponent<Renderer>().sharedMaterial = boardMaterial;
             UnityEngine.Object.DestroyImmediate(listBackdrop.GetComponent<Collider>());
@@ -490,11 +545,13 @@ namespace StargazingHill.Editor
             Text[] locationListLabels = new Text[ObservatoryDisplayNames.Length];
             for (int visualIndex = 0; visualIndex < ObservatoryDisplayNames.Length; visualIndex++)
             {
-                int catalogIndex = ObservatoryDisplayNames.Length - 1 - visualIndex;
+                int catalogIndex = ObservatoryVisualOrder[visualIndex];
                 int row = visualIndex / 3;
                 int column = visualIndex % 3;
                 float x = -1.38f + column * 1.38f;
-                float y = 0.10f - row * 0.20f;
+                // The list opens upward from the selector row.  Keep the first item at the
+                // bottom-left, then read left-to-right and bottom-to-top.
+                float y = ObservatoryListBottomY + row * ObservatoryListRowSpacing;
                 GameObject locationButton = CreateObservatoryButton(
                     listRoot.transform, "Location_" + catalogIndex.ToString("00"),
                     ObservatoryDisplayNamesJapanese[catalogIndex], new Vector3(x, y, -0.058f),
@@ -546,39 +603,124 @@ namespace StargazingHill.Editor
         }
 
         /// <summary>
+        /// Makes a world-space Canvas an actual VRChat UI surface: ordinary layer, the raycaster and
+        /// shape components, and a trigger box the pointer can hit.
+        /// </summary>
+        /// <remarks>
+        /// The layer is the load-bearing part. `VRC.SDK3.ClientSim.ClientSimInteractiveLayerProvider`
+        /// builds the interactive mask as `~(1 &lt;&lt; UI_LAYER) &amp; ~(1 &lt;&lt; UI_MENU_LAYER) &amp; ...`
+        /// whenever the main menu is closed, so anything parked on the UI layer is unreachable during
+        /// normal play, and the in-game camera does not photograph that layer either. Keeping world UI
+        /// on the Default layer matches the YamaPlayer control bar canvas, the one surface in this scene
+        /// whose pointer beam already works.
+        /// </remarks>
+        internal static BoxCollider ConfigureWorldUiCanvas(Canvas canvas)
+        {
+            if (canvas == null) throw new InvalidOperationException("World UI canvas is missing.");
+            GameObject canvasObject = canvas.gameObject;
+            SetLayerRecursively(canvasObject.transform, WorldUiLayer);
+            if (canvasObject.GetComponent<CanvasScaler>() == null) canvasObject.AddComponent<CanvasScaler>();
+            if (canvasObject.GetComponent<GraphicRaycaster>() == null) canvasObject.AddComponent<GraphicRaycaster>();
+            if (canvasObject.GetComponent<VRCUiShape>() == null) canvasObject.AddComponent<VRCUiShape>();
+
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            BoxCollider target = canvasObject.GetComponent<BoxCollider>();
+            if (target == null) target = canvasObject.AddComponent<BoxCollider>();
+            target.isTrigger = true;
+            // Canvas pivots are not always centred, so anchor the box on the rect, not the origin.
+            target.center = new Vector3(
+                (0.5f - canvasRect.pivot.x) * canvasRect.sizeDelta.x,
+                (0.5f - canvasRect.pivot.y) * canvasRect.sizeDelta.y, 0f);
+            // Canvas scales differ by two orders of magnitude across these panels, so the depth is
+            // derived from the world scale to stay a consistent few millimetres everywhere.
+            float scaleZ = Mathf.Abs(canvasObject.transform.lossyScale.z);
+            float depth = scaleZ > 1e-9f ? UiTargetWorldDepth / scaleZ : 1f;
+            target.size = new Vector3(canvasRect.sizeDelta.x, canvasRect.sizeDelta.y, depth);
+            EditorUtility.SetDirty(canvasObject);
+            return target;
+        }
+
+        private static void SetLayerRecursively(Transform root, int layer)
+        {
+            root.gameObject.layer = layer;
+            for (int index = 0; index < root.childCount; index++)
+                SetLayerRecursively(root.GetChild(index), layer);
+        }
+
+        /// <summary>
         /// Adds the same VR laser-pointer interaction path used by VRChat world-space UI while retaining
         /// the ordinary Udon Interact collider for desktop and direct-use input.
         /// </summary>
         internal static void EnableUiBeamForInteraction(GameObject button, UdonBehaviour backing)
         {
-            Text label = button != null ? button.GetComponentInChildren<Text>(true) : null;
-            if (label == null || backing == null) return;
-            Canvas canvas = label.GetComponentInParent<Canvas>();
+            if (button == null || backing == null) return;
+            Graphic target;
+            Canvas canvas = ResolveBeamCanvas(button, out target);
             if (canvas == null) return;
+            ConfigureWorldUiCanvas(canvas);
 
-            GameObject canvasObject = canvas.gameObject;
-            int uiLayer = LayerMask.NameToLayer("UI");
-            if (uiLayer >= 0)
-            {
-                canvasObject.layer = uiLayer;
-                label.gameObject.layer = uiLayer;
-            }
-            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-            Vector3 size = button.transform.localScale;
-            canvasRect.sizeDelta = new Vector2(size.x / CanvasScale, size.y / CanvasScale);
-            label.rectTransform.sizeDelta = canvasRect.sizeDelta;
-            label.raycastTarget = true;
-            if (canvasObject.GetComponent<CanvasScaler>() == null) canvasObject.AddComponent<CanvasScaler>();
-            if (canvasObject.GetComponent<GraphicRaycaster>() == null) canvasObject.AddComponent<GraphicRaycaster>();
-            if (canvasObject.GetComponent<VRCUiShape>() == null) canvasObject.AddComponent<VRCUiShape>();
-
-            Button uiButton = label.GetComponent<Button>();
-            if (uiButton == null) uiButton = label.gameObject.AddComponent<Button>();
-            uiButton.targetGraphic = label;
+            Button uiButton = target.GetComponent<Button>();
+            if (uiButton == null) uiButton = target.gameObject.AddComponent<Button>();
+            uiButton.targetGraphic = target;
             uiButton.transition = Selectable.Transition.ColorTint;
             uiButton.onClick = new Button.ButtonClickedEvent();
             UnityEventTools.AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact");
             EditorUtility.SetDirty(uiButton);
+        }
+
+        /// <summary>
+        /// Beam surface for a cube button. Panels that label their buttons with uGUI Text reuse that
+        /// label's canvas; the debug panel draws labels with TextMesh, so it gets a dedicated one.
+        /// </summary>
+        private static Canvas ResolveBeamCanvas(GameObject button, out Graphic target)
+        {
+            Text label = button.GetComponentInChildren<Text>(true);
+            Canvas labelCanvas = label != null ? label.GetComponentInParent<Canvas>() : null;
+            if (labelCanvas != null)
+            {
+                RectTransform canvasRect = labelCanvas.GetComponent<RectTransform>();
+                Vector3 size = button.transform.localScale;
+                canvasRect.sizeDelta = new Vector2(size.x / CanvasScale, size.y / CanvasScale);
+                label.rectTransform.sizeDelta = canvasRect.sizeDelta;
+                label.raycastTarget = true;
+                target = label;
+                return labelCanvas;
+            }
+            return CreateBeamTargetCanvas(button, out target);
+        }
+
+        private static Canvas CreateBeamTargetCanvas(GameObject button, out Graphic target)
+        {
+            Transform existing = button.transform.Find(BeamTargetName);
+            if (existing != null) UnityEngine.Object.DestroyImmediate(existing.gameObject);
+
+            Vector3 face = button.transform.localScale;
+            GameObject canvasObject = new GameObject(BeamTargetName);
+            canvasObject.transform.SetParent(button.transform, false);
+            // Sits just off the reader-side face, where the panels put their labels.
+            canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.53f);
+            canvasObject.transform.localRotation = Quaternion.identity;
+            canvasObject.transform.localScale = new Vector3(
+                CanvasScale / face.x, CanvasScale / face.y, CanvasScale);
+            Canvas canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.GetComponent<RectTransform>().sizeDelta =
+                new Vector2(face.x / CanvasScale, face.y / CanvasScale);
+
+            GameObject surfaceObject = new GameObject("Surface",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            surfaceObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform surface = surfaceObject.GetComponent<RectTransform>();
+            surface.anchorMin = Vector2.zero;
+            surface.anchorMax = Vector2.one;
+            surface.offsetMin = Vector2.zero;
+            surface.offsetMax = Vector2.zero;
+            Image image = surfaceObject.GetComponent<Image>();
+            // The 3D button already draws the visible face; this only has to be hittable.
+            image.color = new Color(1f, 1f, 1f, 0.004f);
+            image.raycastTarget = true;
+            target = image;
+            return canvas;
         }
 
         private static Transform CreateGroup(Transform parent, string name)
@@ -644,7 +786,6 @@ namespace StargazingHill.Editor
             Material textMaterial, out ScrollRect scrollRect)
         {
             GameObject canvasObject = new GameObject("HistoryScrollCanvas");
-            canvasObject.layer = LayerMask.NameToLayer("UI");
             canvasObject.transform.SetParent(parent, false);
             canvasObject.transform.localPosition = new Vector3(0.73f, HistoryTop, -0.027f);
             canvasObject.transform.localRotation = Quaternion.identity;
@@ -655,9 +796,7 @@ namespace StargazingHill.Editor
             RectTransform canvasRect = canvas.GetComponent<RectTransform>();
             canvasRect.sizeDelta = new Vector2(650f, HistoryHeightPixels);
             canvasRect.pivot = new Vector2(0f, 1f);
-            canvasObject.AddComponent<CanvasScaler>();
-            canvasObject.AddComponent<GraphicRaycaster>();
-            canvasObject.AddComponent<VRCUiShape>();
+            ConfigureWorldUiCanvas(canvas);
 
             GameObject viewportObject = new GameObject("Viewport", typeof(RectTransform),
                 typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));

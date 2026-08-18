@@ -191,11 +191,8 @@ namespace StargazingHill.Editor
                     physicalColliderCount++;
                     continue;
                 }
-                // A trigger on the generated radio child is interaction-only. It does not
-                // collide with players or props, and is required for VRChat's USE action.
-                if (collider.gameObject.name != "RadioUseTrigger")
-                    throw new InvalidOperationException(
-                        "Picnic spot contains an unexpected interaction trigger: " + collider.name);
+                throw new InvalidOperationException(
+                    "Picnic spot contains an unexpected interaction trigger: " + collider.name);
             }
             if (physicalColliderCount != 1 || blanketFilter == null || blanketCollider == null ||
                 blanketCollider.sharedMesh != blanketFilter.sharedMesh || blanketCollider.convex ||
