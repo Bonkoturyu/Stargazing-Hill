@@ -14,6 +14,7 @@
 | Open | QvPenとUnyStylusの併設負荷 | PC/Android/iOSで描画、同期、UI、メモリを測定し、必要なら片方をプラットフォーム別に無効化する |
 | Open | 手持ちデバッグパネルの実機操作 | 約0.47 × 0.41mの文字可読性、片手保持中の別手ボタン操作、ドロップ10秒後のdock復帰、復帰待ち中の再取得キャンセルをPCVR / Questで確認する。iOSは画面操作と負荷を確認する |
 | Provisional | 木陰のローカル設定ボード | 約0.48 × 0.41m、正面向き、proximity 0.35mの上端グリップ、2列UIとして実装。歯車は単一Udon Interact Colliderとし、利用者がSceneで手調整した位置・回転・scaleを生成正本へ取り込んだ。小さい見た目に対してColliderはworld約0.30m角を維持する。位置変更後のUnity Physics first-hit、ボードUI、Pickup、10秒復帰、両眼描画をPCVR / Quest / iOSで再確認してConfirmedへ上げる |
+| Open | ワールドUIのクリック成立 | VRChatはUIレイヤーを操作対象から外すため全CanvasをDefaultレイヤーへ移し、さらにクリック対象を子ではなくCanvasルートへ置き直した。Sliderが動作しボタンが動作しなかった差から立てた単一仮説で、実機未確認。反応しない場合は `UiBeamTarget` へUdonBehaviourを移し、1つのColliderでUI面とInteract面を兼ねる構成へ切り替える |
 | Open | 頭部追従トーストのVR快適性 | 入退室表示は前方1.5m・視線から0.42m下の頭部追従UIで、1行5秒・最大3行、非表示時はGameObjectごと停止する。頭部追従UIは酔いの原因になり得るため、PCVR / Questで距離・位置・滞留時間の快適性と、人数の多いインスタンスでの煩わしさを確認する。通知音と表示は別々にOFFできる |
 | Open | ローカルミラーとナイトモード負荷 | ミラーは初期OFF。方向ごとにON/OFFし、画質は全面共通でLQ/HQを切り替える。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4。複数面、とくにHQは高負荷になり得ることをUIに表示した。Quest / iOSで組み合わせ別GPU負荷、透明描画、視界の快適性を確認する |
 | Open | アラームとPlayerData復元 | `OnPlayerRestored`後のSAVE ON復元、SAVE OFFの非復元、日跨ぎ再発報、インスタンス再入室を実機確認する |

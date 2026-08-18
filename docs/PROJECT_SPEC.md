@@ -104,7 +104,7 @@ Poly Haven配布FBXの軸・単位変換は派生Meshへベイクし、Scene内�
 - 形状予算: 上流6種OBJ合計2,360 triangles、8 Scene itemと地形追従Meshを含む最終合計3,028 triangles
 - 対象: PC / Android / iOSで同じ構成を使用
 
-木陰には、星座を探すときの方角確認用としてOpenGameArtのCC0方位磁石を置く。本体はproximity 0.4mの `VRCPickup` と `VRCObjectSync` で持ち運びを共有するが、針は同期せず、各クライアントで天文系と同じワールド+Z（北）へ向け直す。したがって、磁石を持つ人は本体を水平にして赤い針と自分の向きを見比べることで、星空の北と方位をローカルに確認できる。機種名やプレイヤー向きをネットワーク送信しない。ドロップ10秒後は現在のownerだけが `VRCObjectSync.Respawn()` を実行し、初期位置へ戻す。初期位置はティーポットとの干渉を避けるため従来位置からworld X方向へ0.30m離した接地平面 `X 7.52 / Z 7.48` とする。高さは手入力せず、その真下の面（敷物があれば敷物、なければ地形）へ生成時に降ろす。モデルは底面が原点に来るよう正規化してあるため、方位磁石は常に接地して見える。
+木陰には、星座を探すときの方角確認用としてOpenGameArtのCC0方位磁石を置く。本体はproximity 0.4mの `VRCPickup` と `VRCObjectSync` で持ち運びを共有するが、針は同期せず、各クライアントで天文系と同じワールド+Z（北）へ向け直す。したがって、磁石を持つ人は本体を水平にして赤い針と自分の向きを見比べることで、星空の北と方位をローカルに確認できる。機種名やプレイヤー向きをネットワーク送信しない。ドロップ10秒後は現在のownerだけが `VRCObjectSync.Respawn()` を実行し、初期位置へ戻す。初期位置はティーポットとの干渉を避けるため従来位置からworld X方向へ0.30m離した接地平面 `X 7.52 / Z 7.48` とする。高さは手入力せず、その真下の面（敷物があれば敷物、なければ地形）へ生成時に降ろす。モデルは底面が原点に来るよう正規化してあるため、方位磁石は常に接地して見える。文字盤の東西南北は世界サイズ2cmと小さいため、その文字だけcanvas scaleを0.0001として同じ世界サイズのまま200 pxで焼き、潰れを防ぐ。
 
 ポリゴン削減は行わない。削減による形状劣化や保守用の派生データを増やすほどの負荷ではないため、上流FBXを追跡可能なまま用いる。全Scene再生成と局所feature updateは同じ配置正本を読み、手作業確定後のSceneと生成結果が乖離しないことを検証する。
 
@@ -219,13 +219,13 @@ PCとMobile（Android / iOS）の人数内訳は、各クライアントがビ�
 
 - ミラー: 上、下、左、右、天井それぞれにON/OFFボタンを1つ置き、押すたびにその面だけを切り替える。ONの面は丸印で示し、上部にON数とHQ高負荷の注意を表示する。加えて全OFFボタンと、ON中の全面へ一括適用する `画質 LQ / HQ` ボタンを1つ置く。全ミラーは初期OFF、画質の初期値はLQ。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4とし、Default / Environment / Pickup / Walkthrough / Player / PlayerLocal / MirrorReflectionを反射する
 - ミラー配置: 4面は敷物の実メッシュから測った各辺に沿って立て、辺の長さと同じ幅、辺から0.06m外側、真下の地形へ接地させる。敷物の保存Transformは実際のマット中心からずれるため、配置基準にしない。天井面は敷物中心の2.55m上に敷物の平面寸法で置く
-- ナイトモード: World Space UIの直線Sliderで、頭部を囲むローカル半透明オーバーレイの暗さを0〜90%で調整する。World Lightingや他ユーザーの見た目は変更しない
+- ナイトモード: World Space UIの直線Sliderで、頭部を囲むローカル半透明オーバーレイの暗さを0〜100%で調整する。オーバーレイは純黒で、`SrcAlpha/OneMinusSrcAlpha` により画面を `(1 - 暗さ)` 倍する。100%で完全な黒になる。空・星・月・流星はオーバーレイより前の描画順のためまとめて暗くなる。World Lightingや他ユーザーの見た目は変更しない
 - 日時・アラーム: クライアントのローカル日時を秒単位で表示し、時・分とON/OFFを設定する。発報音はローカル2D音声とする
 - ラジオ: ピクニックのラジオ本体にはCollider、Hover、ビーム、USE操作、状態表示を置かない。設定ボードの「ラジオ音声 ON/OFF」がYamaPlayerの追加ローカルSpeakerを直接切り替える。0〜100% Sliderはこの追加Speakerだけに掛かる絶対ローカル音量であり、YamaPlayer本体や他ユーザーの音量は変更しない。YamaPlayerのマスター音量へ掛ける倍率にはしない。マスターの既定値が0.1のため、倍率方式ではラジオがほぼ無音になったためである。MuteだけはYamaPlayerへ追従する。初期値はON / 85%、空間音響はNear 1.5m / Far 22mとし、敷物の上を全音量域に収める
-- 入退室通知: 通知音と画面表示を別々にON/OFFする。初期値は両方ON。音は生成した2音チャイム（入室は660→990 Hzの上行、退室は880→587 Hzの下行、0.40秒）で、`spatialBlend 0` のローカル2D音声とする。表示は頭部追従のトーストで、前方1.5m・視線から0.42m下、1行5秒、最大3行、`PlayerLocal` レイヤーとする。自分自身の入退室と、入室直後に再生される既存プレイヤー分の一斉通知は鳴らさない
+- 入退室通知: 通知音と画面表示を別々にON/OFFする。初期値は両方ON。入室と退室はそれぞれ約3秒の受付窓へ集約し、窓の最初の1人は名前を、窓の内で増えた分は `○○ さんほか3名が入室しました` と件数のみ更新する。通知音は各窓の最初の1回だけ鳴らす。説明パネルの履歴は従来どおり一人ずつ記録する。音は生成した2音チャイム（入室は660→990 Hzの上行、退室は880→587 Hzの下行、0.40秒）で、`spatialBlend 0` のローカル2D音声とする。表示は頭部追従のトーストで、前方1.5m・視線から0.42m下、1行5秒、最大3行、`PlayerLocal` レイヤーとする。自分自身の入退室と、入室直後に再生される既存プレイヤー分の一斉通知は鳴らさない
 - 保存: `SAVE / 保存` をONにした利用者だけ、VRChat PlayerDataへナイトモード、5方向それぞれのミラーON/OFF、共通のミラー画質、アラーム、ラジオ音声ON/OFF、ラジオ音量、入退室の通知音と画面表示を保存する。`OnPlayerRestored` 後に復元し、SAVE OFFでは次回入室へ設定を持ち越さない。旧 `RadioUse` 保存値は新しいラジオ音声ON/OFFへ、方向ごとにLQ/HQが混在した旧保存値は共通画質へ一度だけ読み替える
 
-ワールドUIのCanvasは、説明パネル・設定ボード・デバッグパネルを通じて次の3条件を満たす。(1) レイヤーはDefault(0)とし、UIレイヤーへ置かない。VRChatはメニューを閉じている間、操作対象レイヤーからUIレイヤーを除外し、ワールドカメラも同レイヤーを写さない。(2) Canvasと同じ寸法のtrigger BoxColliderを持たせる。VRChatはColliderに当ててからGraphicRaycasterへ渡すため、Colliderがないと表示だけで操作できない。奥行は `lossyScale` から逆算してworld 4mmに揃える。(3) SceneへEventSystemを1つ置き、uGUIのdragイベント経路を確保する。ラベルがuGUI Textのボタンはそのラベル用Canvasをビーム面として使い、ラベルがTextMeshのデバッグパネルには不可視の `UiBeamTarget` Canvasを生成する。つまみの寸法は従来の半分（ナイトモード255 × 41、ラジオ音量180 × 32 canvas units）とする。
+ワールドUIのCanvasは、説明パネル・設定ボード・デバッグパネルを通じて次の3条件を満たす。(1) レイヤーはDefault(0)とし、UIレイヤーへ置かない。VRChatはメニューを閉じている間、操作対象レイヤーからUIレイヤーを除外し、ワールドカメラも同レイヤーを写さない。(2) Canvasと同じ寸法のtrigger BoxColliderを持たせる。VRChatはColliderに当ててからGraphicRaycasterへ渡すため、Colliderがないと表示だけで操作できない。奥行は `lossyScale` から逆算してworld 4mmに揃える。(3) SceneへEventSystemを1つ置き、uGUIのdragイベント経路を確保する。ボタンには面を覆う不可視の `UiBeamTarget` Canvasを1枚ずつ生成し、**Canvasルート自身**へ `Image` と `Button` を載せてUdon `Interact` を送る。子オブジェクトへ `Button` を置くとVRChatのポインタから届かない。ラベルTextは `raycastTarget` を落として描画専用にする。つまみの寸法は従来の半分（ナイトモード255 × 41、ラジオ音量180 × 32 canvas units）とする。
 
 設定ボード、ミラー、ナイトモード、アラーム、ラジオSpeakerは同期変数を持たず、すべて各クライアントのローカル状態とする。設定ボードには `VRCPickup` だけを付け、Transform同期を担う `VRCObjectSync` を付けない。根拠: [VRChat PlayerData](https://creators.vrchat.com/worlds/udon/persistence/player-data/)、[VRC Mirror Reflection](https://creators.vrchat.com/worlds/components/vrc_mirrorreflection/)、[VRC UI Shape](https://creators.vrchat.com/worlds/components/vrc_uishape/)、[VRC Pickup](https://creators.vrchat.com/worlds/components/vrc_pickup/)、[VRC Object Sync](https://creators.vrchat.com/worlds/components/vrc_objectsync/)（確認日 2026-08-15、VRChat Worlds SDK 3.10.4）。
 

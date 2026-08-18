@@ -651,76 +651,71 @@ namespace StargazingHill.Editor
         /// Adds the same VR laser-pointer interaction path used by VRChat world-space UI while retaining
         /// the ordinary Udon Interact collider for desktop and direct-use input.
         /// </summary>
+        /// <remarks>
+        /// The clickable graphic goes on the Canvas root, not on a child. The board sliders, whose
+        /// Slider component sits on the canvas root, worked as soon as they were on an interactive
+        /// layer, while buttons whose Button sat on the child label object did not respond at all.
+        /// The YamaPlayer control bar canvas — the one surface in this scene that always worked —
+        /// likewise carries its own CanvasRenderer on the canvas root.
+        /// </remarks>
         internal static void EnableUiBeamForInteraction(GameObject button, UdonBehaviour backing)
         {
             if (button == null || backing == null) return;
-            Graphic target;
-            Canvas canvas = ResolveBeamCanvas(button, out target);
+            DisableLabelRaycast(button);
+            Canvas canvas = EnsureBeamCanvas(button);
             if (canvas == null) return;
             ConfigureWorldUiCanvas(canvas);
 
-            Button uiButton = target.GetComponent<Button>();
-            if (uiButton == null) uiButton = target.gameObject.AddComponent<Button>();
-            uiButton.targetGraphic = target;
-            uiButton.transition = Selectable.Transition.ColorTint;
+            Image surface = canvas.GetComponent<Image>();
+            Button uiButton = canvas.GetComponent<Button>();
+            if (uiButton == null) uiButton = canvas.gameObject.AddComponent<Button>();
+            uiButton.targetGraphic = surface;
+            // The 3D button already draws the visible face, so no colour tint on top of it.
+            uiButton.transition = Selectable.Transition.None;
             uiButton.onClick = new Button.ButtonClickedEvent();
             UnityEventTools.AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact");
             EditorUtility.SetDirty(uiButton);
         }
 
         /// <summary>
-        /// Beam surface for a cube button. Panels that label their buttons with uGUI Text reuse that
-        /// label's canvas; the debug panel draws labels with TextMesh, so it gets a dedicated one.
+        /// One dedicated canvas per button, covering its face, carrying an almost invisible Image as
+        /// the raycast target. Existing label canvases are left alone so they only render text.
         /// </summary>
-        private static Canvas ResolveBeamCanvas(GameObject button, out Graphic target)
-        {
-            Text label = button.GetComponentInChildren<Text>(true);
-            Canvas labelCanvas = label != null ? label.GetComponentInParent<Canvas>() : null;
-            if (labelCanvas != null)
-            {
-                RectTransform canvasRect = labelCanvas.GetComponent<RectTransform>();
-                Vector3 size = button.transform.localScale;
-                canvasRect.sizeDelta = new Vector2(size.x / CanvasScale, size.y / CanvasScale);
-                label.rectTransform.sizeDelta = canvasRect.sizeDelta;
-                label.raycastTarget = true;
-                target = label;
-                return labelCanvas;
-            }
-            return CreateBeamTargetCanvas(button, out target);
-        }
-
-        private static Canvas CreateBeamTargetCanvas(GameObject button, out Graphic target)
+        private static Canvas EnsureBeamCanvas(GameObject button)
         {
             Transform existing = button.transform.Find(BeamTargetName);
             if (existing != null) UnityEngine.Object.DestroyImmediate(existing.gameObject);
 
             Vector3 face = button.transform.localScale;
-            GameObject canvasObject = new GameObject(BeamTargetName);
+            if (face.x <= 0f || face.y <= 0f) return null;
+            GameObject canvasObject = new GameObject(BeamTargetName,
+                typeof(RectTransform), typeof(Canvas), typeof(CanvasRenderer), typeof(Image));
             canvasObject.transform.SetParent(button.transform, false);
-            // Sits just off the reader-side face, where the panels put their labels.
-            canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.53f);
+            // Just off the reader-side face, in front of the label so nothing occludes the ray.
+            canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.56f);
             canvasObject.transform.localRotation = Quaternion.identity;
             canvasObject.transform.localScale = new Vector3(
                 CanvasScale / face.x, CanvasScale / face.y, CanvasScale);
-            Canvas canvas = canvasObject.AddComponent<Canvas>();
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.GetComponent<RectTransform>().sizeDelta =
                 new Vector2(face.x / CanvasScale, face.y / CanvasScale);
 
-            GameObject surfaceObject = new GameObject("Surface",
-                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            surfaceObject.transform.SetParent(canvasObject.transform, false);
-            RectTransform surface = surfaceObject.GetComponent<RectTransform>();
-            surface.anchorMin = Vector2.zero;
-            surface.anchorMax = Vector2.one;
-            surface.offsetMin = Vector2.zero;
-            surface.offsetMax = Vector2.zero;
-            Image image = surfaceObject.GetComponent<Image>();
-            // The 3D button already draws the visible face; this only has to be hittable.
+            Image image = canvasObject.GetComponent<Image>();
             image.color = new Color(1f, 1f, 1f, 0.004f);
             image.raycastTarget = true;
-            target = image;
             return canvas;
+        }
+
+        /// <summary>Label canvases only render; the beam surface owns the raycast.</summary>
+        private static void DisableLabelRaycast(GameObject button)
+        {
+            Text[] labels = button.GetComponentsInChildren<Text>(true);
+            for (int index = 0; index < labels.Length; index++)
+            {
+                labels[index].raycastTarget = false;
+                EditorUtility.SetDirty(labels[index]);
+            }
         }
 
         private static Transform CreateGroup(Transform parent, string name)
@@ -952,15 +947,28 @@ namespace StargazingHill.Editor
         internal static Text CreateText(Transform parent, string value, Vector3 position, float height,
             TextAnchor anchor, Font font, Material material, Color color, bool compensateParentScale = false)
         {
+            return CreateText(parent, value, position, height, anchor, font, material, color,
+                compensateParentScale, CanvasScale);
+        }
+
+        /// <summary>
+        /// <paramref name="canvasScale"/> trades world size against glyph resolution: the world height
+        /// stays put while the font is rasterised at <c>height / canvasScale</c> pixels. Small labels
+        /// read as a smear at the default scale, so they pass a smaller value here.
+        /// </summary>
+        internal static Text CreateText(Transform parent, string value, Vector3 position, float height,
+            TextAnchor anchor, Font font, Material material, Color color, bool compensateParentScale,
+            float canvasScale)
+        {
             GameObject canvasObject = new GameObject("TextCanvas");
             canvasObject.transform.SetParent(parent, false);
             canvasObject.transform.localPosition = position;
             // Unity UI faces the panel's -Z reader side at identity rotation. Rotating this
             // canvas 180 degrees makes every label readable only from behind and mirrored.
             canvasObject.transform.localRotation = Quaternion.identity;
-            Vector3 scale = Vector3.one * CanvasScale;
+            Vector3 scale = Vector3.one * canvasScale;
             if (compensateParentScale)
-                scale = new Vector3(CanvasScale / parent.localScale.x, CanvasScale / parent.localScale.y, CanvasScale);
+                scale = new Vector3(canvasScale / parent.localScale.x, canvasScale / parent.localScale.y, canvasScale);
             canvasObject.transform.localScale = scale;
             Canvas canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
@@ -969,7 +977,7 @@ namespace StargazingHill.Editor
             textObject.transform.SetParent(canvasObject.transform, false);
             Text text = textObject.AddComponent<Text>();
             text.font = font;
-            text.fontSize = Mathf.Max(1, Mathf.RoundToInt(height / CanvasScale));
+            text.fontSize = Mathf.Max(1, Mathf.RoundToInt(height / canvasScale));
             text.alignment = anchor;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;

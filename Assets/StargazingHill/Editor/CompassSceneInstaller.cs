@@ -22,6 +22,7 @@ namespace StargazingHill.Editor
         private const string DialMaterialPath = RootPath + "/Generated/Materials/CompassDial.mat";
         private const string RimMaterialPath = RootPath + "/Generated/Materials/CompassRim.mat";
         private const float TargetModelDiameter = 0.18f;
+        private const float CardinalTextCanvasScale = 0.0001f;
 
         // Beside the radio/tea set, offset far enough from the teapot for a clean pickup silhouette.
         // Only the ground plan is authored: the model is normalized so its base sits at the root
@@ -282,8 +283,12 @@ namespace StargazingHill.Editor
         private static void CreateCardinalText(Transform parent, string value, Vector3 position,
             Font font, Material material, Color color)
         {
+            // The cardinal letters are only 2 cm tall and are read from a hand's length away. At the
+            // usual canvas scale that is a 10 px glyph, which smears; this rasterises them at 200 px
+            // for the same world size.
             UnityEngine.UI.Text text = WorldInformationPanelInstaller.CreateText(parent, value, position,
-                0.020f, UnityEngine.TextAnchor.MiddleCenter, font, material, color, false);
+                0.020f, UnityEngine.TextAnchor.MiddleCenter, font, material, color, false,
+                CardinalTextCanvasScale);
             text.transform.parent.localRotation = Quaternion.Euler(90f, 0f, 0f);
         }
 

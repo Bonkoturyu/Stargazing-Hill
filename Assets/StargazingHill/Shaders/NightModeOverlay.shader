@@ -2,7 +2,7 @@ Shader "StargazingHill/NightModeOverlay"
 {
     Properties
     {
-        _Darkness ("Darkness", Range(0, 0.9)) = 0
+        _Darkness ("Darkness", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -27,7 +27,11 @@ Shader "StargazingHill/NightModeOverlay"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 return o;
             }
-            fixed4 frag(v2f i) : SV_Target { return fixed4(0.003, 0.008, 0.018, _Darkness); }
+            // Pure black. A tinted overlay lifted the floor of an already very dark night scene
+            // instead of darkening it, which read as a pale haze rather than nightfall. With black,
+            // SrcAlpha/OneMinusSrcAlpha is a straight multiply by (1 - _Darkness), so full darkness
+            // is genuinely black.
+            fixed4 frag(v2f i) : SV_Target { return fixed4(0, 0, 0, _Darkness); }
             ENDCG
         }
     }

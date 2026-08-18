@@ -751,3 +751,26 @@
 | 実機のビーム・操作 | Pending Evidence | レイヤーとColliderは生成・検証済み。Desktop / PCVR / Quest / iOSで、3パネルへビームが出ること、つまみを掴んで動かせることを確認する |
 | 実機の写真 | Pending Evidence | UIレイヤーからの退避は完了。VRChatカメラで撮影し、説明パネルの履歴・設定パネルが実際に写ることを確認する |
 | 入退室通知の実挙動 | Pending Evidence | 複数人インスタンスで、自分の入室時に一斉通知が鳴らないこと、他者の入退室で鳴ること、音と表示を別々にOFFできること、VRでの頭部追従の快適性を確認する |
+
+### 2026-08-18 ナイトモードの黒化・ビーム操作の回帰修正・通知の受付窓
+
+- 要求: チャイムが分かりにくい、コンパスの東西南北が粗い、ナイトモードが白い霧に見える、つまみのバーが短い、3パネルのボタンが軒並み反応しない、トーストをもう少し下げたい、通知音をわずかに下げたい、既存の姉妹ワールドの入退室仕様を確認して合うなら導入
+- 設計判断: [ADR 0018](adr/0018-settings-board-usability-fixes.md) の2026-08-18追記、[ADR 0019](adr/0019-local-presence-notifications.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| ボタンが反応しない回帰 | Pass | 前回追加したビーム用Colliderが立方体ボタンのUdon Interact用Colliderを手前で遮る一方、UI側のクリックも通っていなかった。同条件のSliderは動作していた（利用者がナイトモードを操作できた）ことから、差は**クリック対象の階層**と判断。動作していたSliderは `Slider` がCanvasルート、動作しないボタンは `Button` を子のラベルTextへ載せていた。常に動作しているYamaPlayer ControlBarのCanvasもルートに `CanvasRenderer` を持つ |
+| ビーム面の再構成 | Pass | ボタンごとに `UiBeamTarget` Canvasを1枚生成し、**Canvasルート自身**へほぼ透明な `Image`（alpha 0.004）と `Button` を載せてUdon `Interact` を送る。ラベルTextは `raycastTarget` を落として描画専用へ戻した。木の歯車だけは従来方針どおりUI面を持たせず、生成後に `TextCanvas` と `UiBeamTarget` の両方を除去する |
+| ナイトモードの見え方 | Pass | オーバーレイ色 `(0.003, 0.008, 0.018)` は、もともと真っ暗な夜景に対して黒レベルを持ち上げる方向に働き、白い霧に見えていた。純黒へ変更し `_Darkness` の範囲を0〜0.9から0〜1へ拡張。`SrcAlpha/OneMinusSrcAlpha` の純黒は `(1 - _Darkness)` の乗算に等しく、100%で完全な黒になる。空・星・月・流星はすべて `Transparent+20` 以下で `Overlay-10` より前に描かれるため、まとめて暗くなることをシェーダーのQueue確認でPass |
+| つまみのバー長 | Pass | 高さ（つまみの大きさ）は半分のまま、長さをナイトモード255→520、ラジオ音量180→380 canvas unitsへ。ナイトモードは中心 `x=-0.75` で板の左列内、ラジオ音量は中心 `x=0.70` で右列内に収まることを確認 |
+| コンパスの東西南北 | Pass | 世界サイズ2cmの文字をcanvas scale 0.002で作ると10 pxで潰れていた。その文字だけcanvas scaleを0.0001とし、同じ世界サイズのまま200 pxで焼くようにした |
+| トースト位置・音量 | Pass | 頭部追従トーストを視線下0.42m→0.66mへ下げ、チャイム音量を0.30→0.22へ |
+| 姉妹ワールド仕様の取り込み | Pass | 同じ作者の非公開の姉妹ワールドリポジトリから、乗下船通知の受付窓仕様を確認。入退室それぞれ約3秒の受付窓へ集約し、窓の最初の1人は名前、以降は `○○ さんほか3名が入室しました` と件数のみ更新、通知音は窓の最初の1回だけ、履歴は一人ずつ、を導入した。初期値（本ワールドは音も表示もON）とPlayerDataの名前空間・保存条件は本ワールドの既存方針を優先した |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| Unity compile | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-G-Udon.log` |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-H-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`。`Logs/Claude-H-Validate.log` |
+| 星空・流星数値回帰 | Pass | `TestSkyAndMeteorForBatchMode`、終了コード0。`Logs/Claude-H-Sky.log` |
+| ビーム操作の実機確認 | Pending Evidence | 階層の差を単一の仮説として修正したが、VRChat実機でのクリック成立は未確認。3パネルのボタンが実際に反応することを最優先で確認する。もし今回も反応しない場合の次手は、`UiBeamTarget` 側へUdonBehaviourを移し、1つのColliderがUI面とInteract面を兼ねる構成にすること |
+| ナイトモードの実機確認 | Pending Evidence | 100%で完全な黒になること、中間値で霧に見えないことを実機で確認する |
+| 受付窓の実機確認 | Pending Evidence | 複数人が同時に入退室したとき、チャイムが1回だけ鳴り、行が `ほか○名` へ更新されることを確認する |

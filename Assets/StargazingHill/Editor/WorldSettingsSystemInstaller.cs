@@ -245,7 +245,7 @@ namespace StargazingHill.Editor
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             radioVolumeText.transform.parent.name = "RadioVolumeCanvas";
             Slider radioVolumeSlider = CreateSlider(board.transform, "RadioVolumeSliderCanvas",
-                new Vector3(0.70f, -0.73f, -0.032f), new Vector2(180f, 32f),
+                new Vector3(0.70f, -0.73f, -0.032f), new Vector2(380f, 32f),
                 textMaterial, accentMaterial, WorldRadioSpeaker.DefaultLocalVolume);
             Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
                 new Vector3(0.15f, -0.86f, -0.028f), 0.044f, TextAnchor.UpperLeft,
@@ -831,7 +831,7 @@ namespace StargazingHill.Editor
             source.playOnAwake = false;
             // A notification about the instance is not a thing in the world, so it plays flat.
             source.spatialBlend = 0f;
-            source.volume = 0.30f;
+            source.volume = 0.22f;
             VRCSpatialAudioSource spatial = chime.AddComponent<VRCSpatialAudioSource>();
             SerializedObject serialized = new SerializedObject(spatial);
             SetBool(serialized, "EnableSpatialization", false);
@@ -877,9 +877,14 @@ namespace StargazingHill.Editor
             interactionCollider.center = new Vector3(0f, 0f, -1.15f);
             float colliderFaceSize = 0.30f / (0.24f * TreeToggleScale);
             interactionCollider.size = new Vector3(colliderFaceSize, colliderFaceSize, 2.60f);
+            // The gear keeps a bare Udon Interact target. Overlaying UI on it caused the shimmering
+            // that the single-mesh icon was introduced to fix, and its reader ray already reaches
+            // the compact collider ahead of the trunk, so both generated canvases come off again.
             Transform interactionCanvas = toggle.transform.Find("TextCanvas");
             if (interactionCanvas != null)
                 UnityEngine.Object.DestroyImmediate(interactionCanvas.gameObject);
+            Transform beamCanvas = toggle.transform.Find("UiBeamTarget");
+            if (beamCanvas != null) UnityEngine.Object.DestroyImmediate(beamCanvas.gameObject);
             CreateGearIcon(dock.transform, iconMaterial);
         }
 
@@ -945,7 +950,7 @@ namespace StargazingHill.Editor
         private static Slider CreateNightSlider(Transform parent, Material uiMaterial, Material accentMaterial)
         {
             return CreateSlider(parent, "NightModeSliderCanvas",
-                new Vector3(-0.85f, -0.76f, -0.032f), new Vector2(255f, 41f),
+                new Vector3(-0.75f, -0.76f, -0.032f), new Vector2(520f, 41f),
                 uiMaterial, accentMaterial, 0f);
         }
 

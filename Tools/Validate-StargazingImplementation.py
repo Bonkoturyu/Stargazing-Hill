@@ -722,8 +722,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "EnsureEventSystem(scene);" in settings_installer
     assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
     assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
-    assert "new Vector2(255f, 41f)" in settings_installer
-    assert "new Vector2(180f, 32f)" in settings_installer
+    assert "new Vector2(520f, 41f)" in settings_installer
+    assert "new Vector2(380f, 32f)" in settings_installer
     # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
     assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];" in settings_installer
     assert "controller.mirrorButtonTexts.Length != 7" in settings_installer
@@ -751,6 +751,22 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "_live = true;" in presence_notifier
     assert "public void SetSoundEnabled(bool enabled)" in presence_notifier
     assert "public void SetDisplayEnabled(bool enabled)" in presence_notifier
+    # Arrivals and departures collect into a short window: one chime and one line per group.
+    assert "public const float WindowSeconds = 3f;" in presence_notifier
+    assert "private string ComposeLine(bool joined, string displayName, int others)" in presence_notifier
+    assert "さんほか" in presence_notifier
+    assert "verticalOffset = -0.66f" in presence_notifier
+    assert "source.volume = 0.22f;" in settings_installer
+    # Night mode multiplies the scene toward black; a tinted overlay read as pale haze.
+    assert "fixed4(0, 0, 0, _Darkness)" in night_shader
+    assert "_Darkness (\"Darkness\", Range(0, 1))" in night_shader
+    assert 'nightOverlayMaterial.SetFloat("_Darkness", _nightAmount)' in settings_controller
+    # Compass cardinals are rasterised far above the default canvas density.
+    assert "CardinalTextCanvasScale = 0.0001f" in compass_installer
+    # The beam surface is a canvas-root graphic, matching the sliders that already worked.
+    assert "Image surface = canvas.GetComponent<Image>();" in info_installer
+    assert "private static Canvas EnsureBeamCanvas(GameObject button)" in info_installer
+    assert "DisableLabelRaycast(button);" in info_installer
     assert "EnsureProgramAsset(typeof(WorldPresenceNotifier)" in builder
     assert 'CreateButton(board.transform, "MirrorsAllOff"' in settings_installer
     assert 'CreateButton(board.transform, "MirrorQualityToggle"' in settings_installer

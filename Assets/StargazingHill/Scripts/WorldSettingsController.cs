@@ -335,8 +335,8 @@ namespace StargazingHill
         {
             bool active = _nightAmount > 0.002f;
             if (nightOverlay != null) nightOverlay.SetActive(active);
-            if (nightOverlayMaterial != null)
-                nightOverlayMaterial.SetFloat("_Darkness", Mathf.Lerp(0f, 0.90f, _nightAmount));
+            // 100% is fully black, so the slider reads as "how dark" rather than topping out at a haze.
+            if (nightOverlayMaterial != null) nightOverlayMaterial.SetFloat("_Darkness", _nightAmount);
         }
 
         private void ApplyMirrors()
