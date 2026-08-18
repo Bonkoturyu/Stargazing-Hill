@@ -25,7 +25,9 @@ namespace StargazingHill.Editor
         private const float CanvasScale = 0.002f;
         // World-space UI stays on the Default layer; see ConfigureWorldUiCanvas for why.
         internal const int WorldUiLayer = 0;
-        internal const float UiTargetWorldDepth = 0.004f;
+        // Deep enough that a ray arriving at a shallow angle still crosses the box rather than
+        // skimming past a paper-thin one.
+        internal const float UiTargetWorldDepth = 0.012f;
         private const string BeamTargetName = "UiBeamTarget";
         private const float PresenceTop = 0.88f;
         private const float HistoryTop = 0.31f;

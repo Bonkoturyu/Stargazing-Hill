@@ -17,6 +17,7 @@ namespace StargazingHill
         public const int LineCapacity = 3;
         public const float LineSeconds = 5f;
         public const float WindowSeconds = 3f;
+        public const float FadeSeconds = 1.2f;
 
         public GameObject hudRoot;
         public Text hudText;
@@ -24,7 +25,7 @@ namespace StargazingHill
         public AudioSource leaveAudio;
         // Placed below the eyeline so a busy arrival never covers the sky.
         public float forwardDistance = 1.5f;
-        public float verticalOffset = -0.66f;
+        public float verticalOffset = -0.48f;
 
         private bool _soundEnabled = true;
         private bool _displayEnabled = true;
@@ -44,11 +45,13 @@ namespace StargazingHill
         private float _leaveWindowEnd;
         private string _joinFirstName = string.Empty;
         private string _leaveFirstName = string.Empty;
+        private Color _baseColor = Color.white;
         private VRCPlayerApi _localPlayer;
 
         private void Start()
         {
             _localPlayer = Networking.LocalPlayer;
+            if (hudText != null) _baseColor = hudText.color;
             if (hudRoot != null) hudRoot.SetActive(false);
         }
 
@@ -91,7 +94,20 @@ namespace StargazingHill
                 if (expired) RefreshHud();
             }
 
+            ApplyFade();
             if (hudRoot != null && hudRoot.activeSelf) FollowHead();
+        }
+
+        /// <summary>
+        /// The whole toast dims out over its final seconds instead of blinking away. The newest
+        /// line drives it, so a fresh arrival during a fade brings the block back to full.
+        /// </summary>
+        private void ApplyFade()
+        {
+            if (hudText == null || _lineCount <= 0) return;
+            float remaining = _expiry[_lineCount - 1] - Time.time;
+            float alpha = FadeSeconds > 0f ? Mathf.Clamp01(remaining / FadeSeconds) : 1f;
+            hudText.color = new Color(_baseColor.r, _baseColor.g, _baseColor.b, _baseColor.a * alpha);
         }
 
         private void FollowHead()
@@ -244,6 +260,7 @@ namespace StargazingHill
             if (visible && !hudRoot.activeSelf)
             {
                 hudRoot.SetActive(true);
+                ApplyFade();
                 FollowHead();
                 return;
             }

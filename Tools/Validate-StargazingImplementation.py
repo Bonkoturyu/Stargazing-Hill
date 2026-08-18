@@ -690,9 +690,9 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'new GameObject("SettingsSystem")' in settings_installer
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
-    assert "private const float BoardScale = 0.18f;" in settings_installer
-    assert "pickupCollider.center = new Vector3(0f, 1.03f, 0.05f);" in settings_installer
-    assert "pickupCollider.size = new Vector3(2.72f, 0.22f, 0.16f);" in settings_installer
+    assert "private const float BoardScale = 0.22f;" in settings_installer
+    assert "pickupCollider.center = new Vector3(0f, 1.27f, 0.05f);" in settings_installer
+    assert "pickupCollider.size = new Vector3(2.86f, 0.14f, 0.16f);" in settings_installer
     assert "pickup.proximity = 0.35f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
@@ -722,8 +722,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "EnsureEventSystem(scene);" in settings_installer
     assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
     assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
-    assert "new Vector2(520f, 41f)" in settings_installer
-    assert "new Vector2(380f, 32f)" in settings_installer
+    assert "new Vector2(520f, 44f)" in settings_installer
+    assert "new Vector2(440f, 40f)" in settings_installer
     # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
     assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];" in settings_installer
     assert "controller.mirrorButtonTexts.Length != 7" in settings_installer
@@ -755,7 +755,12 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "public const float WindowSeconds = 3f;" in presence_notifier
     assert "private string ComposeLine(bool joined, string displayName, int others)" in presence_notifier
     assert "さんほか" in presence_notifier
-    assert "verticalOffset = -0.66f" in presence_notifier
+    assert "verticalOffset = -0.48f" in presence_notifier
+    # The toast dims out rather than blinking away.
+    assert "public const float FadeSeconds = 1.2f;" in presence_notifier
+    assert "private void ApplyFade()" in presence_notifier
+    # Pointer targets need real depth so a shallow ray still crosses them.
+    assert "internal const float UiTargetWorldDepth = 0.012f;" in info_installer
     assert "source.volume = 0.22f;" in settings_installer
     # Night mode multiplies the scene toward black; a tinted overlay read as pale haze.
     assert "fixed4(0, 0, 0, _Darkness)" in night_shader

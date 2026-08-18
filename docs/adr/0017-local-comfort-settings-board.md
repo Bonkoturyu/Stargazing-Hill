@@ -11,7 +11,7 @@
 ## Decision
 
 - `World/SettingsSystem` を生成し、木の小型歯車ボタンからローカル表示する `LocalSettingsBoard` へ機能を集約する。歯車はフォントglyphや重複Cubeではなく、穴のある単一Meshと `Unlit/Color` 材質で生成してちらつきを避ける。歯車のTransformは利用者がSceneで確定した位置 `(8.053, 2.331, 7.59)`、回転quaternion `(0.627459, 0.33232313, -0.35606158, 0.6075168)`、scale `0.46967`を生成正本へ取り込む。見た目は小さいまま、操作面だけworld約0.30m角となるようlocal Colliderを逆補正し、Udon `Interact`へ直接接続する。木の歯車には透明`Image` / `Button` / `VRCUiShape`面を重ねない。
-- ボードは約0.48 × 0.41mの `VRCPickup` とし、ドロップ10秒後に生成位置へ戻す。初期状態は非表示、操作ボタンは板面と面一にする。Pickup Colliderは上端の細いグリップに限定し、proximityは0.35mとする。`VRCObjectSync`を付けず、持ち運びと復帰を各クライアントだけで処理することで、板面のUI操作とローカル設定を他人へ干渉させない。
+- ボードは約0.62 × 0.57mの `VRCPickup` とし、ドロップ10秒後に生成位置へ戻す。初期状態は非表示、操作ボタンは板面と面一にする。Pickup Colliderは上端の細いグリップに限定し、proximityは0.35mとする。`VRCObjectSync`を付けず、持ち運びと復帰を各クライアントだけで処理することで、板面のUI操作とローカル設定を他人へ干渉させない。
 - ミラーは上、下、左、右、天井の5方向をローカル選択する。初期値は全OFF。LQはpixel light無効・AA 1、HQはpixel light有効・AA 4とし、UIへHQ高負荷の注意と有効数を表示する。操作系は [ADR 0018](0018-settings-board-usability-fixes.md) で方向ごとのON/OFF＋共通画質切替へ置き換えた。
 - ナイトモードはPost ProcessingやWorld Lightingを変更せず、ローカルプレイヤー頭部へ追従する内向き半透明sphereをWorld Space UI Sliderで調整する。
 - 日時はクライアントの `DateTime.Now` を表示する。アラームはローカル2D音源で鳴らし、時・分・ON/OFF・STOPを持つ。

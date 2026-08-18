@@ -28,7 +28,9 @@ namespace StargazingHill.Editor
         private const string LeaveChimePath = RootPath + "/Generated/Audio/PresenceLeaveChime.wav";
         private const string GearIconMeshPath = RootPath + "/Generated/Meshes/TreeSettingsGearIcon.asset";
         private const float CanvasScale = 0.002f;
-        private const float BoardScale = 0.18f;
+        // Enlarged from 0.18: at that size the controls were 3 cm tall, which neither the VR
+        // pointer nor the desktop crosshair could hit reliably.
+        private const float BoardScale = 0.22f;
         // The four upright mirrors stand on the ground just outside the picnic mat edge.
         private const float MirrorEdgeMargin = 0.06f;
         private const float MirrorGroundClearance = 0.02f;
@@ -117,13 +119,13 @@ namespace StargazingHill.Editor
             board.transform.localScale = Vector3.one * BoardScale;
 
             GameObject sheet = CreateCube("PanelSheet", board.transform, new Vector3(0f, 0f, 0f),
-                new Vector3(2.65f, 2.25f, 0.045f), boardMaterial, false);
+                new Vector3(2.80f, 2.60f, 0.045f), boardMaterial, false);
 
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
             // Keep pickup handling on a narrow top grip so it does not steal the UI ray
             // from buttons and the slider across the entire face of the board.
-            pickupCollider.center = new Vector3(0f, 1.03f, 0.05f);
-            pickupCollider.size = new Vector3(2.72f, 0.22f, 0.16f);
+            pickupCollider.center = new Vector3(0f, 1.27f, 0.05f);
+            pickupCollider.size = new Vector3(2.86f, 0.14f, 0.16f);
             pickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -143,26 +145,26 @@ namespace StargazingHill.Editor
             EditorUtility.SetDirty(pickupReturn);
 
             Text title = CreateText(board.transform, "ローカル設定",
-                new Vector3(-0.20f, 0.98f, -0.028f), 0.090f, TextAnchor.UpperCenter,
+                new Vector3(-0.22f, 1.14f, -0.028f), 0.090f, TextAnchor.UpperCenter,
                 font, textMaterial, new Color(0.78f, 0.90f, 1f));
             title.transform.parent.name = "TitleCanvas";
             GameObject languageButton = CreateButton(board.transform, "LanguageToggle", "日→EN",
-                new Vector3(1.00f, 0.94f, -0.0125f), new Vector3(0.48f, 0.19f, 0.019f),
+                new Vector3(1.06f, 1.06f, -0.0125f), new Vector3(0.56f, 0.22f, 0.019f),
                 0.050f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.LanguageToggle, 0, "Language / 言語");
             Text languageButtonText = GetButtonLabel(languageButton);
             Text clock = CreateText(board.transform, "0000-00-00  00:00:00  LOCAL",
-                new Vector3(-0.20f, 0.76f, -0.028f), 0.064f, TextAnchor.UpperCenter,
+                new Vector3(-0.22f, 0.94f, -0.028f), 0.064f, TextAnchor.UpperCenter,
                 font, textMaterial, Color.white);
             clock.transform.parent.name = "ClockCanvas";
 
-            CreateCube("HeaderDivider", board.transform, new Vector3(0f, 0.64f, -0.026f),
-                new Vector3(2.35f, 0.012f, 0.012f), accentMaterial, false);
-            CreateCube("ColumnDivider", board.transform, new Vector3(0.06f, -0.17f, -0.026f),
-                new Vector3(0.012f, 1.48f, 0.012f), accentMaterial, false);
+            CreateCube("HeaderDivider", board.transform, new Vector3(0f, 0.80f, -0.026f),
+                new Vector3(2.50f, 0.012f, 0.012f), accentMaterial, false);
+            CreateCube("ColumnDivider", board.transform, new Vector3(0.06f, -0.25f, -0.026f),
+                new Vector3(0.012f, 2.00f, 0.012f), accentMaterial, false);
 
             Text mirrorState = CreateText(board.transform, "ミラー（HQは高負荷）  ON 0 / 5  LQ",
-                new Vector3(-1.18f, 0.54f, -0.028f), 0.046f, TextAnchor.UpperLeft,
+                new Vector3(-1.30f, 0.70f, -0.028f), 0.046f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             mirrorState.transform.parent.name = "MirrorStateCanvas";
             // One ON/OFF toggle per direction in a two-column grid, then a clear-all button and a
@@ -172,87 +174,87 @@ namespace StargazingHill.Editor
             Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];
             for (int mirrorIndex = 0; mirrorIndex < mirrorDirections.Length; mirrorIndex++)
             {
-                float x = mirrorIndex % 2 == 0 ? -0.90f : -0.14f;
-                float y = 0.36f - (mirrorIndex / 2) * 0.19f;
+                float x = mirrorIndex % 2 == 0 ? -1.02f : -0.32f;
+                float y = 0.48f - (mirrorIndex / 2) * 0.26f;
                 GameObject mirrorButton = CreateButton(board.transform,
                     "Mirror_" + mirrorNames[mirrorIndex], mirrorDirections[mirrorIndex] + "  OFF",
-                    new Vector3(x, y, -0.0125f), new Vector3(0.70f, 0.16f, 0.019f),
+                    new Vector3(x, y, -0.0125f), new Vector3(0.64f, 0.22f, 0.019f),
                     0.045f, buttonMaterial, font, textMaterial, controller,
                     WorldSettingsButton.Mirror, mirrorIndex,
                     "Mirror " + mirrorNames[mirrorIndex] + " ON/OFF");
                 mirrorButtonTexts[mirrorIndex] = GetButtonLabel(mirrorButton);
             }
             mirrorButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "MirrorsAllOff", "すべてOFF",
-                new Vector3(-0.14f, -0.02f, -0.0125f), new Vector3(0.70f, 0.16f, 0.019f),
+                new Vector3(-0.32f, -0.04f, -0.0125f), new Vector3(0.64f, 0.22f, 0.019f),
                 0.045f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.MirrorsOff, 0, "All mirrors OFF"));
             mirrorButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "MirrorQualityToggle", "画質  LQ",
-                new Vector3(-0.52f, -0.21f, -0.0125f), new Vector3(1.46f, 0.16f, 0.019f),
+                new Vector3(-0.67f, -0.32f, -0.0125f), new Vector3(1.34f, 0.22f, 0.019f),
                 0.045f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.MirrorQuality, 0, "Mirror quality LQ/HQ"));
 
             Text nightModeText = CreateText(board.transform, "ナイトモード",
-                new Vector3(-1.18f, -0.54f, -0.028f), 0.052f, TextAnchor.UpperLeft,
+                new Vector3(-1.30f, -0.56f, -0.028f), 0.052f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             Slider slider = CreateNightSlider(board.transform, textMaterial, accentMaterial);
             Text[] actionButtonTexts = new Text[10];
 
             Text notifyState = CreateText(board.transform, "入退室通知  音 ON / 表示 ON",
-                new Vector3(-1.18f, -0.90f, -0.028f), 0.042f, TextAnchor.UpperLeft,
+                new Vector3(-1.30f, -0.92f, -0.028f), 0.042f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             notifyState.transform.parent.name = "NotifyStateCanvas";
             actionButtonTexts[8] = GetButtonLabel(CreateButton(board.transform, "NotifySoundToggle",
-                "通知音 ON/OFF", new Vector3(-0.95f, -1.06f, -0.0125f),
-                new Vector3(0.60f, 0.16f, 0.019f), 0.038f, buttonMaterial, font, textMaterial,
+                "通知音 ON/OFF", new Vector3(-1.02f, -1.14f, -0.0125f),
+                new Vector3(0.64f, 0.22f, 0.019f), 0.038f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.NotifySoundToggle, 0, "Join/leave sound ON/OFF"));
             actionButtonTexts[9] = GetButtonLabel(CreateButton(board.transform, "NotifyDisplayToggle",
-                "入退室表示 ON/OFF", new Vector3(-0.30f, -1.06f, -0.0125f),
-                new Vector3(0.60f, 0.16f, 0.019f), 0.034f, buttonMaterial, font, textMaterial,
+                "入退室表示 ON/OFF", new Vector3(-0.32f, -1.14f, -0.0125f),
+                new Vector3(0.64f, 0.22f, 0.019f), 0.034f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.NotifyDisplayToggle, 0, "Join/leave toast ON/OFF"));
 
             Text alarmState = CreateText(board.transform, "ALARM  22:00  OFF",
-                new Vector3(0.15f, 0.52f, -0.028f), 0.060f, TextAnchor.UpperLeft,
+                new Vector3(0.20f, 0.70f, -0.028f), 0.060f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             alarmState.transform.parent.name = "AlarmStateCanvas";
-            actionButtonTexts[0] = GetButtonLabel(CreateButton(board.transform, "AlarmHourDown", "時−", new Vector3(0.35f, 0.30f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[0] = GetButtonLabel(CreateButton(board.transform, "AlarmHourDown", "時−", new Vector3(0.36f, 0.46f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1"));
-            actionButtonTexts[1] = GetButtonLabel(CreateButton(board.transform, "AlarmHourUp", "時＋", new Vector3(0.75f, 0.30f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[1] = GetButtonLabel(CreateButton(board.transform, "AlarmHourUp", "時＋", new Vector3(0.78f, 0.46f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1"));
-            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−", new Vector3(0.35f, 0.05f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−", new Vector3(0.36f, 0.18f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5"));
-            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋", new Vector3(0.75f, 0.05f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋", new Vector3(0.78f, 0.18f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5"));
-            actionButtonTexts[4] = GetButtonLabel(CreateButton(board.transform, "AlarmToggle", "ON/OFF", new Vector3(1.15f, 0.30f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[4] = GetButtonLabel(CreateButton(board.transform, "AlarmToggle", "ON/OFF", new Vector3(1.20f, 0.46f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF"));
-            actionButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "AlarmStop", "停止", new Vector3(1.15f, 0.05f, -0.0125f),
-                new Vector3(0.34f, 0.20f, 0.019f), 0.046f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "AlarmStop", "停止", new Vector3(1.20f, 0.18f, -0.0125f),
+                new Vector3(0.38f, 0.24f, 0.019f), 0.046f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm"));
 
             Text radioState = CreateText(board.transform, "ラジオ音声  ON",
-                new Vector3(0.15f, -0.24f, -0.028f), 0.046f, TextAnchor.UpperLeft,
+                new Vector3(0.20f, -0.10f, -0.028f), 0.046f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             radioState.transform.parent.name = "RadioStateCanvas";
-            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "RadioToggle", "音声 ON/OFF", new Vector3(0.94f, -0.43f, -0.0125f),
-                new Vector3(0.72f, 0.20f, 0.019f), 0.041f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "RadioToggle", "音声 ON/OFF", new Vector3(0.78f, -0.32f, -0.0125f),
+                new Vector3(1.24f, 0.24f, 0.019f), 0.041f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.RadioToggle, 0, "Radio speaker ON/OFF"));
             Text radioVolumeText = CreateText(board.transform, "ラジオ音量  85%",
-                new Vector3(0.15f, -0.60f, -0.028f), 0.044f, TextAnchor.UpperLeft,
+                new Vector3(0.20f, -0.56f, -0.028f), 0.044f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             radioVolumeText.transform.parent.name = "RadioVolumeCanvas";
             Slider radioVolumeSlider = CreateSlider(board.transform, "RadioVolumeSliderCanvas",
-                new Vector3(0.70f, -0.73f, -0.032f), new Vector2(380f, 32f),
+                new Vector3(0.78f, -0.76f, -0.032f), new Vector2(440f, 40f),
                 textMaterial, accentMaterial, WorldRadioSpeaker.DefaultLocalVolume);
             Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
-                new Vector3(0.15f, -0.86f, -0.028f), 0.044f, TextAnchor.UpperLeft,
+                new Vector3(0.20f, -0.92f, -0.028f), 0.044f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             saveState.transform.parent.name = "SaveStateCanvas";
-            actionButtonTexts[7] = GetButtonLabel(CreateButton(board.transform, "SaveToggle", "保存 ON/OFF", new Vector3(0.94f, -1.02f, -0.0125f),
-                new Vector3(0.72f, 0.18f, 0.019f), 0.040f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[7] = GetButtonLabel(CreateButton(board.transform, "SaveToggle", "保存 ON/OFF", new Vector3(0.78f, -1.14f, -0.0125f),
+                new Vector3(1.24f, 0.22f, 0.019f), 0.040f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.SaveToggle, 0, "Save local settings ON/OFF"));
 
             AudioSource alarmAudio = system.AddComponent<AudioSource>();
@@ -500,8 +502,8 @@ namespace StargazingHill.Editor
             Vector2[] localSamples =
             {
                 Vector2.zero,
-                new Vector2(-1.20f, 0.90f), new Vector2(1.20f, 0.90f),
-                new Vector2(-1.20f, -0.90f), new Vector2(1.20f, -0.90f)
+                new Vector2(-1.30f, 1.15f), new Vector2(1.30f, 1.15f),
+                new Vector2(-1.30f, -1.15f), new Vector2(1.30f, -1.15f)
             };
             for (int index = 0; index < localSamples.Length; index++)
             {
@@ -950,7 +952,7 @@ namespace StargazingHill.Editor
         private static Slider CreateNightSlider(Transform parent, Material uiMaterial, Material accentMaterial)
         {
             return CreateSlider(parent, "NightModeSliderCanvas",
-                new Vector3(-0.75f, -0.76f, -0.032f), new Vector2(520f, 41f),
+                new Vector3(-0.67f, -0.76f, -0.032f), new Vector2(520f, 44f),
                 uiMaterial, accentMaterial, 0f);
         }
 
