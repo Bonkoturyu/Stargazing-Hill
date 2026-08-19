@@ -826,3 +826,29 @@
 | 再生成後の一致 | Pass | `BuildForBatchMode` 後の保存Sceneで、設定ボードとトグルが手調整値と一致することを確認。`Logs/Claude-K-Build.log` |
 | 木の遮蔽・接地の再検証 | Pass | 板と歯車が動いた後も `ValidateTreeSettingsAccess` の `Physics.RaycastAll` はPass。ラジオを下げた後の `ValidateTerrainContact` もPass。`Logs/Claude-K-Validate.log`、終了コード0 |
 | 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py`。座標定数とlayout JSONの一致を含む |
+
+### 2026-08-19 ミラーの意味づけ・通知トグル・Grab・スライダー配置
+
+- 要求: LQ/HQの見え方を分ける、ミラーを敷物の周りに隙間なく立てる、ミラーボタンを十字に並べて面ごとに巡回、入退室通知を鈴とレポートのアイコントグルへ、アラームにリセット、設定ボードとデバッグパネルをGrabしやすく
+- 方針: [ADR 0018 追記5](adr/0018-settings-board-usability-fixes.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| LQ/HQの分離 | Pass | LQ = `Player \| PlayerLocal \| MirrorReflection`、HQ = LQ + `Default \| Environment \| Pickup \| Walkthrough`。Scene検証でLQがHQの真部分集合であることを確認 |
+| ミラーの矩形化 | Pass | 4面とも外周いっぱいの幅で角を突き合わせ、接地は外周4隅の最低地点ひとつへ統一。高さ2.15→2.85m |
+| 接地検証の破綻を修正 | Pass | 生成と検証が別々に接地高さを計算していたため `Picnic mirror is not aligned to the mat edge at index 0.` で必ず落ちていた。`ResolveMirrorRingBaseHeight` へ寄せ、両方から呼ぶ。静的検査で呼び出しが3か所であることを固定 |
+| ミラーボタンの十字配置と巡回 | Pass | 上／天井・左／▢／右・下／すべてOFF。中央は俯瞰の寝床アイコン。各ボタンは `OFF → LQ → HQ` を巡回し、共通の「画質」ボタンは廃止。ボタン数23、ミラーラベル6 |
+| 入退室トグルのアイコン化 | Pass | 鈴とレポートのアイコンボタン。OFFのときだけ斜線メッシュを重ねる。初期は両方ON＝斜線なし |
+| アラームのリセット | Pass | 22:00・OFFへ戻す横長ボタンを右列下段へ追加。アクションラベル9件 |
+| Grab | Pass | デバッグパネルの `BoxCollider` が板の裏側だけを覆っていたのを上端グリップへ変更。設定ボードと合わせて `proximity` 1.2m |
+| ナイトモードのバー位置 | Pass | 入退室の状態表示に重なっていたのを `−` / `＋` と同じ行 `y -0.46` へ移動。`ValidateSliderClearance` を追加し、Sliderがボード上の他メッシュ・ラベルと重なったら生成を落とす |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| Udonコンパイル | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-R-Udon.log` |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-R-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-R-Validate.log` |
+| レイアウトのプレビュー確認 | Pass | `RenderOpenSettingsLayoutPreviewForBatchMode`。`-batchmode -nographics` が動的バッチング内でSIGSEGVするため `-nographics` を外して実行。コミット済みSceneでも同じく落ちるので環境要因 |
+| LQ/HQの実機確認 | Pending Evidence | LQでアバターだけが映り風景が映らないこと、HQで風景まで映ることをVRChat実機で確認する |
+| ミラーの見た目 | Pending Evidence | 角の隙間が消えたこと、上り側の埋まり具合が許容範囲であることを実機で確認する。高さ2.85mは調整余地あり |
+| 通知トグルの斜線 | Pending Evidence | 鈴・レポートを押すたびに斜線が出入りし、実際に音と表示が止まることを確認する |
+| Grabのしやすさ | Pending Evidence | VRとDesktopの両方で設定ボードとデバッグパネルを掴めることを確認する |
+| 中央アイコンの妥当性 | Pending Evidence | ▢へ寝床のアイコンを当てたのは推測。敷物を表す図として通じるかを確認し、通じなければ差し替える |

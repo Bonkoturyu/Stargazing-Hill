@@ -19,7 +19,6 @@ namespace StargazingHill
         private const string MirrorQuality2Key = "StargazingHill.Settings.MirrorQuality2";
         private const string MirrorQuality3Key = "StargazingHill.Settings.MirrorQuality3";
         private const string MirrorQuality4Key = "StargazingHill.Settings.MirrorQuality4";
-        private const string MirrorHighQualityKey = "StargazingHill.Settings.MirrorHighQuality";
         private const string NotifySoundKey = "StargazingHill.Settings.NotifySound";
         private const string NotifyDisplayKey = "StargazingHill.Settings.NotifyDisplay";
         private const string AlarmEnabledKey = "StargazingHill.Settings.AlarmEnabled";
@@ -51,6 +50,9 @@ namespace StargazingHill
         public Slider radioVolumeSlider;
         public WorldPresenceNotifier presenceNotifier;
         public Text notifyText;
+        // Struck through when the matching notification is off; the icons carry no words.
+        public GameObject notifySoundOffMark;
+        public GameObject notifyDisplayOffMark;
 
         private bool _playerDataReady;
         private bool _saveEnabled;
@@ -58,7 +60,6 @@ namespace StargazingHill
         private bool _alarmRinging;
         // The picnic radio plays for everyone on join; the board switches it off locally.
         private bool _radioEnabled = true;
-        private bool _mirrorHighQuality;
         // Join/leave feedback is on by default; each half switches off independently.
         private bool _notifySound = true;
         private bool _notifyDisplay = true;
@@ -165,17 +166,6 @@ namespace StargazingHill
                 if (!restoredNewMirrors && PlayerData.TryGetInt(player, MirrorKey, out restoredMirror) &&
                     restoredMirror >= 0 && restoredMirror < _mirrorQuality.Length)
                     _mirrorQuality[restoredMirror] = 1;
-                bool restoredHighQuality;
-                if (PlayerData.TryGetBool(player, MirrorHighQualityKey, out restoredHighQuality))
-                    _mirrorHighQuality = restoredHighQuality;
-                else
-                    // Saves written before the per-mirror ON/OFF board only recorded quality per
-                    // direction.  Any HQ mirror in that save selects HQ for the single toggle.
-                    for (int index = 0; index < _mirrorQuality.Length; index++)
-                        if (_mirrorQuality[index] == 2) _mirrorHighQuality = true;
-                for (int index = 0; index < _mirrorQuality.Length; index++)
-                    if (_mirrorQuality[index] != 0)
-                        _mirrorQuality[index] = _mirrorHighQuality ? 2 : 1;
                 if (PlayerData.TryGetBool(player, AlarmEnabledKey, out restoredAlarmEnabled))
                     _alarmEnabled = restoredAlarmEnabled;
                 if (PlayerData.TryGetInt(player, AlarmHourKey, out restoredAlarmHour))
@@ -203,10 +193,13 @@ namespace StargazingHill
             if (settingsBoard != null) settingsBoard.SetActive(!settingsBoard.activeSelf);
         }
 
+        /// <summary>Each press walks that one mirror through OFF, LQ and HQ.</summary>
         public void ToggleMirror(int mirrorIndex)
         {
             int index = Mathf.Clamp(mirrorIndex, 0, 4);
-            _mirrorQuality[index] = _mirrorQuality[index] != 0 ? 0 : (_mirrorHighQuality ? 2 : 1);
+            int next = _mirrorQuality[index] + 1;
+            if (next > 2) next = 0;
+            _mirrorQuality[index] = next;
             ApplyMirrors();
             SaveIfEnabled();
         }
@@ -215,16 +208,6 @@ namespace StargazingHill
         {
             for (int index = 0; index < _mirrorQuality.Length; index++)
                 _mirrorQuality[index] = 0;
-            ApplyMirrors();
-            SaveIfEnabled();
-        }
-
-        public void ToggleMirrorQuality()
-        {
-            _mirrorHighQuality = !_mirrorHighQuality;
-            for (int index = 0; index < _mirrorQuality.Length; index++)
-                if (_mirrorQuality[index] != 0)
-                    _mirrorQuality[index] = _mirrorHighQuality ? 2 : 1;
             ApplyMirrors();
             SaveIfEnabled();
         }
@@ -271,6 +254,18 @@ namespace StargazingHill
         /// Step buttons beside each slider. On desktop the mouse drives the camera, so a
         /// world-space slider cannot practically be dragged; these give the same control.
         /// </summary>
+        /// <summary>Back to the 22:00 default, switched off, and silenced if it is ringing.</summary>
+        public void ResetAlarm()
+        {
+            _alarmHour = 22;
+            _alarmMinute = 0;
+            _alarmEnabled = false;
+            _lastAlarmDate = -1;
+            StopAlarmSound();
+            UpdateClockAndAlarm();
+            SaveIfEnabled();
+        }
+
         public void AdjustNight(int deltaPercent)
         {
             _nightAmount = Mathf.Clamp01(_nightAmount + deltaPercent * 0.01f);
@@ -386,6 +381,8 @@ namespace StargazingHill
 
         private void ApplyNotifier()
         {
+            if (notifySoundOffMark != null) notifySoundOffMark.SetActive(!_notifySound);
+            if (notifyDisplayOffMark != null) notifyDisplayOffMark.SetActive(!_notifyDisplay);
             if (presenceNotifier == null) return;
             presenceNotifier.SetSoundEnabled(_notifySound);
             presenceNotifier.SetDisplayEnabled(_notifyDisplay);
@@ -407,16 +404,19 @@ namespace StargazingHill
                     (_alarmRinging ? alarmRinging : (_alarmEnabled ? alarmOn : alarmOff));
             if (mirrorText != null)
             {
-                int onCount = 0;
+                int lowCount = 0;
+                int highCount = 0;
                 for (int index = 0; index < _mirrorQuality.Length; index++)
-                    if (_mirrorQuality[index] != 0) onCount++;
+                {
+                    if (_mirrorQuality[index] == 1) lowCount++;
+                    else if (_mirrorQuality[index] == 2) highCount++;
+                }
                 string heading = "ミラー（HQは高負荷）";
                 if (_languageIndex == 1) heading = "MIRRORS (HQ: HIGH LOAD)";
                 else if (_languageIndex == 2) heading = "鏡面（HQ負載較高）";
                 else if (_languageIndex == 3) heading = "镜面（HQ负载较高）";
                 else if (_languageIndex == 4) heading = "거울 (HQ: 고부하)";
-                mirrorText.text = heading + "  ON " + onCount + " / 5  " +
-                    (_mirrorHighQuality ? "HQ" : "LQ");
+                mirrorText.text = heading + "  LQ " + lowCount + " / HQ " + highCount;
             }
             if (radioStateText != null)
             {
@@ -464,71 +464,62 @@ namespace StargazingHill
             string title = "ローカル設定";
             string night = "ナイトモード";
             string[] mirrorDirections = { "上", "下", "左", "右", "天井" };
-            string[] actionButtons = { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "音声 ON/OFF", "保存 ON/OFF", "通知音 ON/OFF", "入退室表示 ON/OFF" };
+            string[] actionButtons = { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "音声 ON/OFF", "保存 ON/OFF", "リセット" };
             string language = "日→EN";
             string mirrorAllOff = "すべてOFF";
-            string mirrorQuality = "画質";
             if (_languageIndex == 1)
             {
                 title = "LOCAL SETTINGS";
                 night = "NIGHT MODE";
                 mirrorDirections = new[] { "TOP", "BOTTOM", "LEFT", "RIGHT", "CEILING" };
-                actionButtons = new[] { "HOUR−", "HOUR＋", "MIN−", "MIN＋", "ON/OFF", "STOP", "SPEAKER ON/OFF", "SAVE ON/OFF", "SOUND ON/OFF", "TOAST ON/OFF" };
+                actionButtons = new[] { "HOUR−", "HOUR＋", "MIN−", "MIN＋", "ON/OFF", "STOP", "SPEAKER ON/OFF", "SAVE ON/OFF", "RESET" };
                 language = "EN→繁";
                 mirrorAllOff = "ALL OFF";
-                mirrorQuality = "QUALITY";
             }
             else if (_languageIndex == 2)
             {
                 title = "本機設定";
                 night = "夜間模式";
                 mirrorDirections = new[] { "上", "下", "左", "右", "天花板" };
-                actionButtons = new[] { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "喇叭 ON/OFF", "儲存 ON/OFF", "音效 ON/OFF", "進出顯示 ON/OFF" };
+                actionButtons = new[] { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "喇叭 ON/OFF", "儲存 ON/OFF", "重設" };
                 language = "繁→简";
                 mirrorAllOff = "全部關閉";
-                mirrorQuality = "畫質";
             }
             else if (_languageIndex == 3)
             {
                 title = "本地设置";
                 night = "夜间模式";
                 mirrorDirections = new[] { "上", "下", "左", "右", "天花板" };
-                actionButtons = new[] { "时−", "时＋", "分−", "分＋", "ON/OFF", "停止", "扬声器 ON/OFF", "保存 ON/OFF", "音效 ON/OFF", "进出显示 ON/OFF" };
+                actionButtons = new[] { "时−", "时＋", "分−", "分＋", "ON/OFF", "停止", "扬声器 ON/OFF", "保存 ON/OFF", "重置" };
                 language = "简→한";
                 mirrorAllOff = "全部关闭";
-                mirrorQuality = "画质";
             }
             else if (_languageIndex == 4)
             {
                 title = "로컬 설정";
                 night = "나이트 모드";
                 mirrorDirections = new[] { "위", "아래", "왼쪽", "오른쪽", "천장" };
-                actionButtons = new[] { "시−", "시＋", "분−", "분＋", "ON/OFF", "정지", "스피커 ON/OFF", "저장 ON/OFF", "알림음 ON/OFF", "입퇴장 표시 ON/OFF" };
+                actionButtons = new[] { "시−", "시＋", "분−", "분＋", "ON/OFF", "정지", "스피커 ON/OFF", "저장 ON/OFF", "초기화" };
                 language = "한→日";
                 mirrorAllOff = "모두 OFF";
-                mirrorQuality = "화질";
             }
 
             if (titleText != null) titleText.text = title;
             if (nightModeText != null)
                 nightModeText.text = night + "  " + Mathf.RoundToInt(_nightAmount * 100f) + "%";
             if (languageButtonText != null) languageButtonText.text = language;
-            // 0-4 are the per-direction ON/OFF toggles, 5 clears them all, and 6 switches the
-            // quality every enabled mirror runs at.
+            // 0-4 are the per-direction OFF/LQ/HQ buttons and 5 clears them all.
             if (mirrorButtonTexts != null)
                 for (int index = 0; index < mirrorButtonTexts.Length; index++)
                 {
                     if (mirrorButtonTexts[index] == null) continue;
                     if (index < mirrorDirections.Length)
                     {
-                        bool on = _mirrorQuality[index] != 0;
-                        mirrorButtonTexts[index].text =
-                            (on ? "● " : "") + mirrorDirections[index] + "  " + (on ? "ON" : "OFF");
+                        int quality = _mirrorQuality[index];
+                        string state = quality == 0 ? "OFF" : (quality == 1 ? "LQ" : "HQ");
+                        mirrorButtonTexts[index].text = mirrorDirections[index] + "\n" + state;
                     }
                     else if (index == mirrorDirections.Length) mirrorButtonTexts[index].text = mirrorAllOff;
-                    else if (index == mirrorDirections.Length + 1)
-                        mirrorButtonTexts[index].text =
-                            mirrorQuality + "  " + (_mirrorHighQuality ? "HQ" : "LQ");
                 }
             if (actionButtonTexts != null)
                 for (int index = 0; index < actionButtonTexts.Length && index < actionButtons.Length; index++)
@@ -550,7 +541,6 @@ namespace StargazingHill
             PlayerData.SetInt(MirrorQuality2Key, _mirrorQuality[2]);
             PlayerData.SetInt(MirrorQuality3Key, _mirrorQuality[3]);
             PlayerData.SetInt(MirrorQuality4Key, _mirrorQuality[4]);
-            PlayerData.SetBool(MirrorHighQualityKey, _mirrorHighQuality);
             PlayerData.SetBool(AlarmEnabledKey, _alarmEnabled);
             PlayerData.SetInt(AlarmHourKey, _alarmHour);
             PlayerData.SetInt(AlarmMinuteKey, _alarmMinute);

@@ -421,8 +421,11 @@ namespace StargazingHill.Editor
             panel.layer = pickupLayer;
 
             BoxCollider collider = panel.AddComponent<BoxCollider>();
-            collider.size = new Vector3(2.35f, 2.05f, 0.12f);
-            collider.center = new Vector3(0f, 0f, 0.08f);
+            // The old box sat wholly behind the panel face, so a grab from the front never reached
+            // it. A top grip straddling the sheet is reachable from either side and leaves the
+            // button area free.
+            collider.size = new Vector3(2.45f, 0.26f, 0.20f);
+            collider.center = new Vector3(0f, 1.10f, 0f);
             collider.isTrigger = true;
 
             Rigidbody body = panel.AddComponent<Rigidbody>();
@@ -432,7 +435,7 @@ namespace StargazingHill.Editor
 
             VRCPickup pickup = panel.AddComponent<VRCPickup>();
             pickup.pickupable = true;
-            pickup.proximity = 0.75f;
+            pickup.proximity = 1.2f;
             pickup.InteractionText = "Grab Meteor Debug Panel";
             pickup.UseText = "Use Debug Controls";
             pickup.orientation = VRC_Pickup.PickupOrientation.Any;

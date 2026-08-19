@@ -34,7 +34,13 @@ namespace StargazingHill.Editor
         // The four upright mirrors stand on the ground just outside the picnic mat edge.
         private const float MirrorEdgeMargin = 0.06f;
         private const float MirrorGroundClearance = 0.02f;
-        private const float MirrorHeight = 2.15f;
+        // Icon shapes are authored in a ~1.4 unit square, so this lands them near 0.16 board units.
+        private const float SectionIconScale = 0.115f;
+        // The mat drawn in the middle of the direction cross, and the glyph on a toggle button.
+        private const float MatIconScale = 0.16f;
+        private const float ButtonIconScale = 0.115f;
+        // Taller than the old panels because the uphill side is now partly buried.
+        private const float MirrorHeight = 2.85f;
         private const float MirrorCeilingHeight = 2.55f;
         // Docked beside the tree base and facing the picnic blanket.  Text and controls render
         // toward local -Z, so this yaw intentionally points -Z toward the blanket.
@@ -124,8 +130,8 @@ namespace StargazingHill.Editor
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
             // Keep pickup handling on a narrow top grip so it does not steal the UI ray
             // from buttons and the slider across the entire face of the board.
-            pickupCollider.center = new Vector3(0f, 1.27f, 0.05f);
-            pickupCollider.size = new Vector3(2.86f, 0.14f, 0.16f);
+            pickupCollider.center = new Vector3(0f, 1.25f, 0.02f);
+            pickupCollider.size = new Vector3(2.86f, 0.18f, 0.30f);
             pickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -133,7 +139,8 @@ namespace StargazingHill.Editor
             body.angularDrag = 8f;
             VRCPickup pickup = board.AddComponent<VRCPickup>();
             pickup.pickupable = true;
-            pickup.proximity = 0.35f;
+            // 0.35 m meant standing almost against the board before it offered to be picked up.
+            pickup.proximity = 1.2f;
             pickup.InteractionText = "設定ボードを持つ / Grab settings board";
             pickup.UseText = string.Empty;
             pickup.orientation = VRC_Pickup.PickupOrientation.Any;
@@ -149,7 +156,7 @@ namespace StargazingHill.Editor
                 font, textMaterial, new Color(0.78f, 0.90f, 1f));
             title.transform.parent.name = "TitleCanvas";
             GameObject languageButton = CreateButton(board.transform, "LanguageToggle", "日→EN",
-                new Vector3(1.06f, 1.06f, -0.0125f), new Vector3(0.56f, 0.22f, 0.019f),
+                new Vector3(1.06f, 1.02f, -0.0125f), new Vector3(0.56f, 0.22f, 0.019f),
                 0.050f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.LanguageToggle, 0, "Language / 言語");
             Text languageButtonText = GetButtonLabel(languageButton);
@@ -163,113 +170,138 @@ namespace StargazingHill.Editor
             CreateCube("ColumnDivider", board.transform, new Vector3(0.06f, -0.25f, -0.026f),
                 new Vector3(0.012f, 2.00f, 0.012f), accentMaterial, false);
 
-            Text mirrorState = CreateText(board.transform, "ミラー（HQは高負荷）  ON 0 / 5  LQ",
-                new Vector3(-1.30f, 0.70f, -0.028f), 0.046f, TextAnchor.UpperLeft,
+            Text mirrorState = CreateText(board.transform, "ミラー（HQは高負荷）  LQ 0 / HQ 0",
+                new Vector3(-1.16f, 0.70f, -0.028f), 0.046f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             mirrorState.transform.parent.name = "MirrorStateCanvas";
-            // One ON/OFF toggle per direction in a two-column grid, then a clear-all button and a
-            // single LQ/HQ switch that applies to whichever mirrors are on.
+            // Laid out the way the directions sit around someone on the mat: up and down above and
+            // below, left and right beside, ceiling in the corner, and the mat itself in the middle.
+            // Each button walks its own mirror through OFF, LQ and HQ.
             string[] mirrorDirections = { "上", "下", "左", "右", "天井" };
             string[] mirrorNames = { "Up", "Down", "Left", "Right", "Ceiling" };
-            Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];
+            Vector2[] mirrorCells =
+            {
+                new Vector2(-0.62f, 0.50f), new Vector2(-0.62f, 0.02f),
+                new Vector2(-1.00f, 0.26f), new Vector2(-0.24f, 0.26f),
+                new Vector2(-0.24f, 0.50f)
+            };
+            Vector3 mirrorButtonScale = new Vector3(0.34f, 0.20f, 0.019f);
+            Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 1];
             for (int mirrorIndex = 0; mirrorIndex < mirrorDirections.Length; mirrorIndex++)
             {
-                float x = mirrorIndex % 2 == 0 ? -1.02f : -0.32f;
-                float y = 0.48f - (mirrorIndex / 2) * 0.26f;
                 GameObject mirrorButton = CreateButton(board.transform,
-                    "Mirror_" + mirrorNames[mirrorIndex], mirrorDirections[mirrorIndex] + "  OFF",
-                    new Vector3(x, y, -0.0125f), new Vector3(0.64f, 0.22f, 0.019f),
-                    0.045f, buttonMaterial, font, textMaterial, controller,
+                    "Mirror_" + mirrorNames[mirrorIndex],
+                    mirrorDirections[mirrorIndex] + "\nOFF",
+                    new Vector3(mirrorCells[mirrorIndex].x, mirrorCells[mirrorIndex].y, -0.0125f),
+                    mirrorButtonScale, 0.038f, buttonMaterial, font, textMaterial, controller,
                     WorldSettingsButton.Mirror, mirrorIndex,
-                    "Mirror " + mirrorNames[mirrorIndex] + " ON/OFF");
+                    "Mirror " + mirrorNames[mirrorIndex] + " OFF/LQ/HQ");
                 mirrorButtonTexts[mirrorIndex] = GetButtonLabel(mirrorButton);
             }
-            mirrorButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "MirrorsAllOff", "すべてOFF",
-                new Vector3(-0.32f, -0.04f, -0.0125f), new Vector3(0.64f, 0.22f, 0.019f),
-                0.045f, buttonMaterial, font, textMaterial, controller,
+            mirrorButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "MirrorsAllOff",
+                "すべて\nOFF", new Vector3(-0.24f, 0.02f, -0.0125f), mirrorButtonScale,
+                0.038f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.MirrorsOff, 0, "All mirrors OFF"));
-            mirrorButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "MirrorQualityToggle", "画質  LQ",
-                new Vector3(-0.67f, -0.32f, -0.0125f), new Vector3(1.34f, 0.22f, 0.019f),
-                0.045f, buttonMaterial, font, textMaterial, controller,
-                WorldSettingsButton.MirrorQuality, 0, "Mirror quality LQ/HQ"));
+            CreateSectionIcon(board.transform, "MirrorMatIcon", SettingsIconMeshes.EnsureBed(),
+                new Vector3(-0.62f, 0.26f, -0.028f), accentMaterial, MatIconScale);
 
             Text nightModeText = CreateText(board.transform, "ナイトモード",
-                new Vector3(-1.30f, -0.56f, -0.028f), 0.052f, TextAnchor.UpperLeft,
+                new Vector3(-1.16f, -0.26f, -0.028f), 0.052f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             Slider slider = CreateNightSlider(board.transform, textMaterial, accentMaterial);
-            Text[] actionButtonTexts = new Text[10];
+            Text[] actionButtonTexts = new Text[9];
             // Desktop players steer the camera with the mouse, so a world-space slider cannot
             // realistically be dragged. These give the same range in 10% steps.
-            CreateButton(board.transform, "NightDown", "−", new Vector3(-0.37f, -0.76f, -0.0125f),
+            CreateButton(board.transform, "NightDown", "−", new Vector3(-0.37f, -0.46f, -0.0125f),
                 new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.NightAdjust, -10, "Night mode -10%");
-            CreateButton(board.transform, "NightUp", "＋", new Vector3(-0.11f, -0.76f, -0.0125f),
+            CreateButton(board.transform, "NightUp", "＋", new Vector3(-0.11f, -0.46f, -0.0125f),
                 new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.NightAdjust, 10, "Night mode +10%");
 
             Text notifyState = CreateText(board.transform, "入退室通知  音 ON / 表示 ON",
-                new Vector3(-1.30f, -0.92f, -0.028f), 0.042f, TextAnchor.UpperLeft,
+                new Vector3(-1.16f, -0.76f, -0.028f), 0.042f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             notifyState.transform.parent.name = "NotifyStateCanvas";
-            actionButtonTexts[8] = GetButtonLabel(CreateButton(board.transform, "NotifySoundToggle",
-                "通知音 ON/OFF", new Vector3(-1.02f, -1.14f, -0.0125f),
-                new Vector3(0.64f, 0.22f, 0.019f), 0.038f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.NotifySoundToggle, 0, "Join/leave sound ON/OFF"));
-            actionButtonTexts[9] = GetButtonLabel(CreateButton(board.transform, "NotifyDisplayToggle",
-                "入退室表示 ON/OFF", new Vector3(-0.32f, -1.14f, -0.0125f),
-                new Vector3(0.64f, 0.22f, 0.019f), 0.034f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.NotifyDisplayToggle, 0, "Join/leave toast ON/OFF"));
+            GameObject notifySoundOffMark = CreateIconButton(board.transform, "NotifySoundToggle",
+                SettingsIconMeshes.EnsureBell(), new Vector3(-1.00f, -1.04f, -0.0125f),
+                new Vector3(0.32f, 0.28f, 0.019f), buttonMaterial, accentMaterial, font,
+                textMaterial, controller, WorldSettingsButton.NotifySoundToggle,
+                "Join/leave sound ON/OFF");
+            GameObject notifyDisplayOffMark = CreateIconButton(board.transform, "NotifyDisplayToggle",
+                SettingsIconMeshes.EnsureReport(), new Vector3(-0.62f, -1.04f, -0.0125f),
+                new Vector3(0.32f, 0.28f, 0.019f), buttonMaterial, accentMaterial, font,
+                textMaterial, controller, WorldSettingsButton.NotifyDisplayToggle,
+                "Join/leave toast ON/OFF");
 
             Text alarmState = CreateText(board.transform, "ALARM  22:00  OFF",
-                new Vector3(0.20f, 0.70f, -0.028f), 0.060f, TextAnchor.UpperLeft,
+                new Vector3(0.34f, 0.72f, -0.028f), 0.060f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             alarmState.transform.parent.name = "AlarmStateCanvas";
-            actionButtonTexts[0] = GetButtonLabel(CreateButton(board.transform, "AlarmHourDown", "時−", new Vector3(0.36f, 0.46f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1"));
-            actionButtonTexts[1] = GetButtonLabel(CreateButton(board.transform, "AlarmHourUp", "時＋", new Vector3(0.78f, 0.46f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1"));
-            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−", new Vector3(0.36f, 0.18f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5"));
-            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋", new Vector3(0.78f, 0.18f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.052f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5"));
-            actionButtonTexts[4] = GetButtonLabel(CreateButton(board.transform, "AlarmToggle", "ON/OFF", new Vector3(1.20f, 0.46f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.044f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF"));
-            actionButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "AlarmStop", "停止", new Vector3(1.20f, 0.18f, -0.0125f),
-                new Vector3(0.38f, 0.24f, 0.019f), 0.046f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm"));
+            Vector3 alarmButtonScale = new Vector3(0.38f, 0.24f, 0.019f);
+            actionButtonTexts[0] = GetButtonLabel(CreateButton(board.transform, "AlarmHourDown", "時−",
+                new Vector3(0.36f, 0.52f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1"));
+            actionButtonTexts[1] = GetButtonLabel(CreateButton(board.transform, "AlarmHourUp", "時＋",
+                new Vector3(0.78f, 0.52f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1"));
+            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−",
+                new Vector3(0.36f, 0.26f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5"));
+            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋",
+                new Vector3(0.78f, 0.26f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5"));
+            actionButtonTexts[4] = GetButtonLabel(CreateButton(board.transform, "AlarmToggle", "ON/OFF",
+                new Vector3(1.20f, 0.52f, -0.0125f), alarmButtonScale, 0.044f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF"));
+            actionButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "AlarmStop", "停止",
+                new Vector3(1.20f, 0.26f, -0.0125f), alarmButtonScale, 0.046f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm"));
+            actionButtonTexts[8] = GetButtonLabel(CreateButton(board.transform, "AlarmReset", "リセット",
+                new Vector3(0.78f, 0.00f, -0.0125f), new Vector3(1.24f, 0.22f, 0.019f), 0.046f,
+                buttonMaterial, font, textMaterial, controller, WorldSettingsButton.AlarmReset, 0,
+                "Reset alarm to 22:00 OFF"));
 
             Text radioState = CreateText(board.transform, "ラジオ音声  ON",
-                new Vector3(0.20f, -0.10f, -0.028f), 0.046f, TextAnchor.UpperLeft,
+                new Vector3(0.34f, -0.24f, -0.028f), 0.046f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             radioState.transform.parent.name = "RadioStateCanvas";
-            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "RadioToggle", "音声 ON/OFF", new Vector3(0.78f, -0.32f, -0.0125f),
-                new Vector3(1.24f, 0.24f, 0.019f), 0.041f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "RadioToggle",
+                "音声 ON/OFF", new Vector3(0.78f, -0.44f, -0.0125f),
+                new Vector3(1.24f, 0.22f, 0.019f), 0.041f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.RadioToggle, 0, "Radio speaker ON/OFF"));
             Text radioVolumeText = CreateText(board.transform, "ラジオ音量  85%",
-                new Vector3(0.20f, -0.56f, -0.028f), 0.044f, TextAnchor.UpperLeft,
+                new Vector3(0.34f, -0.66f, -0.028f), 0.044f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             radioVolumeText.transform.parent.name = "RadioVolumeCanvas";
             Slider radioVolumeSlider = CreateSlider(board.transform, "RadioVolumeSliderCanvas",
-                new Vector3(0.56f, -0.76f, -0.032f), new Vector2(320f, 40f),
+                new Vector3(0.60f, -0.86f, -0.032f), new Vector2(260f, 40f),
                 textMaterial, accentMaterial, WorldRadioSpeaker.DefaultLocalVolume);
-            CreateButton(board.transform, "RadioVolumeDown", "−", new Vector3(1.02f, -0.76f, -0.0125f),
+            CreateButton(board.transform, "RadioVolumeDown", "−", new Vector3(1.02f, -0.86f, -0.0125f),
                 new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.RadioVolumeAdjust, -10, "Radio volume -10%");
-            CreateButton(board.transform, "RadioVolumeUp", "＋", new Vector3(1.28f, -0.76f, -0.0125f),
+            CreateButton(board.transform, "RadioVolumeUp", "＋", new Vector3(1.28f, -0.86f, -0.0125f),
                 new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.RadioVolumeAdjust, 10, "Radio volume +10%");
             Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
-                new Vector3(0.20f, -0.92f, -0.028f), 0.044f, TextAnchor.UpperLeft,
+                new Vector3(0.34f, -1.02f, -0.028f), 0.044f, TextAnchor.UpperLeft,
                 font, textMaterial, Color.white);
             saveState.transform.parent.name = "SaveStateCanvas";
-            actionButtonTexts[7] = GetButtonLabel(CreateButton(board.transform, "SaveToggle", "保存 ON/OFF", new Vector3(0.78f, -1.14f, -0.0125f),
-                new Vector3(1.24f, 0.22f, 0.019f), 0.040f, buttonMaterial, font, textMaterial,
+            actionButtonTexts[7] = GetButtonLabel(CreateButton(board.transform, "SaveToggle",
+                "保存 ON/OFF", new Vector3(0.78f, -1.20f, -0.0125f),
+                new Vector3(1.24f, 0.20f, 0.019f), 0.040f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.SaveToggle, 0, "Save local settings ON/OFF"));
+
+            CreateSectionIcon(board.transform, "MirrorIcon", SettingsIconMeshes.EnsureBed(),
+                new Vector3(-1.30f, 0.677f, -0.028f), accentMaterial, SectionIconScale);
+            CreateSectionIcon(board.transform, "NightModeIcon", SettingsIconMeshes.EnsureMoon(),
+                new Vector3(-1.30f, -0.288f, -0.028f), accentMaterial, SectionIconScale);
+            CreateSectionIcon(board.transform, "NotifyIcon", SettingsIconMeshes.EnsurePresence(),
+                new Vector3(-1.30f, -0.783f, -0.028f), accentMaterial, SectionIconScale);
+            CreateSectionIcon(board.transform, "AlarmIcon", SettingsIconMeshes.EnsureAlarm(),
+                new Vector3(0.21f, 0.690f, -0.028f), accentMaterial, SectionIconScale);
+            CreateSectionIcon(board.transform, "RadioVolumeIcon", SettingsIconMeshes.EnsureVolume(),
+                new Vector3(0.21f, -0.683f, -0.028f), accentMaterial, SectionIconScale);
 
             AudioSource alarmAudio = system.AddComponent<AudioSource>();
             alarmAudio.clip = alarmClip;
@@ -313,6 +345,8 @@ namespace StargazingHill.Editor
             controller.radioVolumeSlider = radioVolumeSlider;
             controller.presenceNotifier = notifier;
             controller.notifyText = notifyState;
+            controller.notifySoundOffMark = notifySoundOffMark;
+            controller.notifyDisplayOffMark = notifyDisplayOffMark;
             UdonSharpEditorUtility.CopyProxyToUdon(controller);
             EditorUtility.SetDirty(controller);
 
@@ -345,8 +379,9 @@ namespace StargazingHill.Editor
                 controller.radioVolumeSlider == null || controller.radioVolumeText == null ||
                 controller.titleText == null || controller.nightModeText == null ||
                 controller.languageButtonText == null || controller.mirrorButtonTexts == null ||
-                controller.mirrorButtonTexts.Length != 7 || controller.actionButtonTexts == null ||
-                controller.actionButtonTexts.Length != 10 ||
+                controller.mirrorButtonTexts.Length != 6 || controller.actionButtonTexts == null ||
+                controller.actionButtonTexts.Length != 9 ||
+                controller.notifySoundOffMark == null || controller.notifyDisplayOffMark == null ||
                 controller.presenceNotifier == null || controller.notifyText == null ||
                 boardPickup == null || board.GetComponent<WorldSettingsBoardPickup>() == null ||
                 treeToggle == null || treeToggleButton == null || treeGearIcon == null ||
@@ -373,7 +408,7 @@ namespace StargazingHill.Editor
             if (colliderWorldWidth < 0.29f || colliderWorldWidth > 0.31f)
                 throw new InvalidOperationException(
                     "Tree settings interaction target must remain a compact square around the visible gear.");
-            if (Mathf.Abs(boardPickup.proximity - 0.35f) > 0.001f ||
+            if (Mathf.Abs(boardPickup.proximity - 1.2f) > 0.001f ||
                 !string.IsNullOrEmpty(boardPickup.UseText) || board.GetComponent<VRCObjectSync>() != null)
                 throw new InvalidOperationException("Local settings board pickup must remain local and UI-safe.");
             if ((board.transform.position - BoardPosition).sqrMagnitude > 0.0001f ||
@@ -384,11 +419,33 @@ namespace StargazingHill.Editor
             BoxCollider boardGrip = board.GetComponent<BoxCollider>();
             if (boardGrip == null || boardGrip.size.y > 0.30f)
                 throw new InvalidOperationException("Local settings board pickup grip overlaps the control area.");
+            string[] iconNames =
+            {
+                "MirrorIcon", "NightModeIcon", "NotifyIcon", "AlarmIcon", "RadioVolumeIcon",
+                "MirrorMatIcon", "NotifySoundToggleIcon", "NotifyDisplayToggleIcon",
+                "NotifySoundToggleOffMark", "NotifyDisplayToggleOffMark"
+            };
+            for (int index = 0; index < iconNames.Length; index++)
+            {
+                Transform icon = board.transform.Find(iconNames[index]);
+                MeshFilter iconFilter = icon != null ? icon.GetComponent<MeshFilter>() : null;
+                MeshRenderer iconRenderer = icon != null ? icon.GetComponent<MeshRenderer>() : null;
+                if (iconFilter == null || iconFilter.sharedMesh == null ||
+                    iconFilter.sharedMesh.vertexCount == 0 || iconRenderer == null ||
+                    iconRenderer.sharedMaterial == null ||
+                    iconRenderer.sharedMaterial.shader == null ||
+                    iconRenderer.sharedMaterial.shader.name != "Unlit/Color" ||
+                    icon.GetComponent<Collider>() != null)
+                    throw new InvalidOperationException(
+                        "Generated settings section icon is missing or malformed: " + iconNames[index]);
+            }
             if (UnityEngine.Object.FindObjectOfType<EventSystem>(true) == null)
                 throw new InvalidOperationException(
                     "The scene has no EventSystem, so the board sliders cannot receive drag events.");
             ValidateWorldUiTarget(controller.nightSlider.gameObject);
             ValidateWorldUiTarget(controller.radioVolumeSlider.gameObject);
+            ValidateSliderClearance(controller.settingsBoard, controller.nightSlider);
+            ValidateSliderClearance(controller.settingsBoard, controller.radioVolumeSlider);
             VRCUiShape[] shapes = system.GetComponentsInChildren<VRCUiShape>(true);
             for (int index = 0; index < shapes.Length; index++)
                 ValidateWorldUiTarget(shapes[index].gameObject);
@@ -415,11 +472,20 @@ namespace StargazingHill.Editor
             float matHalfRight;
             ResolveBlanketFrame(out matCenter, out matForward, out matRight,
                 out matHalfForward, out matHalfRight);
+            float matOuterForward = matHalfForward + MirrorEdgeMargin;
+            float matOuterRight = matHalfRight + MirrorEdgeMargin;
             float[] expectedDistances =
             {
-                matHalfForward + MirrorEdgeMargin, matHalfForward + MirrorEdgeMargin,
-                matHalfRight + MirrorEdgeMargin, matHalfRight + MirrorEdgeMargin
+                matOuterForward, matOuterForward, matOuterRight, matOuterRight
             };
+            float[] expectedWidths =
+            {
+                matOuterRight * 2f, matOuterRight * 2f, matOuterForward * 2f, matOuterForward * 2f
+            };
+            // The four panels share one base so the ring stays closed on the slope; validate against
+            // that shared height rather than the ground directly under each panel.
+            float expectedBaseHeight = ResolveMirrorRingBaseHeight(matCenter, matForward, matRight,
+                matOuterForward, matOuterRight);
             for (int index = 0; index < 4; index++)
             {
                 Transform mirror = controller.mirrorsLow[index].transform;
@@ -429,13 +495,27 @@ namespace StargazingHill.Editor
                 if (Vector3.Dot(towardBlanket, reflectiveFront) < 0.95f)
                     throw new InvalidOperationException(
                         "Picnic mirror reflective face points away at index " + index + ".");
-                // The panels must hug the mat edge and stand on the ground rather than float.
+                // The panels must hug the mat edge, span the full outer edge so the corners meet,
+                // and share one base height rather than float or step against each other.
                 float offset = Vector3.ProjectOnPlane(mirror.position - matCenter, Vector3.up).magnitude;
                 float baseHeight = mirror.position.y - MirrorHeight * 0.5f;
                 if (Mathf.Abs(offset - expectedDistances[index]) > 0.01f ||
-                    Mathf.Abs(baseHeight - MirrorBaseHeight(mirror.position)) > 0.01f)
+                    Mathf.Abs(mirror.localScale.x - expectedWidths[index]) > 0.01f ||
+                    Mathf.Abs(baseHeight - expectedBaseHeight) > 0.01f)
                     throw new InvalidOperationException(
                         "Picnic mirror is not aligned to the mat edge at index " + index + ".");
+            }
+            for (int index = 0; index < controller.mirrorsLow.Length; index++)
+            {
+                SerializedObject lowSerialized = new SerializedObject(
+                    controller.mirrorsLow[index].GetComponent<VRCMirrorReflection>());
+                SerializedObject highSerialized = new SerializedObject(
+                    controller.mirrorsHigh[index].GetComponent<VRCMirrorReflection>());
+                int lowMask = lowSerialized.FindProperty("m_ReflectLayers").intValue;
+                int highMask = highSerialized.FindProperty("m_ReflectLayers").intValue;
+                if (lowMask == highMask || (lowMask & ~highMask) != 0)
+                    throw new InvalidOperationException(
+                        "LQ mirrors must reflect strictly less than HQ at index " + index + ".");
             }
             if (Vector3.Dot(-controller.mirrorsLow[4].transform.forward, Vector3.down) < 0.95f)
                 throw new InvalidOperationException("Ceiling mirror reflective face does not point down.");
@@ -484,6 +564,61 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException(
                     "World UI surface is unreachable by the VRChat pointer: " + canvasObject.name +
                     " (layer " + canvasObject.layer + ", collider " + (target != null) + ").");
+        }
+
+        /// <summary>
+        /// A slider is dragged, not tapped, so anything sharing its patch of board steals the drag or
+        /// gets covered by it. The night bar spent a round sitting on top of the join/leave status
+        /// line because nothing here objected, so the board is checked geometrically now.
+        /// </summary>
+        private static void ValidateSliderClearance(GameObject board, Slider slider)
+        {
+            Rect sliderRect = LocalRect(board.transform, slider.transform,
+                slider.GetComponent<RectTransform>().sizeDelta, new Vector2(0.5f, 0.5f));
+            Transform sliderRoot = slider.transform;
+            MeshFilter[] meshes = board.GetComponentsInChildren<MeshFilter>(true);
+            for (int index = 0; index < meshes.Length; index++)
+            {
+                Transform candidate = meshes[index].transform;
+                // The sheet is the board's own backing plate, so of course everything sits on it.
+                if (candidate.IsChildOf(sliderRoot) || candidate.name == "PanelSheet") continue;
+                if (meshes[index].sharedMesh == null) continue;
+                Vector3 size = meshes[index].sharedMesh.bounds.size;
+                Rect other = LocalRect(board.transform, candidate, new Vector2(size.x, size.y),
+                    new Vector2(0.5f, 0.5f));
+                if (sliderRect.Overlaps(other))
+                    throw new InvalidOperationException(
+                        "Settings board slider " + slider.name + " overlaps " + candidate.name +
+                        "; the drag surface must stand clear of every other control and label.");
+            }
+            // Labels are CanvasRenderer based, so they never appear above. Their rect is a deliberately
+            // oversized 2000x1100 overflow box, which is why the glyph extent is measured instead.
+            Text[] labels = board.GetComponentsInChildren<Text>(true);
+            for (int index = 0; index < labels.Length; index++)
+            {
+                RectTransform labelRect = labels[index].rectTransform;
+                if (labelRect.IsChildOf(sliderRoot)) continue;
+                Rect other = LocalRect(board.transform, labelRect.parent,
+                    new Vector2(labels[index].preferredWidth, labels[index].preferredHeight),
+                    labelRect.pivot);
+                if (sliderRect.Overlaps(other))
+                    throw new InvalidOperationException(
+                        "Settings board slider " + slider.name + " overlaps the label \"" +
+                        labels[index].text.Replace("\n", " ") +
+                        "\"; the drag surface must stand clear of every other control and label.");
+            }
+        }
+
+        /// <summary>Axis-aligned footprint of a board child, in the board's own XY plane.</summary>
+        private static Rect LocalRect(Transform board, Transform target, Vector2 size, Vector2 pivot)
+        {
+            Vector3 centre = board.InverseTransformPoint(target.position);
+            Vector3 scale = target.lossyScale;
+            Vector3 boardScale = board.lossyScale;
+            float width = size.x * scale.x / boardScale.x;
+            float height = size.y * scale.y / boardScale.y;
+            // Rect grows right and up from its corner, so shift by the pivot to reach that corner.
+            return new Rect(centre.x - width * pivot.x, centre.y - height * pivot.y, width, height);
         }
 
         private static void ValidateTreeSettingsAccess(Transform treeToggle, Transform treeToggleButton,
@@ -700,6 +835,26 @@ namespace StargazingHill.Editor
                 MirrorGroundClearance;
         }
 
+        /// <summary>
+        /// One shared base for the whole mirror ring, taken from the lowest ground under its four
+        /// outer corners. The mat lies on a slope, so per-panel grounding left steps between
+        /// neighbours; sinking the uphill panels into the hill keeps the top edge level and the
+        /// ring unbroken. Generation and validation must agree, so both call this.
+        /// </summary>
+        private static float ResolveMirrorRingBaseHeight(Vector3 center, Vector3 forward,
+            Vector3 right, float outerForward, float outerRight)
+        {
+            float baseHeight = float.MaxValue;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                Vector3 point = center +
+                    forward * ((corner < 2 ? 1f : -1f) * outerForward) +
+                    right * ((corner % 2 == 0 ? 1f : -1f) * outerRight);
+                baseHeight = Mathf.Min(baseHeight, MirrorBaseHeight(point));
+            }
+            return baseHeight;
+        }
+
         private static void CreateMirrors(Transform parent, Material material, Material frameMaterial,
             out GameObject[] lowQuality, out GameObject[] highQuality)
         {
@@ -712,20 +867,24 @@ namespace StargazingHill.Editor
             float halfRight;
             ResolveBlanketFrame(out center, out forward, out right, out halfForward, out halfRight);
             Vector3[] outward = { forward, -forward, -right, right };
-            // Each panel is as wide as the mat edge it stands on and starts at the mat surface.
-            float[] distances =
+            // The four panels close into a rectangle around the mat: each spans the full outer
+            // edge, so the corners meet instead of leaving the gaps the old edge-length panels had.
+            float outerForward = halfForward + MirrorEdgeMargin;
+            float outerRight = halfRight + MirrorEdgeMargin;
+            float[] distances = { outerForward, outerForward, outerRight, outerRight };
+            float[] widths =
             {
-                halfForward + MirrorEdgeMargin, halfForward + MirrorEdgeMargin,
-                halfRight + MirrorEdgeMargin, halfRight + MirrorEdgeMargin
+                outerRight * 2f, outerRight * 2f, outerForward * 2f, outerForward * 2f
             };
-            float[] widths = { halfRight * 2f, halfRight * 2f, halfForward * 2f, halfForward * 2f };
+            float baseHeight = ResolveMirrorRingBaseHeight(center, forward, right, outerForward,
+                outerRight);
             Vector3[] positions = new Vector3[5];
             Quaternion[] rotations = new Quaternion[5];
             Vector3[] scales = new Vector3[5];
             for (int index = 0; index < 4; index++)
             {
                 Vector3 footing = center + outward[index] * distances[index];
-                footing.y = MirrorBaseHeight(footing) + MirrorHeight * 0.5f;
+                footing.y = baseHeight + MirrorHeight * 0.5f;
                 positions[index] = footing;
                 // Unity's Quad and the VRChat mirror face local -Z.  Point local +Z away
                 // from the blanket so every reflective face looks inward.
@@ -739,16 +898,20 @@ namespace StargazingHill.Editor
             root.transform.SetParent(parent, false);
             lowQuality = new GameObject[names.Length];
             highQuality = new GameObject[names.Length];
-            int reflectLayers = LayerMask.GetMask("Default", "Environment", "Pickup", "Walkthrough",
-                "Player", "PlayerLocal", "MirrorReflection");
+            // LQ reflects avatars alone, which is the cheap "check how I look" mode. HQ adds the
+            // world back in and becomes a real mirror. Previously both used the same mask, so the
+            // two settings looked identical.
+            int avatarLayers = LayerMask.GetMask("Player", "PlayerLocal", "MirrorReflection");
+            int worldLayers = avatarLayers | LayerMask.GetMask("Default", "Environment", "Pickup",
+                "Walkthrough");
             for (int index = 0; index < names.Length; index++)
             {
                 lowQuality[index] = CreateMirrorVariant(root.transform, "Mirror_" + names[index] + "_LQ",
                     positions[index], rotations[index], scales[index], material, frameMaterial,
-                    reflectLayers, true, 1);
+                    avatarLayers, true, 1);
                 highQuality[index] = CreateMirrorVariant(root.transform, "Mirror_" + names[index] + "_HQ",
                     positions[index], rotations[index], scales[index], material, frameMaterial,
-                    reflectLayers, false, 4);
+                    worldLayers, false, 4);
             }
         }
 
@@ -856,6 +1019,47 @@ namespace StargazingHill.Editor
             return source;
         }
 
+        /// <summary>Flat generated icon in a section heading margin. No collider, no shadows.</summary>
+        private static GameObject CreateSectionIcon(Transform parent, string name, Mesh mesh,
+            Vector3 position, Material material, float scale)
+        {
+            GameObject icon = new GameObject(name);
+            icon.transform.SetParent(parent, false);
+            icon.transform.localPosition = position;
+            icon.transform.localScale = Vector3.one * scale;
+            icon.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = icon.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return icon;
+        }
+
+        /// <summary>
+        /// A button whose whole meaning is one glyph. Returns the struck-through overlay, which the
+        /// controller shows while the setting is off, so the icon reads as its own switch.
+        /// </summary>
+        private static GameObject CreateIconButton(Transform parent, string name, Mesh mesh,
+            Vector3 position, Vector3 scale, Material buttonMaterial, Material iconMaterial,
+            Font font, Material textMaterial, WorldSettingsController controller, int action,
+            string interactionText)
+        {
+            GameObject button = CreateButton(parent, name, string.Empty, position, scale,
+                0.040f, buttonMaterial, font, textMaterial, controller, action, 0, interactionText);
+            // The label canvas would only ever draw an empty string.
+            Transform label = button.transform.Find("TextCanvas");
+            if (label != null) UnityEngine.Object.DestroyImmediate(label.gameObject);
+            // Icons live outside the button so the button's own non-uniform scale cannot squash them.
+            Vector3 face = parent.InverseTransformPoint(button.transform.localPosition);
+            CreateSectionIcon(parent, name + "Icon", mesh,
+                new Vector3(position.x, position.y, -0.028f), iconMaterial, ButtonIconScale);
+            GameObject offMark = CreateSectionIcon(parent, name + "OffMark",
+                SettingsIconMeshes.EnsureSlash(), new Vector3(position.x, position.y, -0.030f),
+                iconMaterial, ButtonIconScale);
+            offMark.SetActive(false);
+            return offMark;
+        }
+
         private static GameObject CreateNightOverlay(Transform parent, Material material)
         {
             GameObject overlay = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -956,6 +1160,13 @@ namespace StargazingHill.Editor
             }
             mesh.SetVertices(vertices);
             mesh.SetNormals(normals);
+            // Same UV0 channel the icon meshes carry: the dynamic batcher merges them together and
+            // reads the channel off every mesh in the batch.
+            var uv = new List<Vector2>(vertices.Count);
+            for (int index = 0; index < vertices.Count; index++)
+                uv.Add(new Vector2(vertices[index].x / (toothRadius * 2f) + 0.5f,
+                    vertices[index].y / (toothRadius * 2f) + 0.5f));
+            mesh.SetUVs(0, uv);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
             if (createAsset) AssetDatabase.CreateAsset(mesh, GearIconMeshPath);
@@ -965,8 +1176,10 @@ namespace StargazingHill.Editor
 
         private static Slider CreateNightSlider(Transform parent, Material uiMaterial, Material accentMaterial)
         {
+            // Same row as the −/＋ buttons at x -0.37 and -0.11: the bar spans -1.16..-0.52 and stops
+            // clear of them. It used to sit at y -0.76, right on top of the join/leave status line.
             return CreateSlider(parent, "NightModeSliderCanvas",
-                new Vector3(-0.90f, -0.76f, -0.032f), new Vector2(380f, 44f),
+                new Vector3(-0.84f, -0.46f, -0.032f), new Vector2(320f, 44f),
                 uiMaterial, accentMaterial, 0f);
         }
 

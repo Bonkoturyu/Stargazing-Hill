@@ -691,9 +691,9 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
     assert "private const float BoardScale = 0.22f;" in settings_installer
-    assert "pickupCollider.center = new Vector3(0f, 1.27f, 0.05f);" in settings_installer
-    assert "pickupCollider.size = new Vector3(2.86f, 0.14f, 0.16f);" in settings_installer
-    assert "pickup.proximity = 0.35f;" in settings_installer
+    assert "pickupCollider.center = new Vector3(0f, 1.25f, 0.02f);" in settings_installer
+    assert "pickupCollider.size = new Vector3(2.86f, 0.18f, 0.30f);" in settings_installer
+    assert "pickup.proximity = 1.2f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
     assert "VRCMirrorReflection" in settings_installer
@@ -722,12 +722,12 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "EnsureEventSystem(scene);" in settings_installer
     assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
     assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
-    assert "new Vector2(380f, 44f)" in settings_installer
-    assert "new Vector2(320f, 40f)" in settings_installer
+    assert "new Vector2(320f, 44f)" in settings_installer
+    assert "new Vector2(260f, 40f)" in settings_installer
     # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
-    assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 2];" in settings_installer
-    assert "controller.mirrorButtonTexts.Length != 7" in settings_installer
-    assert "controller.actionButtonTexts.Length != 10" in settings_installer
+    assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 1];" in settings_installer
+    assert "controller.mirrorButtonTexts.Length != 6" in settings_installer
+    assert "controller.actionButtonTexts.Length != 9" in settings_installer
     assert "buttons.Length != 23" in settings_installer
     # Sliders cannot be dragged on desktop, so each has step buttons alongside.
     assert 'CreateButton(board.transform, "NightDown"' in settings_installer
@@ -741,8 +741,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'AddStringPersistentListener(uiButton.onClick, backing.SendCustomEvent, "Interact")' not in info_installer
     # Local join/leave chime and head-following toast, each switchable, neither synced.
     assert "CreatePresenceNotifier(system.transform, font, textMaterial)" in settings_installer
-    assert 'CreateButton(board.transform, "NotifySoundToggle"' in settings_installer
-    assert 'CreateButton(board.transform, "NotifyDisplayToggle"' in settings_installer
+    assert 'CreateIconButton(board.transform, "NotifySoundToggle"' in settings_installer
+    assert 'CreateIconButton(board.transform, "NotifyDisplayToggle"' in settings_installer
     assert "EnsureChimeClip(JoinChimePath, 660f, 990f)" in settings_installer
     assert "EnsureChimeClip(LeaveChimePath, 880f, 587f)" in settings_installer
     assert "Local join/leave notifier must stay local" in settings_installer
@@ -784,18 +784,35 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "DisableLabelRaycast(button);" in info_installer
     assert "EnsureProgramAsset(typeof(WorldPresenceNotifier)" in builder
     assert 'CreateButton(board.transform, "MirrorsAllOff"' in settings_installer
-    assert 'CreateButton(board.transform, "MirrorQualityToggle"' in settings_installer
-    assert "WorldSettingsButton.MirrorQuality" in settings_installer
-    assert "MirrorQuality = 10" in settings_button
+    assert "AlarmReset = 10" in settings_button
     assert "public void ToggleMirror(int mirrorIndex)" in settings_controller
-    assert "public void ToggleMirrorQuality()" in settings_controller
-    assert 'MirrorHighQualityKey = "StargazingHill.Settings.MirrorHighQuality"' in settings_controller
+    assert "public void ResetAlarm()" in settings_controller
+    # Each mirror button now cycles its own panel through the three states.
+    assert "int next = _mirrorQuality[index] + 1;" in settings_controller
+    # LQ shows avatars only; HQ adds the world back. The masks must differ.
+    assert 'int avatarLayers = LayerMask.GetMask("Player", "PlayerLocal", "MirrorReflection");' in settings_installer
+    assert "LQ mirrors must reflect strictly less than HQ" in settings_installer
+    # The ring closes around the mat on one shared base height.
+    assert "float outerForward = halfForward + MirrorEdgeMargin;" in settings_installer
+    assert "footing.y = baseHeight + MirrorHeight * 0.5f;" in settings_installer
+    assert "private const float MirrorHeight = 2.85f;" in settings_installer
+    # Generation and validation must resolve that shared base the same way, or the build trips
+    # on its own check. One helper, called from both sides.
+    assert "private static float ResolveMirrorRingBaseHeight(" in settings_installer
+    assert settings_installer.count("ResolveMirrorRingBaseHeight(") == 3
+    # Bell and report icons act as their own switches, struck through when off.
+    icon_mesh_source = (ROOT / "Assets/StargazingHill/Editor/SettingsIconMeshes.cs").read_text(encoding="utf-8")
+    for icon_toggle in ("EnsureBell", "EnsureReport", "EnsureSlash"):
+        assert f"internal static Mesh {icon_toggle}()" in icon_mesh_source, icon_toggle
+    assert "private static GameObject CreateIconButton(" in settings_installer
+    # The night bar shares its row with the -/+ buttons instead of sitting on the join/leave line.
+    assert 'new Vector3(-0.84f, -0.46f, -0.032f), new Vector2(320f, 44f),' in settings_installer
+    assert "private static void ValidateSliderClearance(" in settings_installer
+    assert "notifySoundOffMark.SetActive(!_notifySound)" in settings_controller
     # The mirrors are measured from the rendered mat instead of the off-centre saved anchor.
     assert "ResolveBlanketFrame(out center, out forward, out right, out halfForward, out halfRight);" in settings_installer
     assert "private const float MirrorEdgeMargin = 0.06f;" in settings_installer
     assert "private const float MirrorGroundClearance = 0.02f;" in settings_installer
-    assert "footing.y = MirrorBaseHeight(footing) + MirrorHeight * 0.5f;" in settings_installer
-    assert "private const float MirrorHeight = 2.15f;" in settings_installer
     assert "private const float MirrorCeilingHeight = 2.55f;" in settings_installer
     assert "Picnic mirror is not aligned to the mat edge at index" in settings_installer
     assert "ConfigureRadioSpeaker" in settings_installer and "YamaPlayerSpeaker" in settings_installer
@@ -815,6 +832,15 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "CreateGearIcon(dock.transform, iconMaterial);" in settings_installer
     assert 'new GameObject("GearIcon")' in settings_installer
     assert "EnsureGearIconMesh()" in settings_installer
+    # Section icons are generated meshes, like the gear: no third-party licence, one line weight.
+    icon_meshes = (ROOT / "Assets/StargazingHill/Editor/SettingsIconMeshes.cs").read_text(encoding="utf-8")
+    for icon_builder in ("EnsureMoon", "EnsureVolume", "EnsureBed", "EnsureAlarm", "EnsurePresence"):
+        assert f"internal static Mesh {icon_builder}()" in icon_meshes, icon_builder
+        assert f"SettingsIconMeshes.{icon_builder}()" in settings_installer, icon_builder
+    assert "AddCrescent(" in icon_meshes and "AddRingSector(" in icon_meshes
+    assert "Vector3.back" in icon_meshes
+    assert "private static GameObject CreateSectionIcon(" in settings_installer
+    assert "Generated settings section icon is missing or malformed" in settings_installer
     assert 'shader.name != "Unlit/Color"' in settings_installer
     assert "DestroyImmediate(interactionCanvas.gameObject)" in settings_installer
     assert "ValidateTreeSettingsAccess(" in settings_installer
