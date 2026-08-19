@@ -852,3 +852,29 @@
 | 通知トグルの斜線 | Pending Evidence | 鈴・レポートを押すたびに斜線が出入りし、実際に音と表示が止まることを確認する |
 | Grabのしやすさ | Pending Evidence | VRとDesktopの両方で設定ボードとデバッグパネルを掴めることを確認する |
 | 中央アイコンの妥当性 | Pending Evidence | ▢へ寝床のアイコンを当てたのは推測。敷物を表す図として通じるかを確認し、通じなければ差し替える |
+
+### 2026-08-19 通知位置・天井の隙間・鏡の内側での操作・取っ手・版面
+
+- 要求: 入退室表示をもう少し手前かつ上へ、天井ミラーの隙間から夜空が見えるのを直す、ミラーを出している間は外側の物へ触れないようにする、設定パネルのボタンの大きさと釣り合いを整える、VRでのGrabのしづらさを再検討する
+- 方針: [ADR 0018 追記6](adr/0018-settings-board-usability-fixes.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 入退室表示の位置 | Pass | 前方 1.5→1.15m、視線から 0.48→0.30m 下 |
+| 天井ミラーの隙間 | Pass | 敷物寸法・壁上端より0.30m下 → 外周＋0.16、壁上端から0.05m下。Scene検証で壁より大きいことと上端に接することを確認 |
+| 鏡の内側での操作遮断 | Pass | 各ミラーの子にWalkthroughレイヤーの非trigger `BoxCollider`（面いっぱい、厚み0.025）。ミラーと一緒に出入りする |
+| 遮断方式の根拠 | Pass | `ClientSimRaycaster` はtrigger colliderを素通りし最初の非triggerで止まる。Walkthroughはレイを止めてアバターを止めない |
+| ボタンの版面 | Pass | 行ピッチ0.26・高さ0.22・幅0.34・列間0.04のひとつの格子へ統一。左右の列で行を揃え、横長は3枠幅。Sliderは「−」「＋」で挟んで1行に |
+| 冗長な状態行の削除 | Pass | ラジオ音声と設定保存はボタン自身が状態を表示。`actionButtonTexts` 9→7、多言語配列も同数へ |
+| ミラー見出しアイコンの重複解消 | Pass | 十字の中央と同じ寝床の図が2か所にあったため、節の見出し側を削除 |
+| 取っ手 | Pass | 設定ボード・デバッグパネルの両方に、板から張り出す見えるバーと一辺12〜13cmの掴み判定。Scene検証で「小さすぎないこと」と「すべてのボタンより上にあること」を確認 |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| Udonコンパイル | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-S-Udon.log` |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-S-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-S-Validate.log` |
+| レイアウトのプレビュー確認 | Blocked | Unity Editorがプロジェクトを開いていたためbatchmodeが起動できず、描画できていない。Editorを閉じてから `RenderOpenSettingsLayoutPreviewForBatchMode` を実行する（`-nographics` は外す） |
+| 取っ手のGrab | Pending Evidence | VRとDesktopの両方で、設定ボードとデバッグパネルを掴めることを確認する。これで駄目なら判定の大きさではなく方式を疑う |
+| 天井の閉じ具合 | Pending Evidence | 中から見上げて隙間がないこと、外から見て天井が浮いていないことを確認する |
+| 鏡の内側での操作遮断 | Pending Evidence | ミラーON中に外側の木の歯車やラジオへ手が届かないこと、歩いて外へ出れば触れることを確認する |
+| 入退室表示の位置 | Pending Evidence | 丘の上から見て敷物に埋もれないこと、近すぎて読みにくくならないことを確認する |
+| 版面の釣り合い | Pending Evidence | 実機で見たときのボタンの大きさと間隔を確認する |

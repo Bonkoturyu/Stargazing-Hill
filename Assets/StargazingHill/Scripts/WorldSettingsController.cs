@@ -464,7 +464,7 @@ namespace StargazingHill
             string title = "ローカル設定";
             string night = "ナイトモード";
             string[] mirrorDirections = { "上", "下", "左", "右", "天井" };
-            string[] actionButtons = { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "音声 ON/OFF", "保存 ON/OFF", "リセット" };
+            string[] actionButtons = { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "リセット" };
             string language = "日→EN";
             string mirrorAllOff = "すべてOFF";
             if (_languageIndex == 1)
@@ -472,7 +472,7 @@ namespace StargazingHill
                 title = "LOCAL SETTINGS";
                 night = "NIGHT MODE";
                 mirrorDirections = new[] { "TOP", "BOTTOM", "LEFT", "RIGHT", "CEILING" };
-                actionButtons = new[] { "HOUR−", "HOUR＋", "MIN−", "MIN＋", "ON/OFF", "STOP", "SPEAKER ON/OFF", "SAVE ON/OFF", "RESET" };
+                actionButtons = new[] { "HOUR−", "HOUR＋", "MIN−", "MIN＋", "ON/OFF", "STOP", "RESET" };
                 language = "EN→繁";
                 mirrorAllOff = "ALL OFF";
             }
@@ -481,7 +481,7 @@ namespace StargazingHill
                 title = "本機設定";
                 night = "夜間模式";
                 mirrorDirections = new[] { "上", "下", "左", "右", "天花板" };
-                actionButtons = new[] { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "喇叭 ON/OFF", "儲存 ON/OFF", "重設" };
+                actionButtons = new[] { "時−", "時＋", "分−", "分＋", "ON/OFF", "停止", "重設" };
                 language = "繁→简";
                 mirrorAllOff = "全部關閉";
             }
@@ -490,7 +490,7 @@ namespace StargazingHill
                 title = "本地设置";
                 night = "夜间模式";
                 mirrorDirections = new[] { "上", "下", "左", "右", "天花板" };
-                actionButtons = new[] { "时−", "时＋", "分−", "分＋", "ON/OFF", "停止", "扬声器 ON/OFF", "保存 ON/OFF", "重置" };
+                actionButtons = new[] { "时−", "时＋", "分−", "分＋", "ON/OFF", "停止", "重置" };
                 language = "简→한";
                 mirrorAllOff = "全部关闭";
             }
@@ -499,7 +499,7 @@ namespace StargazingHill
                 title = "로컬 설정";
                 night = "나이트 모드";
                 mirrorDirections = new[] { "위", "아래", "왼쪽", "오른쪽", "천장" };
-                actionButtons = new[] { "시−", "시＋", "분−", "분＋", "ON/OFF", "정지", "스피커 ON/OFF", "저장 ON/OFF", "초기화" };
+                actionButtons = new[] { "시−", "시＋", "분−", "분＋", "ON/OFF", "정지", "초기화" };
                 language = "한→日";
                 mirrorAllOff = "모두 OFF";
             }

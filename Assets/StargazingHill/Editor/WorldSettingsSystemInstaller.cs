@@ -39,9 +39,44 @@ namespace StargazingHill.Editor
         // The mat drawn in the middle of the direction cross, and the glyph on a toggle button.
         private const float MatIconScale = 0.16f;
         private const float ButtonIconScale = 0.115f;
+        // The board's layout grid, in board units on a 2.80 x 2.60 sheet. Both columns hold three
+        // button slots of the same size, the rows line up across the divider, and wide buttons span
+        // all three slots. Section icons sit in a gutter outside the button block; labels start
+        // where the icons end.
+        private const float RowHeight = 0.22f;
+        private const float RowPitch = 0.26f;
+        private const float ButtonWidth = 0.34f;
+        private const float ColumnGap = 0.04f;
+        private const float WideButtonWidth = ButtonWidth * 3f + ColumnGap * 2f;
+        private const float LeftIconX = -1.30f;
+        private const float LeftLabelX = -1.17f;
+        private const float RightIconX = 0.13f;
+        private const float RightLabelX = 0.26f;
+        private const float LeftColumn0X = LeftLabelX + ButtonWidth * 0.5f;
+        private const float LeftColumn1X = LeftColumn0X + ButtonWidth + ColumnGap;
+        private const float LeftColumn2X = LeftColumn1X + ButtonWidth + ColumnGap;
+        private const float RightColumn0X = RightLabelX + ButtonWidth * 0.5f;
+        private const float RightColumn1X = RightColumn0X + ButtonWidth + ColumnGap;
+        private const float RightColumn2X = RightColumn1X + ButtonWidth + ColumnGap;
+        // Rows A through H, top to bottom. A carries the section headings, the rest carry controls.
+        private const float RowB = 0.52f;
+        private const float RowC = RowB - RowPitch;
+        private const float RowD = RowC - RowPitch;
+        private const float RowE = RowD - RowPitch;
+        private const float RowF = RowE - RowPitch;
+        private const float RowG = RowF - RowPitch;
+        private const float RowH = RowG - RowPitch;
+        // A label's transform is its top edge, so this drop centres UpperLeft text on its row.
+        private const float LabelRowOffset = 0.035f;
+        // The stepper buttons that flank each slider, and the bar left between them.
+        private const float StepButtonWidth = 0.22f;
+        private const float SliderBarWidth = WideButtonWidth - (StepButtonWidth + ColumnGap) * 2f;
         // Taller than the old panels because the uphill side is now partly buried.
         private const float MirrorHeight = 2.85f;
-        private const float MirrorCeilingHeight = 2.55f;
+        // How far the lid drops below the wall tops, and how far it overhangs the ring on each axis.
+        // Both exist so the seam is an overlap rather than a butt joint that the sky can leak through.
+        private const float MirrorCeilingDrop = 0.05f;
+        private const float MirrorCornerOverlap = 0.16f;
         // Docked beside the tree base and facing the picnic blanket.  Text and controls render
         // toward local -Z, so this yaw intentionally points -Z toward the blanket.
         private static readonly Vector3 BoardEuler = new Vector3(0f, 59.832f, 0f);
@@ -127,11 +162,15 @@ namespace StargazingHill.Editor
             GameObject sheet = CreateCube("PanelSheet", board.transform, new Vector3(0f, 0f, 0f),
                 new Vector3(2.80f, 2.60f, 0.045f), boardMaterial, false);
 
+            // A grip the player can see and actually hit. The previous one was an invisible 4 cm
+            // strip on the top edge: nothing showed where to aim, and in VR the hand ray had to
+            // land inside it. This one is a bar standing proud of the sheet with a grab volume
+            // roughly 13 cm on a side, well clear of every button so it steals no UI ray.
+            CreateCube("GripBar", board.transform, new Vector3(0f, 1.42f, 0f),
+                new Vector3(2.30f, 0.30f, 0.20f), accentMaterial, false);
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
-            // Keep pickup handling on a narrow top grip so it does not steal the UI ray
-            // from buttons and the slider across the entire face of the board.
-            pickupCollider.center = new Vector3(0f, 1.25f, 0.02f);
-            pickupCollider.size = new Vector3(2.86f, 0.18f, 0.30f);
+            pickupCollider.center = new Vector3(0f, 1.44f, 0f);
+            pickupCollider.size = new Vector3(2.50f, 0.60f, 0.60f);
             pickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -151,27 +190,31 @@ namespace StargazingHill.Editor
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);
 
+            // Everything below lands on one grid so the two columns read as a pair. Rows step by
+            // RowPitch and every rectangular button is RowHeight tall; the three button columns per
+            // side are ButtonWidth wide with ColumnGap between them. Sizes that used to drift per
+            // section (0.20 here, 0.24 there) are what made the board look thrown together.
             Text title = CreateText(board.transform, "ローカル設定",
-                new Vector3(-0.22f, 1.14f, -0.028f), 0.090f, TextAnchor.UpperCenter,
+                new Vector3(-0.22f, 1.10f, -0.028f), 0.090f, TextAnchor.UpperCenter,
                 font, textMaterial, new Color(0.78f, 0.90f, 1f));
             title.transform.parent.name = "TitleCanvas";
             GameObject languageButton = CreateButton(board.transform, "LanguageToggle", "日→EN",
-                new Vector3(1.06f, 1.02f, -0.0125f), new Vector3(0.56f, 0.22f, 0.019f),
+                new Vector3(1.08f, 0.98f, -0.0125f), new Vector3(0.56f, RowHeight, 0.019f),
                 0.050f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.LanguageToggle, 0, "Language / 言語");
             Text languageButtonText = GetButtonLabel(languageButton);
             Text clock = CreateText(board.transform, "0000-00-00  00:00:00  LOCAL",
-                new Vector3(-0.22f, 0.94f, -0.028f), 0.064f, TextAnchor.UpperCenter,
+                new Vector3(-0.22f, 0.92f, -0.028f), 0.064f, TextAnchor.UpperCenter,
                 font, textMaterial, Color.white);
             clock.transform.parent.name = "ClockCanvas";
 
             CreateCube("HeaderDivider", board.transform, new Vector3(0f, 0.80f, -0.026f),
                 new Vector3(2.50f, 0.012f, 0.012f), accentMaterial, false);
-            CreateCube("ColumnDivider", board.transform, new Vector3(0.06f, -0.25f, -0.026f),
+            CreateCube("ColumnDivider", board.transform, new Vector3(0f, -0.25f, -0.026f),
                 new Vector3(0.012f, 2.00f, 0.012f), accentMaterial, false);
 
             Text mirrorState = CreateText(board.transform, "ミラー（HQは高負荷）  LQ 0 / HQ 0",
-                new Vector3(-1.16f, 0.70f, -0.028f), 0.046f, TextAnchor.UpperLeft,
+                new Vector3(LeftLabelX, 0.77f, -0.028f), 0.046f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             mirrorState.transform.parent.name = "MirrorStateCanvas";
             // Laid out the way the directions sit around someone on the mat: up and down above and
@@ -181,11 +224,11 @@ namespace StargazingHill.Editor
             string[] mirrorNames = { "Up", "Down", "Left", "Right", "Ceiling" };
             Vector2[] mirrorCells =
             {
-                new Vector2(-0.62f, 0.50f), new Vector2(-0.62f, 0.02f),
-                new Vector2(-1.00f, 0.26f), new Vector2(-0.24f, 0.26f),
-                new Vector2(-0.24f, 0.50f)
+                new Vector2(LeftColumn1X, RowB), new Vector2(LeftColumn1X, RowD),
+                new Vector2(LeftColumn0X, RowC), new Vector2(LeftColumn2X, RowC),
+                new Vector2(LeftColumn2X, RowB)
             };
-            Vector3 mirrorButtonScale = new Vector3(0.34f, 0.20f, 0.019f);
+            Vector3 mirrorButtonScale = new Vector3(ButtonWidth, RowHeight, 0.019f);
             Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 1];
             for (int mirrorIndex = 0; mirrorIndex < mirrorDirections.Length; mirrorIndex++)
             {
@@ -199,109 +242,113 @@ namespace StargazingHill.Editor
                 mirrorButtonTexts[mirrorIndex] = GetButtonLabel(mirrorButton);
             }
             mirrorButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "MirrorsAllOff",
-                "すべて\nOFF", new Vector3(-0.24f, 0.02f, -0.0125f), mirrorButtonScale,
+                "すべて\nOFF", new Vector3(LeftColumn2X, RowD, -0.0125f), mirrorButtonScale,
                 0.038f, buttonMaterial, font, textMaterial, controller,
                 WorldSettingsButton.MirrorsOff, 0, "All mirrors OFF"));
+            // The mat itself, seen from above, in the middle of the direction cross. The section
+            // heading carries no icon of its own: the same bed glyph in both places read as two
+            // different things rather than one.
             CreateSectionIcon(board.transform, "MirrorMatIcon", SettingsIconMeshes.EnsureBed(),
-                new Vector3(-0.62f, 0.26f, -0.028f), accentMaterial, MatIconScale);
+                new Vector3(LeftColumn1X, RowC, -0.028f), accentMaterial, MatIconScale);
 
             Text nightModeText = CreateText(board.transform, "ナイトモード",
-                new Vector3(-1.16f, -0.26f, -0.028f), 0.052f, TextAnchor.UpperLeft,
-                font, textMaterial, new Color(0.58f, 0.90f, 1f));
+                new Vector3(LeftLabelX, RowE + LabelRowOffset, -0.028f), 0.052f,
+                TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
             Slider slider = CreateNightSlider(board.transform, textMaterial, accentMaterial);
-            Text[] actionButtonTexts = new Text[9];
+            Text[] actionButtonTexts = new Text[7];
             // Desktop players steer the camera with the mouse, so a world-space slider cannot
-            // realistically be dragged. These give the same range in 10% steps.
-            CreateButton(board.transform, "NightDown", "−", new Vector3(-0.37f, -0.46f, -0.0125f),
-                new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.NightAdjust, -10, "Night mode -10%");
-            CreateButton(board.transform, "NightUp", "＋", new Vector3(-0.11f, -0.46f, -0.0125f),
-                new Vector3(0.24f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.NightAdjust, 10, "Night mode +10%");
+            // realistically be dragged. These give the same range in 10% steps, and flanking the
+            // bar with them makes one balanced row instead of a bar and two loose buttons.
+            CreateButton(board.transform, "NightDown", "−",
+                new Vector3(LeftLabelX + StepButtonWidth * 0.5f, RowF, -0.0125f),
+                new Vector3(StepButtonWidth, RowHeight, 0.019f), 0.070f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.NightAdjust, -10, "Night mode -10%");
+            CreateButton(board.transform, "NightUp", "＋",
+                new Vector3(LeftLabelX + WideButtonWidth - StepButtonWidth * 0.5f, RowF, -0.0125f),
+                new Vector3(StepButtonWidth, RowHeight, 0.019f), 0.070f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.NightAdjust, 10, "Night mode +10%");
 
             Text notifyState = CreateText(board.transform, "入退室通知  音 ON / 表示 ON",
-                new Vector3(-1.16f, -0.76f, -0.028f), 0.042f, TextAnchor.UpperLeft,
-                font, textMaterial, new Color(0.58f, 0.90f, 1f));
+                new Vector3(LeftLabelX, RowG + LabelRowOffset, -0.028f), 0.042f,
+                TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
             notifyState.transform.parent.name = "NotifyStateCanvas";
             GameObject notifySoundOffMark = CreateIconButton(board.transform, "NotifySoundToggle",
-                SettingsIconMeshes.EnsureBell(), new Vector3(-1.00f, -1.04f, -0.0125f),
-                new Vector3(0.32f, 0.28f, 0.019f), buttonMaterial, accentMaterial, font,
+                SettingsIconMeshes.EnsureBell(), new Vector3(LeftColumn0X, RowH, -0.0125f),
+                new Vector3(ButtonWidth, RowHeight, 0.019f), buttonMaterial, accentMaterial, font,
                 textMaterial, controller, WorldSettingsButton.NotifySoundToggle,
                 "Join/leave sound ON/OFF");
             GameObject notifyDisplayOffMark = CreateIconButton(board.transform, "NotifyDisplayToggle",
-                SettingsIconMeshes.EnsureReport(), new Vector3(-0.62f, -1.04f, -0.0125f),
-                new Vector3(0.32f, 0.28f, 0.019f), buttonMaterial, accentMaterial, font,
+                SettingsIconMeshes.EnsureReport(), new Vector3(LeftColumn1X, RowH, -0.0125f),
+                new Vector3(ButtonWidth, RowHeight, 0.019f), buttonMaterial, accentMaterial, font,
                 textMaterial, controller, WorldSettingsButton.NotifyDisplayToggle,
                 "Join/leave toast ON/OFF");
 
             Text alarmState = CreateText(board.transform, "ALARM  22:00  OFF",
-                new Vector3(0.34f, 0.72f, -0.028f), 0.060f, TextAnchor.UpperLeft,
+                new Vector3(RightLabelX, 0.77f, -0.028f), 0.052f, TextAnchor.UpperLeft,
                 font, textMaterial, new Color(0.58f, 0.90f, 1f));
             alarmState.transform.parent.name = "AlarmStateCanvas";
-            Vector3 alarmButtonScale = new Vector3(0.38f, 0.24f, 0.019f);
+            Vector3 gridButtonScale = new Vector3(ButtonWidth, RowHeight, 0.019f);
+            Vector3 wideButtonScale = new Vector3(WideButtonWidth, RowHeight, 0.019f);
             actionButtonTexts[0] = GetButtonLabel(CreateButton(board.transform, "AlarmHourDown", "時−",
-                new Vector3(0.36f, 0.52f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1"));
+                new Vector3(RightColumn0X, RowB, -0.0125f), gridButtonScale, 0.052f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmHour, -1, "Alarm hour -1"));
             actionButtonTexts[1] = GetButtonLabel(CreateButton(board.transform, "AlarmHourUp", "時＋",
-                new Vector3(0.78f, 0.52f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1"));
-            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−",
-                new Vector3(0.36f, 0.26f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5"));
-            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋",
-                new Vector3(0.78f, 0.26f, -0.0125f), alarmButtonScale, 0.052f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5"));
+                new Vector3(RightColumn1X, RowB, -0.0125f), gridButtonScale, 0.052f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmHour, 1, "Alarm hour +1"));
             actionButtonTexts[4] = GetButtonLabel(CreateButton(board.transform, "AlarmToggle", "ON/OFF",
-                new Vector3(1.20f, 0.52f, -0.0125f), alarmButtonScale, 0.044f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF"));
+                new Vector3(RightColumn2X, RowB, -0.0125f), gridButtonScale, 0.044f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmToggle, 0, "Alarm ON/OFF"));
+            actionButtonTexts[2] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteDown", "分−",
+                new Vector3(RightColumn0X, RowC, -0.0125f), gridButtonScale, 0.052f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmMinute, -5, "Alarm minute -5"));
+            actionButtonTexts[3] = GetButtonLabel(CreateButton(board.transform, "AlarmMinuteUp", "分＋",
+                new Vector3(RightColumn1X, RowC, -0.0125f), gridButtonScale, 0.052f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmMinute, 5, "Alarm minute +5"));
             actionButtonTexts[5] = GetButtonLabel(CreateButton(board.transform, "AlarmStop", "停止",
-                new Vector3(1.20f, 0.26f, -0.0125f), alarmButtonScale, 0.046f, buttonMaterial, font,
-                textMaterial, controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm"));
-            actionButtonTexts[8] = GetButtonLabel(CreateButton(board.transform, "AlarmReset", "リセット",
-                new Vector3(0.78f, 0.00f, -0.0125f), new Vector3(1.24f, 0.22f, 0.019f), 0.046f,
+                new Vector3(RightColumn2X, RowC, -0.0125f), gridButtonScale, 0.046f, buttonMaterial,
+                font, textMaterial, controller, WorldSettingsButton.AlarmStop, 0, "Stop alarm"));
+            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "AlarmReset", "リセット",
+                new Vector3(RightColumn1X, RowD, -0.0125f), wideButtonScale, 0.046f,
                 buttonMaterial, font, textMaterial, controller, WorldSettingsButton.AlarmReset, 0,
                 "Reset alarm to 22:00 OFF"));
 
-            Text radioState = CreateText(board.transform, "ラジオ音声  ON",
-                new Vector3(0.34f, -0.24f, -0.028f), 0.046f, TextAnchor.UpperLeft,
-                font, textMaterial, Color.white);
-            radioState.transform.parent.name = "RadioStateCanvas";
-            actionButtonTexts[6] = GetButtonLabel(CreateButton(board.transform, "RadioToggle",
-                "音声 ON/OFF", new Vector3(0.78f, -0.44f, -0.0125f),
-                new Vector3(1.24f, 0.22f, 0.019f), 0.041f, buttonMaterial, font, textMaterial,
+            // The radio and save buttons carry their own state, so no separate status line sits
+            // above them. Two label rows removed is two rows the rest of the column can breathe in.
+            Text radioState = GetButtonLabel(CreateButton(board.transform, "RadioToggle",
+                "ラジオ音声  ON", new Vector3(RightColumn1X, RowE, -0.0125f),
+                wideButtonScale, 0.046f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.RadioToggle, 0, "Radio speaker ON/OFF"));
             Text radioVolumeText = CreateText(board.transform, "ラジオ音量  85%",
-                new Vector3(0.34f, -0.66f, -0.028f), 0.044f, TextAnchor.UpperLeft,
-                font, textMaterial, new Color(0.58f, 0.90f, 1f));
+                new Vector3(RightLabelX, RowF + LabelRowOffset, -0.028f), 0.046f,
+                TextAnchor.UpperLeft, font, textMaterial, new Color(0.58f, 0.90f, 1f));
             radioVolumeText.transform.parent.name = "RadioVolumeCanvas";
             Slider radioVolumeSlider = CreateSlider(board.transform, "RadioVolumeSliderCanvas",
-                new Vector3(0.60f, -0.86f, -0.032f), new Vector2(260f, 40f),
+                new Vector3(RightLabelX + WideButtonWidth * 0.5f, RowG, -0.032f),
+                new Vector2(SliderBarWidth / CanvasScale, 44f),
                 textMaterial, accentMaterial, WorldRadioSpeaker.DefaultLocalVolume);
-            CreateButton(board.transform, "RadioVolumeDown", "−", new Vector3(1.02f, -0.86f, -0.0125f),
-                new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.RadioVolumeAdjust, -10, "Radio volume -10%");
-            CreateButton(board.transform, "RadioVolumeUp", "＋", new Vector3(1.28f, -0.86f, -0.0125f),
-                new Vector3(0.22f, 0.20f, 0.019f), 0.070f, buttonMaterial, font, textMaterial,
-                controller, WorldSettingsButton.RadioVolumeAdjust, 10, "Radio volume +10%");
-            Text saveState = CreateText(board.transform, "設定保存 / SAVE  OFF",
-                new Vector3(0.34f, -1.02f, -0.028f), 0.044f, TextAnchor.UpperLeft,
-                font, textMaterial, Color.white);
-            saveState.transform.parent.name = "SaveStateCanvas";
-            actionButtonTexts[7] = GetButtonLabel(CreateButton(board.transform, "SaveToggle",
-                "保存 ON/OFF", new Vector3(0.78f, -1.20f, -0.0125f),
-                new Vector3(1.24f, 0.20f, 0.019f), 0.040f, buttonMaterial, font, textMaterial,
+            CreateButton(board.transform, "RadioVolumeDown", "−",
+                new Vector3(RightLabelX + StepButtonWidth * 0.5f, RowG, -0.0125f),
+                new Vector3(StepButtonWidth, RowHeight, 0.019f), 0.070f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.RadioVolumeAdjust, -10,
+                "Radio volume -10%");
+            CreateButton(board.transform, "RadioVolumeUp", "＋",
+                new Vector3(RightLabelX + WideButtonWidth - StepButtonWidth * 0.5f, RowG, -0.0125f),
+                new Vector3(StepButtonWidth, RowHeight, 0.019f), 0.070f, buttonMaterial, font,
+                textMaterial, controller, WorldSettingsButton.RadioVolumeAdjust, 10,
+                "Radio volume +10%");
+            Text saveState = GetButtonLabel(CreateButton(board.transform, "SaveToggle",
+                "設定保存  OFF", new Vector3(RightColumn1X, RowH, -0.0125f),
+                wideButtonScale, 0.046f, buttonMaterial, font, textMaterial,
                 controller, WorldSettingsButton.SaveToggle, 0, "Save local settings ON/OFF"));
 
-            CreateSectionIcon(board.transform, "MirrorIcon", SettingsIconMeshes.EnsureBed(),
-                new Vector3(-1.30f, 0.677f, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "NightModeIcon", SettingsIconMeshes.EnsureMoon(),
-                new Vector3(-1.30f, -0.288f, -0.028f), accentMaterial, SectionIconScale);
+                new Vector3(LeftIconX, RowE, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "NotifyIcon", SettingsIconMeshes.EnsurePresence(),
-                new Vector3(-1.30f, -0.783f, -0.028f), accentMaterial, SectionIconScale);
+                new Vector3(LeftIconX, RowG, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "AlarmIcon", SettingsIconMeshes.EnsureAlarm(),
-                new Vector3(0.21f, 0.690f, -0.028f), accentMaterial, SectionIconScale);
+                new Vector3(RightIconX, 0.745f, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "RadioVolumeIcon", SettingsIconMeshes.EnsureVolume(),
-                new Vector3(0.21f, -0.683f, -0.028f), accentMaterial, SectionIconScale);
+                new Vector3(RightIconX, RowF, -0.028f), accentMaterial, SectionIconScale);
 
             AudioSource alarmAudio = system.AddComponent<AudioSource>();
             alarmAudio.clip = alarmClip;
@@ -380,7 +427,7 @@ namespace StargazingHill.Editor
                 controller.titleText == null || controller.nightModeText == null ||
                 controller.languageButtonText == null || controller.mirrorButtonTexts == null ||
                 controller.mirrorButtonTexts.Length != 6 || controller.actionButtonTexts == null ||
-                controller.actionButtonTexts.Length != 9 ||
+                controller.actionButtonTexts.Length != 7 ||
                 controller.notifySoundOffMark == null || controller.notifyDisplayOffMark == null ||
                 controller.presenceNotifier == null || controller.notifyText == null ||
                 boardPickup == null || board.GetComponent<WorldSettingsBoardPickup>() == null ||
@@ -416,12 +463,25 @@ namespace StargazingHill.Editor
                 Quaternion.Angle(board.transform.rotation, Quaternion.Euler(BoardEuler)) > 0.01f)
                 throw new InvalidOperationException("Local settings board size or facing validation failed.");
             ValidateTreeSettingsAccess(treeToggle, treeToggleButton, treeToggleCollider, treeGearIcon, board);
+            // The grip has to be big enough to aim at and still sit above every control, or it
+            // either cannot be grabbed or it swallows the ray meant for a button.
             BoxCollider boardGrip = board.GetComponent<BoxCollider>();
-            if (boardGrip == null || boardGrip.size.y > 0.30f)
-                throw new InvalidOperationException("Local settings board pickup grip overlaps the control area.");
+            if (boardGrip == null || boardGrip.size.y < 0.45f || boardGrip.size.z < 0.45f)
+                throw new InvalidOperationException(
+                    "Local settings board pickup grip is too small to aim at.");
+            float gripBottom = boardGrip.center.y - boardGrip.size.y * 0.5f;
+            for (int index = 0; index < buttons.Length; index++)
+            {
+                Transform button = buttons[index].transform;
+                if (button.parent != board.transform) continue;
+                if (button.localPosition.y + button.localScale.y * 0.5f > gripBottom)
+                    throw new InvalidOperationException(
+                        "Local settings board pickup grip overlaps the control area at " +
+                        button.name + ".");
+            }
             string[] iconNames =
             {
-                "MirrorIcon", "NightModeIcon", "NotifyIcon", "AlarmIcon", "RadioVolumeIcon",
+                "NightModeIcon", "NotifyIcon", "AlarmIcon", "RadioVolumeIcon",
                 "MirrorMatIcon", "NotifySoundToggleIcon", "NotifyDisplayToggleIcon",
                 "NotifySoundToggleOffMark", "NotifyDisplayToggleOffMark"
             };
@@ -519,6 +579,16 @@ namespace StargazingHill.Editor
             }
             if (Vector3.Dot(-controller.mirrorsLow[4].transform.forward, Vector3.down) < 0.95f)
                 throw new InvalidOperationException("Ceiling mirror reflective face does not point down.");
+            // The lid has to overhang the walls and meet them at the top, or the seam opens onto the
+            // sky. Its local X follows the mat's right axis and its local Y the forward axis.
+            Transform ceiling = controller.mirrorsLow[4].transform;
+            float wallTop = expectedBaseHeight + MirrorHeight;
+            if (ceiling.localScale.x < matOuterRight * 2f + 0.01f ||
+                ceiling.localScale.y < matOuterForward * 2f + 0.01f ||
+                ceiling.position.y > wallTop || ceiling.position.y < wallTop - 0.25f)
+                throw new InvalidOperationException(
+                    "Ceiling mirror does not close the ring: it must overhang the walls and sit at " +
+                    "their top edge.");
             Transform radioRoot = GameObject.Find("World/Environment/PicnicSpot/PicnicRadio")?.transform;
             UdonBehaviour radioBacking = UdonSharpEditorUtility.GetBackingUdonBehaviour(controller.radioSpeaker);
             if (radioRoot == null || radioRoot.Find("RadioUseTrigger") != null ||
@@ -891,9 +961,14 @@ namespace StargazingHill.Editor
                 rotations[index] = Quaternion.LookRotation(outward[index], Vector3.up);
                 scales[index] = new Vector3(widths[index], MirrorHeight, 1f);
             }
-            positions[4] = center + Vector3.up * MirrorCeilingHeight;
+            // The lid sits on top of the four walls rather than at a height of its own, and spans the
+            // outer ring plus an overlap. It used to be the size of the mat itself and 0.30 m below
+            // the wall tops, which left a slot all the way around that the night sky showed through.
+            positions[4] = center;
+            positions[4].y = baseHeight + MirrorHeight - MirrorCeilingDrop;
             rotations[4] = Quaternion.Euler(-90f, blanket.eulerAngles.y, 0f);
-            scales[4] = new Vector3(halfRight * 2f, halfForward * 2f, 1f);
+            scales[4] = new Vector3(outerRight * 2f + MirrorCornerOverlap,
+                outerForward * 2f + MirrorCornerOverlap, 1f);
             GameObject root = new GameObject("LocalPicnicMirrors");
             root.transform.SetParent(parent, false);
             lowQuality = new GameObject[names.Length];
@@ -938,8 +1013,29 @@ namespace StargazingHill.Editor
             if (clear != null) clear.colorValue = new Color(0.003f, 0.008f, 0.018f, 1f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             CreateMirrorFrame(mirror.transform, frameMaterial);
+            CreateMirrorInteractionShield(mirror);
             mirror.SetActive(false);
             return mirror;
+        }
+
+        /// <summary>
+        /// Stops the pointer reaching whatever stands beyond a raised mirror. The shield is a child of
+        /// the panel, so it comes and goes with it.
+        /// </summary>
+        private static void CreateMirrorInteractionShield(GameObject mirror)
+        {
+            int walkthroughLayer = LayerMask.NameToLayer("Walkthrough");
+            if (walkthroughLayer < 0)
+                throw new InvalidOperationException("VRChat Walkthrough layer is missing.");
+            GameObject shield = new GameObject(mirror.name + "_InteractionShield");
+            shield.layer = walkthroughLayer;
+            shield.transform.SetParent(mirror.transform, false);
+            BoxCollider collider = shield.AddComponent<BoxCollider>();
+            collider.size = new Vector3(1f, 1f, 0.025f);
+            // VRChat walks its interact ray past trigger colliders and only stops at a solid one, so
+            // this cannot be a trigger. Walkthrough is the layer that blocks rays without blocking
+            // avatars, which keeps the ring something a player can still step out of.
+            collider.isTrigger = false;
         }
 
         private static void CreateMirrorFrame(Transform mirror, Material material)
@@ -1176,10 +1272,10 @@ namespace StargazingHill.Editor
 
         private static Slider CreateNightSlider(Transform parent, Material uiMaterial, Material accentMaterial)
         {
-            // Same row as the −/＋ buttons at x -0.37 and -0.11: the bar spans -1.16..-0.52 and stops
-            // clear of them. It used to sit at y -0.76, right on top of the join/leave status line.
+            // Centred on its row between the two stepper buttons, the same way the radio bar sits.
             return CreateSlider(parent, "NightModeSliderCanvas",
-                new Vector3(-0.84f, -0.46f, -0.032f), new Vector2(320f, 44f),
+                new Vector3(LeftLabelX + WideButtonWidth * 0.5f, RowF, -0.032f),
+                new Vector2(SliderBarWidth / CanvasScale, 44f),
                 uiMaterial, accentMaterial, 0f);
         }
 

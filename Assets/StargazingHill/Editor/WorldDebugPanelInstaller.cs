@@ -421,11 +421,12 @@ namespace StargazingHill.Editor
             panel.layer = pickupLayer;
 
             BoxCollider collider = panel.AddComponent<BoxCollider>();
-            // The old box sat wholly behind the panel face, so a grab from the front never reached
-            // it. A top grip straddling the sheet is reachable from either side and leaves the
-            // button area free.
-            collider.size = new Vector3(2.45f, 0.26f, 0.20f);
-            collider.center = new Vector3(0f, 1.10f, 0f);
+            // The first attempt put an invisible 5 cm strip on the top edge. Nothing showed where to
+            // aim and the VR hand ray had to land inside it, so it grabbed no better than the box
+            // that used to sit behind the face. This one is a visible bar standing proud of the
+            // sheet with a grab volume roughly 12 cm on a side, clear of every button.
+            collider.size = new Vector3(2.00f, 0.58f, 0.58f);
+            collider.center = new Vector3(0f, 1.12f, 0f);
             collider.isTrigger = true;
 
             Rigidbody body = panel.AddComponent<Rigidbody>();
@@ -454,6 +455,13 @@ namespace StargazingHill.Editor
                 new Vector3(2.35f, 2.05f, 0.018f));
             Collider collider = board.GetComponent<Collider>();
             if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
+
+            // The bar the pickup collider wraps. Without something to see, players aimed at the top
+            // edge and missed.
+            GameObject grip = CreatePrimitive("GripBar", parent, material, new Vector3(0f, 1.10f, 0f),
+                Quaternion.identity, new Vector3(1.80f, 0.26f, 0.20f));
+            Collider gripCollider = grip.GetComponent<Collider>();
+            if (gripCollider != null) UnityEngine.Object.DestroyImmediate(gripCollider);
         }
 
         private static GameObject CreateActionButton(

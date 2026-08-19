@@ -691,8 +691,14 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
     assert "private const float BoardScale = 0.22f;" in settings_installer
-    assert "pickupCollider.center = new Vector3(0f, 1.25f, 0.02f);" in settings_installer
-    assert "pickupCollider.size = new Vector3(2.86f, 0.18f, 0.30f);" in settings_installer
+    # A visible grip bar with a grab volume big enough to aim at, above every control.
+    assert 'CreateCube("GripBar", board.transform' in settings_installer
+    assert "pickupCollider.center = new Vector3(0f, 1.44f, 0f);" in settings_installer
+    assert "pickupCollider.size = new Vector3(2.50f, 0.60f, 0.60f);" in settings_installer
+    assert "Local settings board pickup grip is too small to aim at." in settings_installer
+    debug_panel_installer = (ROOT / "Assets/StargazingHill/Editor/WorldDebugPanelInstaller.cs").read_text(encoding="utf-8")
+    assert 'CreatePrimitive("GripBar", parent' in debug_panel_installer
+    assert "collider.size = new Vector3(2.00f, 0.58f, 0.58f);" in debug_panel_installer
     assert "pickup.proximity = 1.2f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
@@ -722,12 +728,13 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "EnsureEventSystem(scene);" in settings_installer
     assert "existing.gameObject.AddComponent<StandaloneInputModule>();" in settings_installer
     assert "FindObjectOfType<EventSystem>(true) == null" in settings_installer
-    assert "new Vector2(320f, 44f)" in settings_installer
-    assert "new Vector2(260f, 40f)" in settings_installer
+    # Both bars are the same size and sit between their own step buttons.
+    assert "new Vector2(SliderBarWidth / CanvasScale, 44f)" in settings_installer
+    assert settings_installer.count("SliderBarWidth / CanvasScale") == 2
     # One ON/OFF toggle per direction, one clear-all, one shared LQ/HQ switch.
     assert "Text[] mirrorButtonTexts = new Text[mirrorDirections.Length + 1];" in settings_installer
     assert "controller.mirrorButtonTexts.Length != 6" in settings_installer
-    assert "controller.actionButtonTexts.Length != 9" in settings_installer
+    assert "controller.actionButtonTexts.Length != 7" in settings_installer
     assert "buttons.Length != 23" in settings_installer
     # Sliders cannot be dragged on desktop, so each has step buttons alongside.
     assert 'CreateButton(board.transform, "NightDown"' in settings_installer
@@ -765,7 +772,8 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "public const float WindowSeconds = 3f;" in presence_notifier
     assert "private string ComposeLine(bool joined, string displayName, int others)" in presence_notifier
     assert "さんほか" in presence_notifier
-    assert "verticalOffset = -0.48f" in presence_notifier
+    assert "verticalOffset = -0.30f" in presence_notifier
+    assert "forwardDistance = 1.15f" in presence_notifier
     # The toast dims out rather than blinking away.
     assert "public const float FadeSeconds = 1.2f;" in presence_notifier
     assert "private void ApplyFade()" in presence_notifier
@@ -805,15 +813,27 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     for icon_toggle in ("EnsureBell", "EnsureReport", "EnsureSlash"):
         assert f"internal static Mesh {icon_toggle}()" in icon_mesh_source, icon_toggle
     assert "private static GameObject CreateIconButton(" in settings_installer
-    # The night bar shares its row with the -/+ buttons instead of sitting on the join/leave line.
-    assert 'new Vector3(-0.84f, -0.46f, -0.032f), new Vector2(320f, 44f),' in settings_installer
+    # Every control lands on one grid: same row pitch, same button height, aligned columns.
+    assert "private const float RowPitch = 0.26f;" in settings_installer
+    assert "private const float ButtonWidth = 0.34f;" in settings_installer
+    assert "private const float WideButtonWidth = ButtonWidth * 3f + ColumnGap * 2f;" in settings_installer
+    # The radio and save buttons carry their own state, so those status lines are gone.
+    assert "RadioStateCanvas" not in settings_installer
+    assert "SaveStateCanvas" not in settings_installer
     assert "private static void ValidateSliderClearance(" in settings_installer
     assert "notifySoundOffMark.SetActive(!_notifySound)" in settings_controller
     # The mirrors are measured from the rendered mat instead of the off-centre saved anchor.
     assert "ResolveBlanketFrame(out center, out forward, out right, out halfForward, out halfRight);" in settings_installer
     assert "private const float MirrorEdgeMargin = 0.06f;" in settings_installer
     assert "private const float MirrorGroundClearance = 0.02f;" in settings_installer
-    assert "private const float MirrorCeilingHeight = 2.55f;" in settings_installer
+    # The lid overhangs the walls and meets them at the top rather than floating below them.
+    assert "private const float MirrorCeilingDrop = 0.05f;" in settings_installer
+    assert "private const float MirrorCornerOverlap = 0.16f;" in settings_installer
+    assert "Ceiling mirror does not close the ring" in settings_installer
+    # A raised mirror blocks the pointer from whatever stands beyond it.
+    assert "private static void CreateMirrorInteractionShield(GameObject mirror)" in settings_installer
+    assert 'int walkthroughLayer = LayerMask.NameToLayer("Walkthrough");' in settings_installer
+    assert "collider.isTrigger = false;" in settings_installer
     assert "Picnic mirror is not aligned to the mat edge at index" in settings_installer
     assert "ConfigureRadioSpeaker" in settings_installer and "YamaPlayerSpeaker" in settings_installer
     assert "PlayerData.TryGet" in settings_controller and "OnPlayerRestored" in settings_controller
