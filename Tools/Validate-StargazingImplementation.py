@@ -698,7 +698,7 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "Local settings board pickup grip is too small to aim at." in settings_installer
     debug_panel_installer = (ROOT / "Assets/StargazingHill/Editor/WorldDebugPanelInstaller.cs").read_text(encoding="utf-8")
     assert 'CreatePrimitive("GripBar", parent' in debug_panel_installer
-    assert "collider.size = new Vector3(2.00f, 0.58f, 0.58f);" in debug_panel_installer
+    assert "collider.size = new Vector3(1.40f, 0.54f, 0.54f);" in debug_panel_installer
     assert "pickup.proximity = 1.2f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer

@@ -786,6 +786,39 @@ namespace StargazingHill.Editor
             RenderCameraToPng(camera, "stargazing-hill-picnic-low.png");
         }
 
+        /// <summary>
+        /// Raises every mirror and photographs the enclosure it makes. The panels ship disabled, so
+        /// nothing about the ring shows up in the other previews and a gap at the lid seam only
+        /// turned up when someone stood inside it in the client.
+        /// </summary>
+        public static void RenderMirrorRingPreviewForBatchMode()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldSettingsSystemInstaller.ValidateScene(scene);
+            WorldSettingsController controller = Object.FindObjectOfType<WorldSettingsController>(true);
+            Camera camera = GameObject.Find("World/WorldSettings/ReferenceCamera")?.GetComponent<Camera>();
+            if (controller == null || camera == null)
+                throw new InvalidOperationException("Settings controller or reference camera is missing.");
+            for (int index = 0; index < controller.mirrorsHigh.Length; index++)
+                controller.mirrorsHigh[index].SetActive(true);
+
+            Bounds ring = CalculateRendererBounds(controller.mirrorsHigh[4]);
+            // Lying on the mat, looking up into a corner: the lid seam, two wall tops and the corner
+            // join all land in one frame, which is everywhere a gap could open.
+            camera.transform.position =
+                new Vector3(ring.center.x, ring.min.y - 1.90f, ring.center.z);
+            camera.transform.rotation = Quaternion.Euler(-42f, 45f, 0f);
+            RenderCameraToPng(camera, "stargazing-hill-mirror-ring-up.png");
+
+            // Standing off to one side, where a lid that fails to overhang shows daylight.
+            camera.transform.position = ring.center + new Vector3(4.6f, 1.6f, -4.6f);
+            camera.transform.LookAt(ring.center);
+            RenderCameraToPng(camera, "stargazing-hill-mirror-ring-outside.png");
+
+            for (int index = 0; index < controller.mirrorsHigh.Length; index++)
+                controller.mirrorsHigh[index].SetActive(false);
+        }
+
         public static void RenderMeteorDebugPreviewForBatchMode()
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);

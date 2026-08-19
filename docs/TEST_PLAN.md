@@ -872,7 +872,10 @@
 | Udonコンパイル | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-S-Udon.log` |
 | Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-S-Build.log` |
 | 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-S-Validate.log` |
-| レイアウトのプレビュー確認 | Blocked | Unity Editorがプロジェクトを開いていたためbatchmodeが起動できず、描画できていない。Editorを閉じてから `RenderOpenSettingsLayoutPreviewForBatchMode` を実行する（`-nographics` は外す） |
+| レイアウトのプレビュー確認 | Pass | `RenderOpenSettingsLayoutPreviewForBatchMode`。行が左右で揃い、Sliderが「−」「＋」に挟まれた1行になっていること、状態表示の重複行が消えていることを目視で確認。`Logs/settings-preview.png` |
+| 取っ手の見え方 | Pass | 最初はボード幅いっぱい・高さ0.30のアクセント色で、取っ手ではなく塗り潰しに見えた。1.60 × 0.18へ細くする。掴み判定は大きいままなので、狙いやすさは変わらない |
+| ミラーの囲いのプレビュー | Pass | `RenderMirrorRingPreviewForBatchMode` を追加。全面HQで有効化し、内側から見上げた図と外側からの図を出す。ミラーは既定で無効なので、他のプレビューには一切写っていなかった。外側の図で4面と天井が箱として閉じていることを確認。`Logs/stargazing-hill-mirror-ring-outside.png` |
+| デバッグパネルの取っ手の干渉 | Pass | 掴み判定を板幅いっぱいにすると右上の言語ボタン（x 0.78〜1.10、y 0.83〜0.95）と重なるため、幅1.40へ狭めてy 0.87から上に置く |
 | 取っ手のGrab | Pending Evidence | VRとDesktopの両方で、設定ボードとデバッグパネルを掴めることを確認する。これで駄目なら判定の大きさではなく方式を疑う |
 | 天井の閉じ具合 | Pending Evidence | 中から見上げて隙間がないこと、外から見て天井が浮いていないことを確認する |
 | 鏡の内側での操作遮断 | Pending Evidence | ミラーON中に外側の木の歯車やラジオへ手が届かないこと、歩いて外へ出れば触れることを確認する |

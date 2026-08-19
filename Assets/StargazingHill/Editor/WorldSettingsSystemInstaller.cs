@@ -166,8 +166,10 @@ namespace StargazingHill.Editor
             // strip on the top edge: nothing showed where to aim, and in VR the hand ray had to
             // land inside it. This one is a bar standing proud of the sheet with a grab volume
             // roughly 13 cm on a side, well clear of every button so it steals no UI ray.
-            CreateCube("GripBar", board.transform, new Vector3(0f, 1.42f, 0f),
-                new Vector3(2.30f, 0.30f, 0.20f), accentMaterial, false);
+            // Slim on purpose: the collider around it is far larger, so the bar only has to say
+            // where to reach. Drawn at the board's width it read as a slab of accent colour.
+            CreateCube("GripBar", board.transform, new Vector3(0f, 1.36f, 0f),
+                new Vector3(1.60f, 0.18f, 0.18f), accentMaterial, false);
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
             pickupCollider.center = new Vector3(0f, 1.44f, 0f);
             pickupCollider.size = new Vector3(2.50f, 0.60f, 0.60f);

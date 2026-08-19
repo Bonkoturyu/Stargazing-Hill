@@ -425,8 +425,9 @@ namespace StargazingHill.Editor
             // aim and the VR hand ray had to land inside it, so it grabbed no better than the box
             // that used to sit behind the face. This one is a visible bar standing proud of the
             // sheet with a grab volume roughly 12 cm on a side, clear of every button.
-            collider.size = new Vector3(2.00f, 0.58f, 0.58f);
-            collider.center = new Vector3(0f, 1.12f, 0f);
+            // Narrower than the sheet so it stays clear of the language toggle at x 0.78 to 1.10.
+            collider.size = new Vector3(1.40f, 0.54f, 0.54f);
+            collider.center = new Vector3(0f, 1.14f, 0f);
             collider.isTrigger = true;
 
             Rigidbody body = panel.AddComponent<Rigidbody>();
@@ -457,9 +458,12 @@ namespace StargazingHill.Editor
             if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
 
             // The bar the pickup collider wraps. Without something to see, players aimed at the top
-            // edge and missed.
-            GameObject grip = CreatePrimitive("GripBar", parent, material, new Vector3(0f, 1.10f, 0f),
-                Quaternion.identity, new Vector3(1.80f, 0.26f, 0.20f));
+            // edge and missed. It is slimmer than that collider: it only has to say where to reach.
+            Material gripMaterial = EnsureColorMaterial(
+                "Assets/StargazingHill/Generated/Materials/VRDebugGrip.mat",
+                new Color(0.58f, 0.90f, 1f, 1f));
+            GameObject grip = CreatePrimitive("GripBar", parent, gripMaterial,
+                new Vector3(0f, 1.08f, 0f), Quaternion.identity, new Vector3(1.30f, 0.16f, 0.16f));
             Collider gripCollider = grip.GetComponent<Collider>();
             if (gripCollider != null) UnityEngine.Object.DestroyImmediate(gripCollider);
         }
