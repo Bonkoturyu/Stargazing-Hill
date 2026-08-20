@@ -691,14 +691,29 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
     assert "private const float BoardScale = 0.22f;" in settings_installer
-    # A visible grip bar with a grab volume big enough to aim at, above every control.
-    assert 'CreateCube("GripBar", board.transform' in settings_installer
-    assert "pickupCollider.center = new Vector3(0f, 1.44f, 0f);" in settings_installer
-    assert "pickupCollider.size = new Vector3(2.50f, 0.60f, 0.60f);" in settings_installer
+    # Visible grip rods down both sides, with grab boxes that start at the sheet edge and
+    # reach outward so they never sit over a control.
+    assert 'CreateCube("GripBarLeft", board.transform' in settings_installer
+    assert 'CreateCube("GripBarRight", board.transform' in settings_installer
+    assert "private const float GripBarX = 1.47f;" in settings_installer
+    assert "private const float GripColliderX = 1.58f;" in settings_installer
     assert "Local settings board pickup grip is too small to aim at." in settings_installer
+    assert "Local settings board needs one pickup grip on each side." in settings_installer
     debug_panel_installer = (ROOT / "Assets/StargazingHill/Editor/WorldDebugPanelInstaller.cs").read_text(encoding="utf-8")
-    assert 'CreatePrimitive("GripBar", parent' in debug_panel_installer
-    assert "collider.size = new Vector3(1.40f, 0.54f, 0.54f);" in debug_panel_installer
+    assert 'CreateGripRod(parent, "GripBarLeft"' in debug_panel_installer
+    assert 'CreateGripRod(parent, "GripBarRight"' in debug_panel_installer
+    assert "private const float GripColliderX = 1.34f;" in debug_panel_installer
+    # Both grips switch together while the panel flies home.
+    for pickup_source in ("WorldSettingsBoardPickup", "WorldDebugPanelPickup"):
+        text = (ROOT / f"Assets/StargazingHill/Scripts/{pickup_source}.cs").read_text(encoding="utf-8")
+        assert "public Collider secondPickupCollider;" in text, pickup_source
+        assert "private void SetGripsEnabled(bool enabled)" in text, pickup_source
+    # Panel buttons are rounded plates rather than cubes, on all three panels.
+    button_mesh_source = (ROOT / "Assets/StargazingHill/Editor/PanelButtonMeshes.cs").read_text(encoding="utf-8")
+    assert "internal static Mesh EnsureRoundedPlate(float width, float height)" in button_mesh_source
+    info_panel_installer = (ROOT / "Assets/StargazingHill/Editor/WorldInformationPanelInstaller.cs").read_text(encoding="utf-8")
+    for panel_source in (settings_installer, debug_panel_installer, info_panel_installer):
+        assert "PanelButtonMeshes.EnsureRoundedPlate(" in panel_source
     assert "pickup.proximity = 1.2f;" in settings_installer
     assert "pickup.UseText = string.Empty;" in settings_installer
     assert "WorldInformationPanelInstaller.EnableUiBeamForInteraction(button, backing);" in settings_installer
@@ -772,7 +787,7 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert "public const float WindowSeconds = 3f;" in presence_notifier
     assert "private string ComposeLine(bool joined, string displayName, int others)" in presence_notifier
     assert "さんほか" in presence_notifier
-    assert "verticalOffset = -0.30f" in presence_notifier
+    assert "verticalOffset = -0.16f" in presence_notifier
     assert "forwardDistance = 1.15f" in presence_notifier
     # The toast dims out rather than blinking away.
     assert "public const float FadeSeconds = 1.2f;" in presence_notifier

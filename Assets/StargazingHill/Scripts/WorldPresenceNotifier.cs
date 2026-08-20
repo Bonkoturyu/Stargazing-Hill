@@ -24,10 +24,11 @@ namespace StargazingHill
         public AudioSource joinAudio;
         public AudioSource leaveAudio;
         // Placed below the eyeline so a busy arrival never covers the sky.
-        // Pulled in and raised: at 1.5 m and 0.48 m down the toast landed on the picnic mat when
-        // read from up the hill, so the text competed with the blanket pattern behind it.
+        // Pulled in from 1.5 m and lifted twice: at 0.48 m down the toast landed on the picnic mat
+        // when read from up the hill, and at 0.30 m the longer "and N others" lines reached the
+        // client's own microphone icon.
         public float forwardDistance = 1.15f;
-        public float verticalOffset = -0.30f;
+        public float verticalOffset = -0.16f;
 
         private bool _soundEnabled = true;
         private bool _displayEnabled = true;

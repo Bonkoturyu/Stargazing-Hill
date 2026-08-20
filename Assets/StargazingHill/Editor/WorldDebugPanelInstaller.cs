@@ -25,6 +25,11 @@ namespace StargazingHill.Editor
         // only debug ON/OFF control, so this standalone object must never be regenerated.
         private const string LegacyToggleObjectName = "VRDebugPanelToggle";
         internal const float PanelScale = 0.20f;
+        // The grips. The rods graze the sheet edge at 1.175; the grab boxes start there and reach
+        // outward, so they never sit over the language toggle that ends at x 1.10.
+        private const float GripBarX = 1.26f;
+        private const float GripColliderX = 1.34f;
+        private static readonly Vector3 GripColliderSize = new Vector3(0.34f, 1.00f, 0.46f);
 
         // TextMesh renders a line at characterSize * fontSize / 10 world units, so a metre-based layout has
         // to convert rather than assign metres straight to characterSize. The first version did not, and
@@ -374,6 +379,7 @@ namespace StargazingHill.Editor
             GameObject languageButton = CreatePrimitive("LanguageToggle", panel.transform, buttonMaterial,
                 new Vector3(0.94f, 0.89f, -0.012f), Quaternion.identity,
                 new Vector3(0.32f, 0.12f, 0.006f));
+            RoundCorners(languageButton, new Vector3(0.32f, 0.12f, 0.006f));
             BoxCollider languageCollider = languageButton.GetComponent<BoxCollider>();
             if (languageCollider != null) languageCollider.isTrigger = true;
             Text languageLabel = CreateUiText(panel.transform, "ENGLISH",
@@ -420,15 +426,19 @@ namespace StargazingHill.Editor
             if (pickupLayer < 0) throw new InvalidOperationException("VRChat Pickup layer is missing.");
             panel.layer = pickupLayer;
 
-            BoxCollider collider = panel.AddComponent<BoxCollider>();
             // The first attempt put an invisible 5 cm strip on the top edge. Nothing showed where to
             // aim and the VR hand ray had to land inside it, so it grabbed no better than the box
-            // that used to sit behind the face. This one is a visible bar standing proud of the
-            // sheet with a grab volume roughly 12 cm on a side, clear of every button.
-            // Narrower than the sheet so it stays clear of the language toggle at x 0.78 to 1.10.
-            collider.size = new Vector3(1.40f, 0.54f, 0.54f);
-            collider.center = new Vector3(0f, 1.14f, 0f);
+            // that used to sit behind the face. The grips are now visible rods down each side, with
+            // grab boxes that start at the sheet edge and reach outward: generous, reachable with
+            // either hand, and never over a button.
+            BoxCollider collider = panel.AddComponent<BoxCollider>();
+            collider.center = new Vector3(-GripColliderX, 0f, 0f);
+            collider.size = GripColliderSize;
             collider.isTrigger = true;
+            BoxCollider secondCollider = panel.AddComponent<BoxCollider>();
+            secondCollider.center = new Vector3(GripColliderX, 0f, 0f);
+            secondCollider.size = GripColliderSize;
+            secondCollider.isTrigger = true;
 
             Rigidbody body = panel.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -445,6 +455,7 @@ namespace StargazingHill.Editor
 
             WorldDebugPanelPickup pickupReturn = UdonSharpUndo.AddComponent<WorldDebugPanelPickup>(panel);
             pickupReturn.pickupCollider = collider;
+            pickupReturn.secondPickupCollider = secondCollider;
             pickupReturn.pickupRigidbody = body;
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);
@@ -457,15 +468,29 @@ namespace StargazingHill.Editor
             Collider collider = board.GetComponent<Collider>();
             if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
 
-            // The bar the pickup collider wraps. Without something to see, players aimed at the top
-            // edge and missed. It is slimmer than that collider: it only has to say where to reach.
+            // The rods the pickup colliders wrap. Without something to see, players aimed at the
+            // panel edge and missed.
             Material gripMaterial = EnsureColorMaterial(
                 "Assets/StargazingHill/Generated/Materials/VRDebugGrip.mat",
                 new Color(0.58f, 0.90f, 1f, 1f));
-            GameObject grip = CreatePrimitive("GripBar", parent, gripMaterial,
-                new Vector3(0f, 1.08f, 0f), Quaternion.identity, new Vector3(1.30f, 0.16f, 0.16f));
+            CreateGripRod(parent, "GripBarLeft", gripMaterial, -GripBarX);
+            CreateGripRod(parent, "GripBarRight", gripMaterial, GripBarX);
+        }
+
+        private static void CreateGripRod(Transform parent, string name, Material material, float x)
+        {
+            GameObject grip = CreatePrimitive(name, parent, material, new Vector3(x, 0f, 0f),
+                Quaternion.identity, new Vector3(0.15f, 0.60f, 0.15f));
             Collider gripCollider = grip.GetComponent<Collider>();
             if (gripCollider != null) UnityEngine.Object.DestroyImmediate(gripCollider);
+        }
+
+        /// <summary>Swaps a button's cube for the rounded plate of the same size.</summary>
+        private static void RoundCorners(GameObject button, Vector3 localScale)
+        {
+            MeshFilter filter = button.GetComponent<MeshFilter>();
+            if (filter == null) return;
+            filter.sharedMesh = PanelButtonMeshes.EnsureRoundedPlate(localScale.x, localScale.y);
         }
 
         private static GameObject CreateActionButton(
@@ -474,6 +499,7 @@ namespace StargazingHill.Editor
         {
             GameObject button = CreatePrimitive(label.Replace(" ", "_"), parent, material,
                 localPosition, Quaternion.identity, localScale);
+            RoundCorners(button, localScale);
             ConfigureButton(button, action, showerIndex, panelRoot, meteor, sky, label);
             CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f),
                 FitLabelHeight(label, localScale.x * 0.88f, localScale.y * 0.52f),

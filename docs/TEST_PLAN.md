@@ -881,3 +881,27 @@
 | 鏡の内側での操作遮断 | Pending Evidence | ミラーON中に外側の木の歯車やラジオへ手が届かないこと、歩いて外へ出れば触れることを確認する |
 | 入退室表示の位置 | Pending Evidence | 丘の上から見て敷物に埋もれないこと、近すぎて読みにくくならないことを確認する |
 | 版面の釣り合い | Pending Evidence | 実機で見たときのボタンの大きさと間隔を確認する |
+
+### 2026-08-20 通知の重なり・アイコンと罫線・側面の取っ手・角丸ボタン
+
+- 要求: 入退室表示がマイクアイコンと被るのでずらす、そのフォントを少し小さく、取っ手を小さくして左右へ、アラームのアイコンが罫線と被る、3つのパネルのボタンを角丸に
+- 方針: [ADR 0018 追記7](adr/0018-settings-board-usability-fixes.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 入退室表示の位置 | Pass | 視線から 0.30→0.16m 下。「ほか○名」が付く長い行で下端が伸び、自分のマイクアイコンへ届いていた |
+| 入退室表示の文字 | Pass | 0.062→0.048。1.15mの距離で3行出ると視界のかなりを塞いでいた |
+| アラームアイコンと罫線 | Pass | y 0.745→0.705。アイコンは共通の正方形から描くが、目覚まし時計は上のベルが他より高い |
+| アイコンと罫線の検証 | Pass | `ValidateIconClearsDividers` を追加。アイコンの実メッシュ範囲が `HeaderDivider` `ColumnDivider` と重なったら生成を落とす |
+| 取っ手を左右へ | Pass | 上端1本から、板の縁の外に立てる細い棒2本へ。掴み判定も盤面から完全に外す。プレビューで両側に出ていることを確認 |
+| 取っ手が盤面を避ける理由 | Pass | 操作レイは近い順に判定し、掴み判定はボタンより手前に来る。XYで少しでも重なるとボタンより先に拾う。Scene検証で全ボタンより外側にあることを確認 |
+| 判定2つの連動 | Pass | `secondPickupCollider` を両Pickupへ追加し、復帰中の有効・無効を `SetGripsEnabled` で揃える |
+| ボタンの角丸 | Pass | `PanelButtonMeshes.EnsureRoundedPlate`。設定ボード・デバッグパネル・説明パネルの3つとも角丸になっていることをプレビューで確認。`Logs/settings-preview.png`、`Logs/debug-preview.png`、`Logs/info-preview.png` |
+| 角丸の作り方 | Pass | 単位立方体と同じ -0.5〜0.5 を保ち縦稜だけを丸める。半径は短辺の0.28倍を幅と高さで割ってから焼くので、非等倍スケールでも円弧のまま。Colliderは矩形のまま |
+| 静的回帰 | Pass | `python Tools/Validate-StargazingImplementation.py` |
+| Udonコンパイル | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-V-Udon.log` |
+| Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-W-Build.log` |
+| 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-W-Validate.log` |
+| 取っ手のGrab | Pending Evidence | VRとDesktopの両方で、左右どちらの棒からも掴めることを確認する |
+| 入退室表示の位置 | Pending Evidence | マイクアイコンと重ならないこと、上げすぎて邪魔になっていないことを確認する |
+| 角丸の見え方 | Pending Evidence | 実機での丸みの強さを確認する。短辺の0.28倍で足りなければ `CornerShare` を上げる |

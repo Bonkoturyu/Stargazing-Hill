@@ -448,6 +448,8 @@ namespace StargazingHill.Editor
             // At exactly -0.020 m it was coplanar with the panel face and flickered from z-fighting.
             button.transform.localPosition = LanguageTogglePosition;
             button.transform.localScale = LanguageToggleScale;
+            button.GetComponent<MeshFilter>().sharedMesh =
+                PanelButtonMeshes.EnsureRoundedPlate(LanguageToggleScale.x, LanguageToggleScale.y);
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
             Text buttonLabel = CreateText(button.transform, "日→EN", new Vector3(0f, 0f, -0.53f),
@@ -582,6 +584,8 @@ namespace StargazingHill.Editor
             button.transform.SetParent(parent, false);
             button.transform.localPosition = position;
             button.transform.localScale = scale;
+            button.GetComponent<MeshFilter>().sharedMesh =
+                PanelButtonMeshes.EnsureRoundedPlate(scale.x, scale.y);
             button.GetComponent<Renderer>().sharedMaterial = buttonMaterial;
             button.GetComponent<BoxCollider>().isTrigger = true;
             CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f), textHeight,

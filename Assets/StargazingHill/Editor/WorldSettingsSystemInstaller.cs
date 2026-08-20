@@ -68,6 +68,12 @@ namespace StargazingHill.Editor
         private const float RowH = RowG - RowPitch;
         // A label's transform is its top edge, so this drop centres UpperLeft text on its row.
         private const float LabelRowOffset = 0.035f;
+        // The grips. The rods graze the sheet edge at 1.40; the grab boxes start there and reach
+        // outward, so they never sit over a control.
+        private const float GripBarX = 1.47f;
+        private static readonly Vector3 GripBarSize = new Vector3(0.16f, 0.68f, 0.16f);
+        private const float GripColliderX = 1.58f;
+        private static readonly Vector3 GripColliderSize = new Vector3(0.36f, 1.20f, 0.50f);
         // The stepper buttons that flank each slider, and the bar left between them.
         private const float StepButtonWidth = 0.22f;
         private const float SliderBarWidth = WideButtonWidth - (StepButtonWidth + ColumnGap) * 2f;
@@ -166,14 +172,22 @@ namespace StargazingHill.Editor
             // strip on the top edge: nothing showed where to aim, and in VR the hand ray had to
             // land inside it. This one is a bar standing proud of the sheet with a grab volume
             // roughly 13 cm on a side, well clear of every button so it steals no UI ray.
-            // Slim on purpose: the collider around it is far larger, so the bar only has to say
-            // where to reach. Drawn at the board's width it read as a slab of accent colour.
-            CreateCube("GripBar", board.transform, new Vector3(0f, 1.36f, 0f),
-                new Vector3(1.60f, 0.18f, 0.18f), accentMaterial, false);
+            // A rod down each side, reachable with either hand and entirely off the board face, so
+            // the grab volume can be generous without ever competing with a button for the ray.
+            // Slim on purpose: the colliders around them are much larger, and the rods only have to
+            // say where to reach. A single bar across the top read as a slab of accent colour.
+            CreateCube("GripBarLeft", board.transform, new Vector3(-GripBarX, 0f, 0f),
+                GripBarSize, accentMaterial, false);
+            CreateCube("GripBarRight", board.transform, new Vector3(GripBarX, 0f, 0f),
+                GripBarSize, accentMaterial, false);
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
-            pickupCollider.center = new Vector3(0f, 1.44f, 0f);
-            pickupCollider.size = new Vector3(2.50f, 0.60f, 0.60f);
+            pickupCollider.center = new Vector3(-GripColliderX, 0f, 0f);
+            pickupCollider.size = GripColliderSize;
             pickupCollider.isTrigger = true;
+            BoxCollider secondPickupCollider = board.AddComponent<BoxCollider>();
+            secondPickupCollider.center = new Vector3(GripColliderX, 0f, 0f);
+            secondPickupCollider.size = GripColliderSize;
+            secondPickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
             body.drag = 8f;
@@ -188,6 +202,7 @@ namespace StargazingHill.Editor
             pickup.AutoHold = VRC_Pickup.AutoHoldMode.No;
             WorldSettingsBoardPickup pickupReturn = UdonSharpUndo.AddComponent<WorldSettingsBoardPickup>(board);
             pickupReturn.pickupCollider = pickupCollider;
+            pickupReturn.secondPickupCollider = secondPickupCollider;
             pickupReturn.pickupRigidbody = body;
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);
@@ -347,8 +362,10 @@ namespace StargazingHill.Editor
                 new Vector3(LeftIconX, RowE, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "NotifyIcon", SettingsIconMeshes.EnsurePresence(),
                 new Vector3(LeftIconX, RowG, -0.028f), accentMaterial, SectionIconScale);
+            // Lower than the heading it belongs to: the bells on top of this glyph reach higher than
+            // the other icons do and were crossing the header rule at y 0.80.
             CreateSectionIcon(board.transform, "AlarmIcon", SettingsIconMeshes.EnsureAlarm(),
-                new Vector3(RightIconX, 0.745f, -0.028f), accentMaterial, SectionIconScale);
+                new Vector3(RightIconX, 0.705f, -0.028f), accentMaterial, SectionIconScale);
             CreateSectionIcon(board.transform, "RadioVolumeIcon", SettingsIconMeshes.EnsureVolume(),
                 new Vector3(RightIconX, RowF, -0.028f), accentMaterial, SectionIconScale);
 
@@ -465,21 +482,30 @@ namespace StargazingHill.Editor
                 Quaternion.Angle(board.transform.rotation, Quaternion.Euler(BoardEuler)) > 0.01f)
                 throw new InvalidOperationException("Local settings board size or facing validation failed.");
             ValidateTreeSettingsAccess(treeToggle, treeToggleButton, treeToggleCollider, treeGearIcon, board);
-            // The grip has to be big enough to aim at and still sit above every control, or it
-            // either cannot be grabbed or it swallows the ray meant for a button.
-            BoxCollider boardGrip = board.GetComponent<BoxCollider>();
-            if (boardGrip == null || boardGrip.size.y < 0.45f || boardGrip.size.z < 0.45f)
+            // Two grips, one per side. Each has to be big enough to aim at and has to stay off the
+            // board face, or it either cannot be grabbed or it swallows the ray meant for a button.
+            // A grab box in front of a button wins the ray outright: the raycaster resolves the
+            // nearest hit first, and this collider is nearer than the button's beam target.
+            BoxCollider[] boardGrips = board.GetComponents<BoxCollider>();
+            if (boardGrips.Length != 2)
                 throw new InvalidOperationException(
-                    "Local settings board pickup grip is too small to aim at.");
-            float gripBottom = boardGrip.center.y - boardGrip.size.y * 0.5f;
-            for (int index = 0; index < buttons.Length; index++)
+                    "Local settings board needs one pickup grip on each side.");
+            for (int index = 0; index < boardGrips.Length; index++)
             {
-                Transform button = buttons[index].transform;
-                if (button.parent != board.transform) continue;
-                if (button.localPosition.y + button.localScale.y * 0.5f > gripBottom)
+                BoxCollider grip = boardGrips[index];
+                if (grip.size.y < 0.90f || grip.size.z < 0.40f || grip.size.x < 0.30f)
                     throw new InvalidOperationException(
-                        "Local settings board pickup grip overlaps the control area at " +
-                        button.name + ".");
+                        "Local settings board pickup grip is too small to aim at.");
+                float inner = Mathf.Abs(grip.center.x) - grip.size.x * 0.5f;
+                for (int other = 0; other < buttons.Length; other++)
+                {
+                    Transform button = buttons[other].transform;
+                    if (button.parent != board.transform) continue;
+                    if (Mathf.Abs(button.localPosition.x) + button.localScale.x * 0.5f > inner)
+                        throw new InvalidOperationException(
+                            "Local settings board pickup grip overlaps the control area at " +
+                            button.name + ".");
+                }
             }
             string[] iconNames =
             {
@@ -500,6 +526,9 @@ namespace StargazingHill.Editor
                     icon.GetComponent<Collider>() != null)
                     throw new InvalidOperationException(
                         "Generated settings section icon is missing or malformed: " + iconNames[index]);
+                // Icons are drawn from a shared square, but they do not fill it equally: the alarm's
+                // bells reach higher than anything else and crossed the header rule at first.
+                ValidateIconClearsDividers(board, icon, iconFilter.sharedMesh, iconNames[index]);
             }
             if (UnityEngine.Object.FindObjectOfType<EventSystem>(true) == null)
                 throw new InvalidOperationException(
@@ -678,6 +707,29 @@ namespace StargazingHill.Editor
                         "Settings board slider " + slider.name + " overlaps the label \"" +
                         labels[index].text.Replace("\n", " ") +
                         "\"; the drag surface must stand clear of every other control and label.");
+            }
+        }
+
+        /// <summary>A section icon must not cross the rules that separate the board's regions.</summary>
+        private static void ValidateIconClearsDividers(GameObject board, Transform icon, Mesh mesh,
+            string iconName)
+        {
+            Bounds local = mesh.bounds;
+            Rect iconRect = LocalRect(board.transform, icon,
+                new Vector2(local.size.x, local.size.y), new Vector2(0.5f, 0.5f));
+            // The mesh is not centred on its own origin, so shift the rect by that offset.
+            iconRect.position += new Vector2(local.center.x * icon.localScale.x,
+                local.center.y * icon.localScale.y);
+            string[] dividerNames = { "HeaderDivider", "ColumnDivider" };
+            for (int index = 0; index < dividerNames.Length; index++)
+            {
+                Transform divider = board.transform.Find(dividerNames[index]);
+                if (divider == null) continue;
+                Rect dividerRect = LocalRect(board.transform, divider, Vector2.one,
+                    new Vector2(0.5f, 0.5f));
+                if (iconRect.Overlaps(dividerRect))
+                    throw new InvalidOperationException(
+                        "Settings board icon " + iconName + " crosses " + dividerNames[index] + ".");
             }
         }
 
@@ -1068,7 +1120,8 @@ namespace StargazingHill.Editor
             hud.transform.SetParent(root.transform, false);
             int localLayer = LayerMask.NameToLayer("PlayerLocal");
             if (localLayer >= 0) hud.layer = localLayer;
-            Text hudText = CreateText(hud.transform, string.Empty, Vector3.zero, 0.062f,
+            // 0.062 read as shouting at 1.15 m, and three lines of it filled a third of the view.
+            Text hudText = CreateText(hud.transform, string.Empty, Vector3.zero, 0.048f,
                 TextAnchor.UpperCenter, font, textMaterial, new Color(0.85f, 0.94f, 1f));
             if (localLayer >= 0)
             {
@@ -1348,6 +1401,10 @@ namespace StargazingHill.Editor
             string interactionText)
         {
             GameObject button = CreateCube(name, parent, position, scale, material, true);
+            // Rounded on the face only. The collider stays the full rectangle, so softening the
+            // corners costs nothing in how easy the button is to hit.
+            button.GetComponent<MeshFilter>().sharedMesh =
+                PanelButtonMeshes.EnsureRoundedPlate(scale.x, scale.y);
             BoxCollider collider = button.GetComponent<BoxCollider>();
             collider.isTrigger = true;
             CreateText(button.transform, label, new Vector3(0f, 0f, -0.53f), textHeight,

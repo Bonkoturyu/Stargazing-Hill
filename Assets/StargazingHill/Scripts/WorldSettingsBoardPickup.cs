@@ -9,6 +9,8 @@ namespace StargazingHill
     {
         public const float ReturnDelaySeconds = 10f;
         public Collider pickupCollider;
+        // The grips sit on both sides of the panel, so the grab volume is two boxes.
+        public Collider secondPickupCollider;
         public Rigidbody pickupRigidbody;
 
         private Vector3 _initialLocalPosition;
@@ -29,14 +31,14 @@ namespace StargazingHill
         {
             _held = true;
             _returnPending = false;
-            if (pickupCollider != null) pickupCollider.enabled = false;
+            SetGripsEnabled(false);
         }
 
         public override void OnDrop()
         {
             _held = false;
             _returnPending = true;
-            if (pickupCollider != null) pickupCollider.enabled = true;
+            SetGripsEnabled(true);
             StopMotion();
             _returnAtTime = Time.time + ReturnDelaySeconds;
             SendCustomEventDelayedSeconds(nameof(ReturnIfReady), ReturnDelaySeconds);
@@ -62,7 +64,13 @@ namespace StargazingHill
             transform.localPosition = _initialLocalPosition;
             transform.localRotation = _initialLocalRotation;
             transform.localScale = _initialLocalScale;
-            if (pickupCollider != null) pickupCollider.enabled = true;
+            SetGripsEnabled(true);
+        }
+
+        private void SetGripsEnabled(bool enabled)
+        {
+            if (pickupCollider != null) pickupCollider.enabled = enabled;
+            if (secondPickupCollider != null) secondPickupCollider.enabled = enabled;
         }
 
         private void StopMotion()
