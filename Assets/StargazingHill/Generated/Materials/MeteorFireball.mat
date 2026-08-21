@@ -30,7 +30,7 @@ Material:
     - _ExtinctionCoefficient: 0.23
     - _FlareStrength: 0.82
     - _HeadSize: 0.15
-    - _HorizonFull: 0.20791169
+    - _HorizonFull: 0.2079117
     - _HorizonStart: 0
     - _Intensity: 6.2
     - _MinimumSinAltitude: 0.05

@@ -2,7 +2,7 @@
 
 作成日: 2026-08-11
 
-## 実装状況（2026-08-14）
+## 実装状況（2026-08-15）
 
 - HYG Stellar Database v4.1から `mag <= 6.8` の12,495星を抽出し、赤経・赤緯・等級・色指数だけを追跡する。
 - `StargazingWorldBuilder` が全天球の星を4頂点Quadへ変換し、1 Mesh / 1 Renderer / 1 Materialへ統合する。
@@ -33,7 +33,7 @@
 
 ## 2. 既存実装からの再利用方針
 
-`VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` の夜空実装で採用した以下の考え方を再利用する。
+非公開の既存VRChatプロジェクトの夜空実装で採用した以下の考え方を再利用する。
 
 - HYG星表
 - 等級ベースの明るさ
@@ -90,7 +90,7 @@ Editor生成時の観測地点初期値は `Assets/StargazingHill/Settings/Tokyo
 
 緯度は北を正、経度は東を正とする。星、月、流星放射点へ同じ値を渡すため、別の都市・緯度経度へ差し替えても個別コード変更は不要。
 
-runtimeでは説明パネルの `WorldObservatorySelector` が次の20地点catalogを持つ。Kagawaは県庁所在地Takamatsu、Okinawaは県庁所在地Nahaを代表地点とする。座標は都市中心付近の近似値であり、特定の観測施設位置を意味しない。
+runtimeでは説明パネルの `WorldObservatorySelector` が次の22地点catalogを持つ。Kagawaは県庁所在地Takamatsu、Okinawaは県庁所在地Naha、Shimaneは県庁所在地Matsueを代表地点とする。座標は都市中心付近の近似値であり、特定の観測施設位置を意味しない。
 
 | Country | Location | Latitude | Longitude East |
 |---|---|---:|---:|
@@ -114,8 +114,10 @@ runtimeでは説明パネルの `WorldObservatorySelector` が次の20地点cata
 | Indonesia | Jakarta | -6.2088 | 106.8456 |
 | China | Beijing | 39.9042 | 116.4074 |
 | Korea | Seoul | 37.5665 | 126.9780 |
+| Japan | Tottori | 35.5011 | 134.2351 |
+| Japan | Matsue (Shimane) | 35.4681 | 133.0484 |
 
-`◀` / `▶` または上方向へ展開する3列タイルから選ぶと、操作クライアントがselectorのOwnershipを取得し、`selectedIndex`だけをManual Syncする。全クライアントは同じcatalogから緯度・東経を読み、星空回転・月位置・流星放射点へ即時適用する。競合時は最後に受理された選択を採用する。同期対象であることは見出しの `(global)` で示す。選択中ラベルと20地点タイルの名称は、各ユーザーのローカル言語設定に合わせて日本語 / English / 繁體中文 / 简体中文 / 한국어へ切り替えるが、名称と言語indexは同期しない。天体Transformそのものも同期しない。詳細判断は[ADR 0016](adr/0016-global-observatory-selector.md)を正本とする。
+`◀` / `▶` または上方向へ展開する3列タイルから選ぶと、操作クライアントがselectorのOwnershipを取得し、`selectedIndex`だけをManual Syncする。全クライアントは同じcatalogから緯度・東経を読み、星空回転・月位置・流星放射点へ即時適用する。競合時は最後に受理された選択を採用する。同期対象であることは見出しの `(global)` で示す。選択中ラベルと22地点タイルの名称は、各ユーザーのローカル言語設定に合わせて日本語 / English / 繁體中文 / 简体中文 / 한국어へ切り替えるが、名称と言語indexは同期しない。天体Transformそのものも同期しない。既存同期互換性のためTokyo=0〜Seoul=19を維持し、Tottori=20、Matsue (Shimane)=21を末尾へ追加する。詳細判断は[ADR 0016](adr/0016-global-observatory-selector.md)を正本とする。
 
 ## 5. 時刻
 
@@ -415,7 +417,8 @@ MVPでは簡易カーブで実装し、必要なら将来ZHR等を用いた年�
 8. [x] 散在流星
 9. [x] MeteorShowerCatalog化
 10. [x] IMO 2026主要11群
-11. [ ] Quest / iOS実機負荷確認
+11. [x] Quest実機負荷確認（2026-08-15、ユーザー実機スモーク確認で目立つ問題なし）
+12. [ ] iOS実機負荷確認
 
 ## 18. 実装前に再確認するもの
 

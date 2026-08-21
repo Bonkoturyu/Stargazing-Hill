@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-14
+最終確認日: 2026-08-15
 
 VRChat SDKのDescription欄へ貼り付ける正本。
 

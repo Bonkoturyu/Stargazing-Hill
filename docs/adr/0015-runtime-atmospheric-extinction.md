@@ -7,7 +7,7 @@
 
 星Meshは肉眼限界の調整として`mag <= 6.8`を採用しているが、従来のShaderは地平線fadeだけで、低空ほど長い空気層を通って暗くなる大気消散を計算していなかった。そのため、背景には低空の青い空気感がある一方、星と流星の輝度変化が一致していなかった。
 
-参照実装 `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` の `NightStarMeshBaker` は、肉眼限界`6.8等級`、消散係数`0.23 mag/airmass`、`airmass ≈ 1 / sin(altitude)`、最低正弦`0.05`を使用する。ただし参照側は特定時刻の地平線上だけを生成するため、消散をEditor bakeできる。本ワールドは現在時刻に合わせて全天球Mesh自体を回転するため、生成時の高度へ焼くと時刻変化に追従できない。
+非公開の既存VRChatプロジェクトの星Mesh生成処理は、肉眼限界`6.8等級`、消散係数`0.23 mag/airmass`、`airmass ≈ 1 / sin(altitude)`、最低正弦`0.05`を使用する。ただし参照側は特定時刻の地平線上だけを生成するため、消散をEditor bakeできる。本ワールドは現在時刻に合わせて全天球Mesh自体を回転するため、生成時の高度へ焼くと時刻変化に追従できない。
 
 ## Options
 
@@ -32,5 +32,5 @@
 
 ## Evidence
 
-- 参照: https://github.com/Bonkoturyu/VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH （commit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae`、`Assets/BonkotuWorld/Editor/NightStarMeshBaker.cs`、確認日2026-08-14）
+- 参照: 非公開local snapshotの星Mesh生成処理（確認日2026-08-14）
 - 現行実装確認: `Starfield.shader`は従来smoothstepだけで消散式なし、`BuildStarMesh()`は`mag <= 6.8`を選別済み（2026-08-14）

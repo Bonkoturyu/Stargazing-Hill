@@ -170,7 +170,7 @@ namespace StargazingHill.Editor
 
             EditorSceneManager.MarkSceneDirty(scene);
             Debug.Log("[Stargazing Hill] Installed terrain-conforming Tiny Treats picnic spot: " +
-                "8 scene items, no colliders or realtime shadows.");
+                "8 scene items, one blanket MeshCollider, no prop colliders or realtime shadows.");
         }
 
         internal static void ValidateScene()
@@ -178,8 +178,27 @@ namespace StargazingHill.Editor
             GameObject root = GameObject.Find("World/Environment/PicnicSpot");
             if (root == null || root.transform.childCount != ItemDefinitions.Length)
                 throw new InvalidOperationException("Picnic spot hierarchy validation failed.");
-            if (root.GetComponentsInChildren<Collider>(true).Length != 0)
-                throw new InvalidOperationException("Picnic spot must not contain colliders.");
+            Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
+            Transform blanket = root.transform.Find("PicnicBlanketBlue");
+            MeshFilter blanketFilter = blanket != null ? blanket.GetComponentInChildren<MeshFilter>(true) : null;
+            MeshCollider blanketCollider = blanket != null ? blanket.GetComponentInChildren<MeshCollider>(true) : null;
+            int physicalColliderCount = 0;
+            for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+            {
+                Collider collider = colliders[colliderIndex];
+                if (!collider.isTrigger)
+                {
+                    physicalColliderCount++;
+                    continue;
+                }
+                throw new InvalidOperationException(
+                    "Picnic spot contains an unexpected interaction trigger: " + collider.name);
+            }
+            if (physicalColliderCount != 1 || blanketFilter == null || blanketCollider == null ||
+                blanketCollider.sharedMesh != blanketFilter.sharedMesh || blanketCollider.convex ||
+                blanketCollider.isTrigger)
+                throw new InvalidOperationException(
+                    "Picnic spot must contain exactly one physical collider: the static blanket MeshCollider.");
 
             MeshFilter[] filters = root.GetComponentsInChildren<MeshFilter>(true);
             Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
@@ -295,6 +314,11 @@ namespace StargazingHill.Editor
                 EditorUtility.SetDirty(asset);
             }
             filter.sharedMesh = asset;
+            MeshCollider collider = filter.GetComponent<MeshCollider>();
+            if (collider == null) collider = filter.gameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh = asset;
+            collider.convex = false;
+            collider.isTrigger = false;
         }
 
         private static void ValidateTerrainContact(GameObject root)

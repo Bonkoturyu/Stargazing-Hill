@@ -5,9 +5,9 @@
 
 ## Context
 
-既存の流星デバッグパネルは据置き前提の約2.35 × 2.05mで、VR内で手に持って流星を見ながら操作できなかった。ユーザーは、参考ワールド `VRChat-World_Luxury_Cruise_Ship_PRETTY_MUCH` と同様のリモコンUI、手持ち操作、放置後約10秒で元位置へ戻る挙動を要求した。
+既存の流星デバッグパネルは据置き前提の約2.35 × 2.05mで、VR内で手に持って流星を見ながら操作できなかった。ユーザーは、非公開の既存VRChatプロジェクトと同様のリモコンUI、手持ち操作、放置後約10秒で元位置へ戻る挙動を要求した。
 
-参考実装はcommit `1d8ccafca7b0c0c11dbadef5aa8a029f6c7ef8ae` の `LocalPickupReturn.cs` とデッキ上リモコン生成処理で確認した。同リポジトリの実機記録ではローカルPickupと復帰処理がPCVR / QuestでPassしている。
+参考実装は非公開local snapshotのPickup復帰処理とリモコン生成処理で確認した。同プロジェクトの実機記録ではローカルPickupと復帰処理がPCVR / QuestでPassしている。
 
 ## Decision
 

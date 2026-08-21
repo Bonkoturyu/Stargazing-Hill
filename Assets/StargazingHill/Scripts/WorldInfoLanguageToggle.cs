@@ -39,11 +39,13 @@ namespace StargazingHill
             if (observatorySelector != null) observatorySelector.SetDisplayLanguage(_languageIndex);
 
             if (buttonLabel == null) return;
-            if (_languageIndex == 0) buttonLabel.text = "ENGLISH";
-            else if (_languageIndex == 1) buttonLabel.text = "繁體中文";
-            else if (_languageIndex == 2) buttonLabel.text = "简体中文";
-            else if (_languageIndex == 3) buttonLabel.text = "한국어";
-            else buttonLabel.text = "日本語";
+            // Show both the current and next language. The arrow is deliberately not a
+            // media-style triangle because this board already uses triangles for location navigation.
+            if (_languageIndex == 0) buttonLabel.text = "日→EN";
+            else if (_languageIndex == 1) buttonLabel.text = "EN→繁";
+            else if (_languageIndex == 2) buttonLabel.text = "繁→简";
+            else if (_languageIndex == 3) buttonLabel.text = "简→한";
+            else buttonLabel.text = "한→日";
         }
     }
 }

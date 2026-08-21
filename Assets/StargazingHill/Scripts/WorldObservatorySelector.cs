@@ -13,7 +13,7 @@ namespace StargazingHill
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class WorldObservatorySelector : UdonSharpBehaviour
     {
-        public const int ExpectedLocationCount = 20;
+        public const int ExpectedLocationCount = 22;
 
         [Header("Global Observatory Catalog")]
         public string[] profileIds;
@@ -25,6 +25,9 @@ namespace StargazingHill
         public string[] displayNamesKorean;
         public float[] latitudeDegrees;
         public float[] longitudeDegreesEast;
+        // Catalog indices in the same order as the expanded tile list. The synchronized
+        // selectedIndex remains a stable catalog ID; only Previous/Next traverse this array.
+        public int[] selectionOrder;
 
         [Header("Scene References")]
         public RealSkyController skyController;
@@ -50,14 +53,26 @@ namespace StargazingHill
 
         public void SelectPrevious()
         {
-            if (!CatalogIsValid()) return;
-            CommitGlobalSelection((selectedIndex - 1 + profileIds.Length) % profileIds.Length);
+            SelectRelative(-1);
         }
 
         public void SelectNext()
         {
+            SelectRelative(1);
+        }
+
+        private void SelectRelative(int direction)
+        {
             if (!CatalogIsValid()) return;
-            CommitGlobalSelection((selectedIndex + 1) % profileIds.Length);
+            int orderIndex = 0;
+            for (int index = 0; index < selectionOrder.Length; index++)
+            {
+                if (selectionOrder[index] != selectedIndex) continue;
+                orderIndex = index;
+                break;
+            }
+            int nextOrderIndex = (orderIndex + direction + selectionOrder.Length) % selectionOrder.Length;
+            CommitGlobalSelection(selectionOrder[nextOrderIndex]);
         }
 
         public void SelectLocation(int index)
@@ -163,7 +178,8 @@ namespace StargazingHill
                    displayNamesSimplifiedChinese != null && displayNamesSimplifiedChinese.Length == count &&
                    displayNamesKorean != null && displayNamesKorean.Length == count &&
                    latitudeDegrees != null && latitudeDegrees.Length == count &&
-                   longitudeDegreesEast != null && longitudeDegreesEast.Length == count;
+                   longitudeDegreesEast != null && longitudeDegreesEast.Length == count &&
+                   selectionOrder != null && selectionOrder.Length == count;
         }
 
         private void UpdateDebugLabel()

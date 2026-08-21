@@ -1,6 +1,6 @@
 # 第三者依存パッケージ
 
-状態: `In Progress`
+状態: `Provisional`
 
 `Packages/manifest.json` と `Packages/vpm-manifest.json` を技術上の正本とし、この文書には採用理由、配布元、ライセンス、対応版の証拠を記録する。Unity標準モジュールは個別列挙せず、追加VPM/packageを中心に管理する。
 

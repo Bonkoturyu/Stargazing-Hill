@@ -124,8 +124,8 @@ $$
 Quadを球面へ接する向きにするため、方向 $\mathbf{d}$ と補助軸から接線基底を作る。
 
 $$
-\mathbf{t}=\operatorname{normalize}(\mathbf{d}\times\mathbf{a}),\qquad
-\mathbf{b}=\operatorname{normalize}(\mathbf{d}\times\mathbf{t})
+\mathbf{t}=\frac{\mathbf{d}\times\mathbf{a}}{\left\lVert\mathbf{d}\times\mathbf{a}\right\rVert},\qquad
+\mathbf{b}=\frac{\mathbf{d}\times\mathbf{t}}{\left\lVert\mathbf{d}\times\mathbf{t}\right\rVert}
 $$
 
 $\mathbf{a}$ は通常`Vector3.up`、極付近で外積が不安定になる場合だけ`Vector3.right`を使う。half sizeを $s$ とすると4頂点は次の組合せ。
@@ -134,22 +134,22 @@ $$
 \mathbf{v}=\mathbf{c}\pm s\mathbf{t}\pm s\mathbf{b}
 $$
 
-UVは通常の $(0,0)$〜$(1,1)$、triangleは2枚。全星のvertex、UV、vertex color、indexを同じ配列へ追加し、`UInt32` indexの1 Meshにする。星ごとのGameObject、Renderer、Materialは作らない。
+UVは通常の `(0, 0)`〜`(1, 1)`、triangleは2枚。全星のvertex、UV、vertex color、indexを同じ配列へ追加し、`UInt32` indexの1 Meshにする。星ごとのGameObject、Renderer、Materialは作らない。
 
 ### 4. 等級を大きさと明るさへ変換
 
 実装は物理光度をそのままHDRへ変換するのではなく、VRで暗い星も読めるよう知覚寄りに圧縮する。等級上限 $m_{lim}=6.8$ として可視度 $v$ を作る。
 
 $$
-v=\operatorname{clamp01}\left(\frac{m_{lim}-m}{8.3}\right)
+v=\min\left(1,\max\left(0,\frac{m_{\mathrm{lim}}-m}{8.3}\right)\right)
 $$
 
 $$
-s=\operatorname{lerp}(0.055,\ 0.24,\ v^{0.55})
+s=0.055+(0.24-0.055)v^{0.55}
 $$
 
 $$
-B=\operatorname{lerp}(0.22,\ 1.0,\ v^{0.45})
+B=0.22+(1.0-0.22)v^{0.45}
 $$
 
 $s$ はQuadのhalf size、$B$ はvertex colorのalphaへ入れる明るさ。指数を1未満にすることで、中程度以下の星を完全に潰さず残す。
@@ -199,7 +199,7 @@ $$
 東経を正とする観測地経度 $\lambda$ を加え、0〜360°へ正規化する。
 
 $$
-\theta_L=\operatorname{normalize}_{0..360}(\theta_G+\lambda)
+\theta_L=(\theta_G+\lambda)\bmod 360^\circ
 $$
 
 東京profileは緯度35.68°N、東経139.76°E。別地点へ変更するときは `ObservatoryProfile`を差し替え、星・月・流星放射点へ同じ値を渡す。
@@ -246,18 +246,21 @@ $$
 $$
 
 $$
-core=\operatorname{saturate}(1-r^2)^2
+core=\max(0,\min(1,1-r^2))^2
 $$
 
 $$
-sparkle=\operatorname{saturate}(1-3r^2)
+sparkle=\max(0,\min(1,1-3r^2))
 $$
 
 次に、カメラから星へのworld方向の $y$ を高度の正弦として使う。まず地平線以下を0、約15°以上を1へする形状fadeを求める。
 
 $$
-h=\operatorname{smoothstep}(0,\ \sin15^\circ,\ viewDirection_y)
+q=\min\left(1,\max\left(0,\frac{viewDirection_y}{\sin15^\circ}\right)\right),\qquad
+h=q^2(3-2q)
 $$
+
+これはShaderの`smoothstep(0, sin(15°), viewDirection_y)`と同じ補間を、式として展開したもの。
 
 さらに、大気を通る長さをairmass $X$で近似する。地平線付近で無限大にならないよう、参照ワールドと同じく正弦の下限を`0.05`へ固定する。
 

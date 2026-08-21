@@ -2,7 +2,7 @@
 
 状態: `Confirmed`
 
-確認日: 2026-08-14
+確認日: 2026-08-15
 
 この文書は、GitHub repositoryをPrivateからPublicへ変更する前の確認結果、2026-08-14の公開実施結果、公開後も維持する境界を記録する。コード・仕様の正本ではなく、公開判断のチェックリストである。
 
@@ -17,7 +17,7 @@
 | VRChat user/group/avatar ID | `usr_`、`grp_`、`avtr_` を検出せず | Confirmed |
 | Blueprint ID | 保存Sceneにproduction worldの `wrld_...` が1件ある。秘密情報ではないが、clone利用者向け注意が必要 | Confirmed |
 | QvPen / YamaPlayer / UnyStylus | package本体は追跡されていない。VPM manifestのpackage名と固定version、局所patch、復元手順だけを公開する | Confirmed |
-| 第三者asset | HYG、Poly Haven、Tiny Treats、Noto Sans CJKは権利記録と隣接license/NOTICEを保持する | Confirmed |
+| 第三者asset | HYG、Poly Haven、Tiny Treats、OpenGameArt方位磁石、Noto Sans CJKは権利記録と隣接license/NOTICEを保持する | Confirmed |
 | VRChat VPM resolver | `Packages/com.vrchat.core.vpm-resolver` はVRChat Distro License付きで追跡される。root MITの例外であり、無償公開とする | Confirmed |
 | 大容量履歴 | 最大の到達blobは旧Jacaranda mesh約37.1 MiB。GitHubの単一file 100 MiB制限未満だが、clone容量には残る | Confirmed |
 
@@ -31,6 +31,7 @@
 | default branch | `main` | Confirmed |
 | branch ruleset | `main` を対象にPR経由、branch削除禁止、non-fast-forward禁止、squash mergeの既存rulesetを `active` 化 | Confirmed |
 | Actions履歴 | 過去にBudget/Billingでjob開始前に失敗した `Static validation` run 74件を削除。2026-08-15にrunner起動を確認し、Actionをrepository方針どおりfull commit SHAへ固定。PR #28のpush / pull request runがともにPass | Confirmed |
+| Actions allowlist | 利用者が2026-08-15に `natsuneko-laboratory/create-unitypackage@*` 相当を許可リストへ追加。workflow本体は `0e02a37fdb702e893dc2a96603768ca7e7dd9b54` へ固定済み。次の `v*` tag実行でremote設定を実証する | Provisional |
 | Dependabot | security updatesを有効化し、open alert 0件を確認 | Confirmed |
 | Secret scanning | Secret scanningとPush protectionを有効化 | Confirmed |
 | CodeQL | Public化後に利用可能。設定と初回実行は未実施 | Pending Evidence |
@@ -51,6 +52,8 @@ VRChat SDKの `VRCPipelineManager` はBlueprint IDをworldの一意なIDとし�
 
 ## 公開後に残る作業
 
+- `Confirmed`: BOOTH初回正式版 `1.0.0` のunitypackageと顧客向けZIPを2026-08-20に生成し、179 pathnameの所有境界、外部依存除外、5file構成、SHA-256一致を確認した。顧客向け文書はrepository非所持を前提とする5言語の `README.txt` / `NOTICE.txt` とし、Markdown文書は同梱しない。
+- `Confirmed`: 利用者が2026-08-21にBOOTHへ初回正式版 `1.0.0` を出品した。価格、サポート範囲、更新方針、返金条件の現在値はBOOTH商品ページ側で管理する。
 - `Pending Evidence`: tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
 - `Pending Evidence`: QvPen upstream packageには明示license fileがないため、本体は今後も追跡・同梱しない。
 - `Pending Evidence`: BOOTH向け初回artifactをclean Unity 2022.3.22f1 projectへimportし、依存復元後の保存Scene validationを行う。
