@@ -53,6 +53,7 @@ VRChat SDKの `VRCPipelineManager` はBlueprint IDをworldの一意なIDとし�
 ## 公開後に残る作業
 
 - `Confirmed`: BOOTH初回正式版 `1.0.0` のunitypackageと顧客向けZIPを2026-08-20に生成し、179 pathnameの所有境界、外部依存除外、5file構成、SHA-256一致を確認した。顧客向け文書はrepository非所持を前提とする5言語の `README.txt` / `NOTICE.txt` とし、Markdown文書は同梱しない。
+- `Confirmed`: 利用者が2026-08-21にBOOTHへ初回正式版 `1.0.0` を出品した。価格、サポート範囲、更新方針、返金条件の現在値はBOOTH商品ページ側で管理する。
 - `Pending Evidence`: tagによるRelease workflowを1回実行し、ZIP内のunitypackageをclean projectへimportする。
 - `Pending Evidence`: QvPen upstream packageには明示license fileがないため、本体は今後も追跡・同梱しない。
 - `Pending Evidence`: BOOTH向け初回artifactをclean Unity 2022.3.22f1 projectへimportし、依存復元後の保存Scene validationを行う。

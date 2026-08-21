@@ -1,6 +1,6 @@
 # Handoff
 
-更新日: 2026-08-20
+更新日: 2026-08-21
 
 ## 現在地
 
@@ -22,7 +22,7 @@
 - 2026-08-20の引き継ぎ確認で、現在のSceneを再生成しない `Tools/Run-LocalChecks.ps1 -SkipBuild` 相当をWindows PowerShellから実行し、YamaPlayer / UnyStylusパッチ、静的検査、UdonSharp program assets、保存Scene検証、星空・流星数値試験がすべてPassした。ClientSim / Desktop / PCVR / Quest / iOSの操作・見た目は引き続きPending Evidence。
 - 2026-08-20実機確認で3パネルの操作と入退室トースト位置はPass。左右2 Colliderの取っ手は右を狙うと左へ吸われたため、左右の棒を盤面奥の単一対称Colliderで覆う生成へ修正した。修正後の左右Grabとパネル操作もVRChat実機でPass。正本は [ADR 0018](docs/adr/0018-settings-board-usability-fixes.md) 追記8と `docs/TEST_PLAN.md` 最新節。
 - World uploadは利用者が実施済み。
-- BOOTH初回正式版を生成済み。`Build/BOOTH/StargazingHill-1.0.0-BOOTH.zip`（27,010,877 bytes、SHA-256 `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94`）に、検査済み `StargazingHill-1.0.0.unitypackage`（27,707,195 bytes、179 pathname、SHA-256 `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`）、repository非所持を前提とする5言語 `README.txt` / `NOTICE.txt`、`LICENSE.txt`、checksumを収録。日本語NOTICEは「現状のまま」と表記し、Markdown文書は0件。clean importはPending Evidence。
+- BOOTH初回正式版を生成済み。`Build/BOOTH/StargazingHill-1.0.0-BOOTH.zip`（27,010,877 bytes、SHA-256 `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94`）に、検査済み `StargazingHill-1.0.0.unitypackage`（27,707,195 bytes、179 pathname、SHA-256 `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`）、repository非所持を前提とする5言語 `README.txt` / `NOTICE.txt`、`LICENSE.txt`、checksumを収録。日本語NOTICEは「現状のまま」と表記し、Markdown文書は0件。利用者が2026-08-21に「Stargazing Hill – 星空・月・流星群システム for VRChat」version `1.0.0` としてBOOTHへ出品済み。clean importはPending Evidence。
 
 ## 次の安全な一手
 

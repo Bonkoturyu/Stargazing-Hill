@@ -1,10 +1,10 @@
 # BOOTH配布準備
 
-状態: `Open`
+状態: `Confirmed`
 
-確認日: 2026-08-15
+確認日: 2026-08-21
 
-この文書は、BOOTHへ登録する顧客向けZIPを作るための作業正本である。価格、サポート範囲、商品ページ文面はまだ `Open` とする。
+この文書は、BOOTHへ登録する顧客向けZIPを作るための作業正本である。初回正式版 `1.0.0` は2026-08-21に利用者がBOOTHへ出品済み。価格、サポート範囲、更新方針、返金条件の現在値はBOOTH商品ページを正本とし、このrepositoryでは配布物の境界と生成・検証手順を記録する。
 
 ## 配布できる範囲
 
@@ -46,10 +46,10 @@ powershell -ExecutionPolicy Bypass -File Tools/Prepare-BoothRelease.ps1 `
 
 scriptはunitypackageのpathname境界を先に検査し、YamaPlayer、QvPen、UnyStylus、ローカルbake inputが混入したpackageを拒否する。
 
-## 販売開始前の完了条件
+## 初回販売の記録と残条件
 
 - `Confirmed`: 2026-08-14に現在worktreeから `0.1.0-draft` のunitypackageとBOOTH ZIPを生成し、pathname境界とSHA-256を検査した。販売version確定時に同じ手順で再生成する。
 - `Confirmed`: 2026-08-20に初回正式版 `1.0.0` を現在worktreeから再生成した。unitypackageは27,707,195 bytes・179 pathnameで、所有境界と外部依存除外をPass。BOOTH ZIPは27,010,877 bytes・5file。購入者が元のGit repositoryを持っていない前提の5言語 `README.txt` / `NOTICE.txt` を収録し、Markdown文書を同梱しない。日本語NOTICEは購入者向けの平易な表現として「現状のまま」を採用した。unitypackage SHA-256は `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`、ZIP SHA-256は `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94`。
 - `Pending Evidence`: clean Unity 2022.3.22f1 projectへimportし、VPM依存と購入済みUnyStylus復元後に保存Scene validationを通す。
 - `Pending Evidence`: Windows / Android / iOSの保存Scene、UdonSharp、Shader、プレイヤー、描画機能を確認する。
-- `Open`: 商品名、version、価格、サポート範囲、更新方針、返金条件、商品ページ文面を確定する。
+- `Confirmed`: 商品名を「Stargazing Hill – 星空・月・流星群システム for VRChat」、versionを `1.0.0` として商品ページを整備し、2026-08-21に利用者がBOOTHへ出品した。価格、サポート範囲、更新方針、返金条件はBOOTH商品ページ側で管理する。

@@ -922,4 +922,5 @@
 | unitypackage export | Pass | Unity 2022.3.22f1 batch exportで `StargazingHill-1.0.0.unitypackage` を生成。27,707,195 bytes、179 pathname。すべて `Assets/StargazingHill` 配下で、YamaPlayer / QvPen / UnyStylus / local bake inputの混入なし |
 | BOOTH ZIP | Pass | `StargazingHill-1.0.0-BOOTH.zip`、27,010,877 bytes。unitypackage、`README.txt`、`LICENSE.txt`、`NOTICE.txt`、`SHA256SUMS.txt` の5fileを確認。READMEとNOTICEは購入者が元のGit repositoryを持たない前提の自己完結した日英繁中簡中韓5言語で、Markdown文書は0件。日本語NOTICEの提供状態は「現状のまま」と表記 |
 | SHA-256 | Pass | unitypackage `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`。ZIP内 `SHA256SUMS.txt` と再計算値が一致。ZIP自体は `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94` |
+| BOOTH出品 | Pass | 利用者が2026-08-21に商品名「Stargazing Hill – 星空・月・流星群システム for VRChat」、version `1.0.0` として出品完了を報告 |
 | BOOTH clean import | Pending Evidence | clean Unity 2022.3.22f1 projectで外部依存を復元し、import後の保存Scene validationを確認する |
