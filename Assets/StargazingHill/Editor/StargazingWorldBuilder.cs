@@ -2402,16 +2402,20 @@ namespace StargazingHill.Editor
                 throw new InvalidOperationException("VR debug panel root is not at the handheld scale.");
 
             BoxCollider pickupCollider = panel.GetComponent<BoxCollider>();
+            BoxCollider[] pickupColliders = panel.GetComponents<BoxCollider>();
             Rigidbody pickupRigidbody = panel.GetComponent<Rigidbody>();
             VRCPickup pickup = panel.GetComponent<VRCPickup>();
             WorldDebugPanelPickup pickupReturn = panel.GetComponent<WorldDebugPanelPickup>();
             if (panel.layer != LayerMask.NameToLayer("Pickup") ||
-                pickupCollider == null || !pickupCollider.isTrigger ||
+                pickupCollider == null || pickupColliders.Length != 1 || !pickupCollider.isTrigger ||
+                pickupCollider.size.x < 2.90f || Mathf.Abs(pickupCollider.center.x) > 0.001f ||
+                pickupCollider.center.z - pickupCollider.size.z * 0.5f < 0.04f ||
                 pickupRigidbody == null || pickupRigidbody.useGravity ||
                 pickup == null || !pickup.pickupable ||
                 pickup.orientation != VRC_Pickup.PickupOrientation.Any ||
                 pickup.AutoHold != VRC_Pickup.AutoHoldMode.No ||
                 pickupReturn == null || pickupReturn.pickupCollider != pickupCollider ||
+                pickupReturn.secondPickupCollider != pickupCollider ||
                 pickupReturn.pickupRigidbody != pickupRigidbody ||
                 !Mathf.Approximately(WorldDebugPanelPickup.ReturnDelaySeconds, 10f))
                 throw new InvalidOperationException("VR debug panel handheld pickup configuration failed.");

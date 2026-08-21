@@ -25,11 +25,11 @@ namespace StargazingHill.Editor
         // only debug ON/OFF control, so this standalone object must never be regenerated.
         private const string LegacyToggleObjectName = "VRDebugPanelToggle";
         internal const float PanelScale = 0.20f;
-        // The grips. The rods graze the sheet edge at 1.175; the grab boxes start there and reach
-        // outward, so they never sit over the language toggle that ends at x 1.10.
+        // Both rods use one symmetric collider behind the panel. Two colliders made VRChat resolve
+        // the right rod through the first (left) collider.
         private const float GripBarX = 1.26f;
-        private const float GripColliderX = 1.34f;
-        private static readonly Vector3 GripColliderSize = new Vector3(0.34f, 1.00f, 0.46f);
+        private const float GripColliderZ = 0.27f;
+        private static readonly Vector3 GripColliderSize = new Vector3(3.02f, 1.00f, 0.44f);
 
         // TextMesh renders a line at characterSize * fontSize / 10 world units, so a metre-based layout has
         // to convert rather than assign metres straight to characterSize. The first version did not, and
@@ -429,16 +429,12 @@ namespace StargazingHill.Editor
             // The first attempt put an invisible 5 cm strip on the top edge. Nothing showed where to
             // aim and the VR hand ray had to land inside it, so it grabbed no better than the box
             // that used to sit behind the face. The grips are now visible rods down each side, with
-            // grab boxes that start at the sheet edge and reach outward: generous, reachable with
-            // either hand, and never over a button.
+            // one symmetric grab box behind the controls: generous and reachable from either rod
+            // without letting VRChat redirect the right rod to the first collider.
             BoxCollider collider = panel.AddComponent<BoxCollider>();
-            collider.center = new Vector3(-GripColliderX, 0f, 0f);
+            collider.center = new Vector3(0f, 0f, GripColliderZ);
             collider.size = GripColliderSize;
             collider.isTrigger = true;
-            BoxCollider secondCollider = panel.AddComponent<BoxCollider>();
-            secondCollider.center = new Vector3(GripColliderX, 0f, 0f);
-            secondCollider.size = GripColliderSize;
-            secondCollider.isTrigger = true;
 
             Rigidbody body = panel.AddComponent<Rigidbody>();
             body.useGravity = false;
@@ -455,7 +451,7 @@ namespace StargazingHill.Editor
 
             WorldDebugPanelPickup pickupReturn = UdonSharpUndo.AddComponent<WorldDebugPanelPickup>(panel);
             pickupReturn.pickupCollider = collider;
-            pickupReturn.secondPickupCollider = secondCollider;
+            pickupReturn.secondPickupCollider = collider;
             pickupReturn.pickupRigidbody = body;
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);

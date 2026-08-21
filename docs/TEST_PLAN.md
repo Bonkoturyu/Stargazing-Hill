@@ -902,6 +902,24 @@
 | Udonコンパイル | Pass | `CheckUdonSharpProgramAssetsForBatchMode`、終了コード0。`Logs/Claude-V-Udon.log` |
 | Unity再生成 | Pass | `BuildForBatchMode`、終了コード0。`Logs/Claude-W-Build.log` |
 | 保存Scene独立検証 | Pass | 別Unity起動の `ValidateForBatchMode`、終了コード0。`Logs/Claude-W-Validate.log` |
-| 取っ手のGrab | Pending Evidence | VRとDesktopの両方で、左右どちらの棒からも掴めることを確認する |
-| 入退室表示の位置 | Pending Evidence | マイクアイコンと重ならないこと、上げすぎて邪魔になっていないことを確認する |
+| 引き継ぎ時の保存Scene再検証 | Pass | 2026-08-20、現在の未コミットSceneを再生成しない `Tools/Run-LocalChecks.ps1 -SkipBuild` 相当をWindows PowerShellで実行。YamaPlayer / UnyStylusパッチ、静的検査、UdonSharp program assets、保存Scene検証、星空・流星数値試験がすべてPass。`Logs/LocalCheck-UdonSharp.log`、`Logs/LocalCheck-Validate.log`、`Logs/LocalCheck-SkyMeteor.log` |
+| 3パネルの操作 | Pass | 利用者がVRChat実機で問題なく操作できることを確認（2026-08-20） |
+| 取っ手のGrab（修正前） | Fail | 利用者のVRChat実機では左側は正常。右側を持とうとすると最初のColliderである左側へ吸われ、右側から持てなかった（2026-08-20） |
+| 単一Grab Colliderの構造検証 | Pass | 左右2 Colliderを削除し、両方の見える棒を覆う左右対称の単一trigger Colliderへ変更。前面はボタンより奥、`pickupCollider` と互換用 `secondPickupCollider` は同じColliderを参照。静的検査と `Tools/Run-LocalChecks.ps1 -SkipBuild` 相当のUdonSharp program assets・保存Scene・星空/流星試験がすべてPass（2026-08-20） |
+| 取っ手のGrab（単一Collider修正後） | Pass | 利用者がVRChat実機で左右どちらからも持て、パネル操作にも問題がないことを確認（2026-08-20） |
+| 入退室表示の位置 | Pass | 利用者がVRChat実機で現在位置を適切と確認（2026-08-20） |
 | 角丸の見え方 | Pending Evidence | 実機での丸みの強さを確認する。短辺の0.28倍で足りなければ `CornerShare` を上げる |
+
+### 2026-08-20 BOOTH初回正式版パッケージ
+
+- 要求: 実機確認済みの現在Sceneから、BOOTH商品用の再配布可能unitypackageと顧客向けZIPをversion `1.0.0`として生成する
+- 配布境界: [ADR 0010](adr/0010-redistributable-unitypackage-boundary.md) と [BOOTH配布準備](BOOTH_RELEASE_GUIDE.md)
+
+| 項目 | 結果 | 証拠・残条件 |
+|---|---|---|
+| 右取っ手修正の実機確認 | Pass | 単一対称Grab Collider化後、左右Grabとパネル操作に問題なし（利用者報告、2026-08-20） |
+| World upload | Out of scope | BOOTH package検証の範囲外。利用者が2026-08-20にVRChat SDKから実施済み |
+| unitypackage export | Pass | Unity 2022.3.22f1 batch exportで `StargazingHill-1.0.0.unitypackage` を生成。27,707,195 bytes、179 pathname。すべて `Assets/StargazingHill` 配下で、YamaPlayer / QvPen / UnyStylus / local bake inputの混入なし |
+| BOOTH ZIP | Pass | `StargazingHill-1.0.0-BOOTH.zip`、27,010,877 bytes。unitypackage、`README.txt`、`LICENSE.txt`、`NOTICE.txt`、`SHA256SUMS.txt` の5fileを確認。READMEとNOTICEは購入者が元のGit repositoryを持たない前提の自己完結した日英繁中簡中韓5言語で、Markdown文書は0件。日本語NOTICEの提供状態は「現状のまま」と表記 |
+| SHA-256 | Pass | unitypackage `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`。ZIP内 `SHA256SUMS.txt` と再計算値が一致。ZIP自体は `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94` |
+| BOOTH clean import | Pending Evidence | clean Unity 2022.3.22f1 projectで外部依存を復元し、import後の保存Scene validationを確認する |

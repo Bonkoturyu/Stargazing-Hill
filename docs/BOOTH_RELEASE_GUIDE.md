@@ -39,9 +39,9 @@ powershell -ExecutionPolicy Bypass -File Tools/Prepare-BoothRelease.ps1 `
 `Build/BOOTH/StargazingHill-1.0.0-BOOTH.zip` に次を収録する。
 
 - `StargazingHill-1.0.0.unitypackage`
-- 5言語の `README.md`
+- 購入者向けに自己完結した5言語の `README.txt`
 - `LICENSE.txt`
-- `NOTICE.md`
+- 購入者向け注意事項を5言語で記載した `NOTICE.txt`
 - `SHA256SUMS.txt`
 
 scriptはunitypackageのpathname境界を先に検査し、YamaPlayer、QvPen、UnyStylus、ローカルbake inputが混入したpackageを拒否する。
@@ -49,6 +49,7 @@ scriptはunitypackageのpathname境界を先に検査し、YamaPlayer、QvPen、
 ## 販売開始前の完了条件
 
 - `Confirmed`: 2026-08-14に現在worktreeから `0.1.0-draft` のunitypackageとBOOTH ZIPを生成し、pathname境界とSHA-256を検査した。販売version確定時に同じ手順で再生成する。
+- `Confirmed`: 2026-08-20に初回正式版 `1.0.0` を現在worktreeから再生成した。unitypackageは27,707,195 bytes・179 pathnameで、所有境界と外部依存除外をPass。BOOTH ZIPは27,010,877 bytes・5file。購入者が元のGit repositoryを持っていない前提の5言語 `README.txt` / `NOTICE.txt` を収録し、Markdown文書を同梱しない。日本語NOTICEは購入者向けの平易な表現として「現状のまま」を採用した。unitypackage SHA-256は `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`、ZIP SHA-256は `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94`。
 - `Pending Evidence`: clean Unity 2022.3.22f1 projectへimportし、VPM依存と購入済みUnyStylus復元後に保存Scene validationを通す。
 - `Pending Evidence`: Windows / Android / iOSの保存Scene、UdonSharp、Shader、プレイヤー、描画機能を確認する。
 - `Open`: 商品名、version、価格、サポート範囲、更新方針、返金条件、商品ページ文面を確定する。

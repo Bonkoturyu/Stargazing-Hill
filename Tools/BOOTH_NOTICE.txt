@@ -1,0 +1,67 @@
+Stargazing Hill 1.0.0
+Important Notices / 注意事項
+
+======================================================================
+日本語
+======================================================================
+
+1. 本商品はUnity用のワールドデータです。VRChatへのupload代行、完成済みpublic Worldの所有権、元のBlueprint IDへのupload権限は含まれません。
+2. upload前に、Sceneへ保存されているBlueprint IDを必ずDetachまたはclearし、購入者自身が所有するWorld IDへ変更してください。
+3. YamaPlayer、QvPen、UnyStylusは同梱されません。特にUnyStylus v1.3は別売の有料商品であり、購入者自身による正規購入が必要です。
+4. 指定versionと異なるUnity、VRChat SDK、外部packageでは、compile error、参照切れ、表示差異が発生する場合があります。
+5. import、依存導入、platform切替、Build & Test、uploadの前に、購入者自身のprojectをバックアップしてください。
+6. Stargazing Hill固有部分にはLICENSE.txtのMIT Licenseが適用されます。第三者素材には各素材固有のライセンスが適用されます。unitypackage内のNOTICE・LICENSE・著作権表示を削除しないでください。
+7. YamaPlayer、QvPen、UnyStylusなど、同梱されない外部packageを本商品と一緒に再配布しないでください。
+8. 本商品は現状のまま提供されます。利用、改変、Build、upload、公開に伴う確認と責任は購入者にあります。
+
+======================================================================
+English
+======================================================================
+
+1. This product provides Unity world data. It does not include an upload service, ownership of the published original world, or permission to upload to its original Blueprint ID.
+2. Before uploading, detach or clear the Blueprint ID saved in the scene and assign a World ID owned by your own account.
+3. YamaPlayer, QvPen, and UnyStylus are not included. UnyStylus v1.3 is a separately sold paid product and must be legitimately purchased by the customer.
+4. Unity, VRChat SDK, or external package versions other than those specified may cause compilation errors, missing references, or visual differences.
+5. Back up your own project before importing, installing dependencies, switching platforms, running Build & Test, or uploading.
+6. Original Stargazing Hill portions are covered by the MIT License in LICENSE.txt. Third-party assets remain under their respective licenses. Do not remove NOTICE, LICENSE, copyright, or attribution files contained in the unitypackage.
+7. Do not redistribute excluded external packages such as YamaPlayer, QvPen, or UnyStylus together with this product.
+8. This product is provided as-is. The customer is responsible for verification and for any use, modification, build, upload, or publication.
+
+======================================================================
+繁體中文
+======================================================================
+
+1. 本商品提供Unity世界資料，不包含VRChat upload代辦、已公開原始World的所有權，也不包含向原始Blueprint ID upload的權限。
+2. upload前，請務必Detach或清除Scene中儲存的Blueprint ID，並改用您自己帳號擁有的World ID。
+3. 本商品不包含YamaPlayer、QvPen與UnyStylus。UnyStylus v1.3是另售付費商品，須由購買者自行合法購買。
+4. 使用非指定version的Unity、VRChat SDK或外部package，可能造成compile error、reference遺失或顯示差異。
+5. 在import、安裝相依項目、切換platform、Build & Test或upload前，請備份您自己的project。
+6. Stargazing Hill原創部分適用LICENSE.txt中的MIT License。第三方素材仍適用各自的授權。請勿刪除unitypackage內的NOTICE、LICENSE、著作權或署名檔案。
+7. 請勿將未包含的YamaPlayer、QvPen、UnyStylus等外部package與本商品一起再散布。
+8. 本商品依現狀提供。使用、修改、Build、upload與公開前的確認及相關責任由購買者承擔。
+
+======================================================================
+简体中文
+======================================================================
+
+1. 本商品提供Unity世界数据，不包含VRChat upload代办、已发布原始World的所有权，也不包含向原始Blueprint ID upload的权限。
+2. upload前，请务必Detach或清除Scene中保存的Blueprint ID，并改用您自己账号拥有的World ID。
+3. 本商品不包含YamaPlayer、QvPen和UnyStylus。UnyStylus v1.3是另售付费商品，须由购买者自行合法购买。
+4. 使用非指定version的Unity、VRChat SDK或外部package，可能导致compile error、reference丢失或显示差异。
+5. 在import、安装依赖、切换platform、Build & Test或upload前，请备份您自己的project。
+6. Stargazing Hill原创部分适用LICENSE.txt中的MIT License。第三方素材仍适用各自的许可。请勿删除unitypackage内的NOTICE、LICENSE、版权或署名文件。
+7. 请勿将未包含的YamaPlayer、QvPen、UnyStylus等外部package与本商品一起再分发。
+8. 本商品按现状提供。使用、修改、Build、upload和发布前的确认及相关责任由购买者承担。
+
+======================================================================
+한국어
+======================================================================
+
+1. 이 상품은 Unity 월드 데이터를 제공합니다. VRChat upload 대행, 공개된 원본 World의 소유권, 원본 Blueprint ID에 upload할 권한은 포함되지 않습니다.
+2. upload 전에 Scene에 저장된 Blueprint ID를 반드시 Detach 또는 clear하고 본인 계정이 소유한 World ID로 변경하세요.
+3. YamaPlayer, QvPen, UnyStylus는 포함되지 않습니다. UnyStylus v1.3은 별도 판매되는 유료 상품이며 구매자가 정식으로 구매해야 합니다.
+4. 지정된 version과 다른 Unity, VRChat SDK 또는 외부 package를 사용하면 compile error, reference 누락 또는 표시 차이가 발생할 수 있습니다.
+5. import, 의존성 설치, platform 변경, Build & Test 또는 upload 전에 본인의 project를 백업하세요.
+6. Stargazing Hill의 원본 부분에는 LICENSE.txt의 MIT License가 적용됩니다. 제3자 소재에는 각각의 라이선스가 적용됩니다. unitypackage 내부의 NOTICE, LICENSE, 저작권 및 출처 표시 파일을 삭제하지 마세요.
+7. 포함되지 않은 YamaPlayer, QvPen, UnyStylus 등의 외부 package를 이 상품과 함께 재배포하지 마세요.
+8. 이 상품은 현 상태로 제공됩니다. 사용, 수정, Build, upload 및 공개에 관한 확인과 책임은 구매자에게 있습니다.

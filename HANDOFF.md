@@ -1,6 +1,6 @@
 # Handoff
 
-更新日: 2026-08-16
+更新日: 2026-08-20
 
 ## 現在地
 
@@ -17,6 +17,12 @@
 - OpenGameArtのCC0方位磁石を木陰へ追加した。本体はPickup/ObjectSync、針は各クライアントで天文上の北（ワールド+Z）を指すローカル計算とし、owner限定のドロップ10秒後Respawnを追加。初期位置はティーポットからworld X方向へ0.30m離した接地平面 `X 7.52 / Z 7.48` を正本とし、高さは生成時に真下の面（敷物または地形）から決める。再生成後は `y=2.4047` で敷物に接地する。
 - YamaPlayer 2.0.0-beta.7は標準Playlist Editorを正本とし、QvPen 3.3.15と購入済みUnyStylus v1.3を含む外部依存は配布用unitypackageへ同梱しない。
 - 今回差分はUnity 2022.3.22f1で `CheckUdonSharpProgramAssetsForBatchMode`、`BuildForBatchMode`、`ValidateForBatchMode`、`TestSkyAndMeteorForBatchMode` をすべて終了コード0で通し、保存Sceneを再生成済みである（`Logs/Claude-*.log`）。静的検査 `python Tools/Validate-StargazingImplementation.py` もPassし、絶対音量・Slider Collider・EventSystem・ミラー7ボタン・実測接地を不変条件として追加した。結果の正本は `docs/TEST_PLAN.md` の最新節とする。エージェントからUnityを起動するときはサンドボックス内のheadless実行ではlicense machine bindingが一致しないため、ホスト環境で通常Editor相当の `-quit -projectPath -executeMethod -logFile` を使う。ClientSim / PCVR / Quest / iOS操作はPending Evidence。
+- 2026-08-20、側面2本の取っ手、3パネル共通の角丸ボタン、入退室トースト位置・文字サイズ、アラームアイコン位置まで生成正本と保存Sceneへ反映済み。詳細と検証結果は [ADR 0018](docs/adr/0018-settings-board-usability-fixes.md) 追記7および `docs/TEST_PLAN.md` の最新節を正本とする。
+- 引き継ぎ時点のHEADは `0caab9c`。`Provisional`: 引き継ぎ前からある未コミット差分は `Assets/StargazingHill/Scenes/StargazingHill.unity` のみで、内容はVRChat SDKのBuild/Upload前処理が保存する `NetworkIDs`、Dynamic Materials、pipeline metadata、Udon同期方式などと一致する。由来を断定せず、手調整のScene差分と同様に破棄・再生成しない。
+- 2026-08-20の引き継ぎ確認で、現在のSceneを再生成しない `Tools/Run-LocalChecks.ps1 -SkipBuild` 相当をWindows PowerShellから実行し、YamaPlayer / UnyStylusパッチ、静的検査、UdonSharp program assets、保存Scene検証、星空・流星数値試験がすべてPassした。ClientSim / Desktop / PCVR / Quest / iOSの操作・見た目は引き続きPending Evidence。
+- 2026-08-20実機確認で3パネルの操作と入退室トースト位置はPass。左右2 Colliderの取っ手は右を狙うと左へ吸われたため、左右の棒を盤面奥の単一対称Colliderで覆う生成へ修正した。修正後の左右Grabとパネル操作もVRChat実機でPass。正本は [ADR 0018](docs/adr/0018-settings-board-usability-fixes.md) 追記8と `docs/TEST_PLAN.md` 最新節。
+- World uploadは利用者が実施済み。
+- BOOTH初回正式版を生成済み。`Build/BOOTH/StargazingHill-1.0.0-BOOTH.zip`（27,010,877 bytes、SHA-256 `a4a253835de475477654edfb4177fead9409c9bdecfdccf923cb6fd8eb67fd94`）に、検査済み `StargazingHill-1.0.0.unitypackage`（27,707,195 bytes、179 pathname、SHA-256 `5f3a8e0eaa1da2184e820e555e13a681084c950f3cca7bd6c8e18f3e56cd3729`）、repository非所持を前提とする5言語 `README.txt` / `NOTICE.txt`、`LICENSE.txt`、checksumを収録。日本語NOTICEは「現状のまま」と表記し、Markdown文書は0件。clean importはPending Evidence。
 
 ## 次の安全な一手
 

@@ -5,7 +5,8 @@
 .DESCRIPTION
     This script does not create the unitypackage and never gathers Unity dependencies. Export the package
     through Stargazing Hill/Build & Export/Redistributable UnityPackage... first, then pass that file here.
-    The result contains the unitypackage, five-language package README, license, notice, and SHA-256 list.
+    The result contains the unitypackage, self-contained five-language README.txt and NOTICE.txt,
+    LICENSE.txt, and a SHA-256 list. The customer documentation does not assume repository access.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File Tools/Prepare-BoothRelease.ps1 -UnityPackage Build/StargazingHill-redistributable.unitypackage -Version 1.0.0
@@ -46,9 +47,13 @@ New-Item -ItemType Directory -Path $stagingDirectory -Force | Out-Null
 $packageName = "$productName.unitypackage"
 $packagedUnityPackage = Join-Path $stagingDirectory $packageName
 Copy-Item -LiteralPath $resolvedPackage -Destination $packagedUnityPackage
-Copy-Item -LiteralPath (Join-Path $projectRoot 'Assets/StargazingHill/README_UNITYPACKAGE.md') -Destination (Join-Path $stagingDirectory 'README.md')
+$readmeSource = Join-Path $PSScriptRoot 'BOOTH_README.txt'
+$noticeSource = Join-Path $PSScriptRoot 'BOOTH_NOTICE.txt'
+if (-not (Test-Path -LiteralPath $readmeSource)) { throw "Missing customer README: $readmeSource" }
+if (-not (Test-Path -LiteralPath $noticeSource)) { throw "Missing customer notice: $noticeSource" }
+Copy-Item -LiteralPath $readmeSource -Destination (Join-Path $stagingDirectory 'README.txt')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination (Join-Path $stagingDirectory 'LICENSE.txt')
-Copy-Item -LiteralPath (Join-Path $projectRoot 'NOTICE.md') -Destination (Join-Path $stagingDirectory 'NOTICE.md')
+Copy-Item -LiteralPath $noticeSource -Destination (Join-Path $stagingDirectory 'NOTICE.txt')
 
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $packagedUnityPackage).Hash.ToLowerInvariant()
 Set-Content -Encoding ascii -LiteralPath (Join-Path $stagingDirectory 'SHA256SUMS.txt') -Value "$hash  $packageName"

@@ -443,6 +443,19 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     for dependency in ("YamaPlayer", "QvPen", "UnyStylus"):
         assert dependency in restore_guide
 
+    booth_script = (ROOT / "Tools/Prepare-BoothRelease.ps1").read_text(encoding="utf-8")
+    booth_readme = (ROOT / "Tools/BOOTH_README.txt").read_text(encoding="utf-8")
+    booth_notice = (ROOT / "Tools/BOOTH_NOTICE.txt").read_text(encoding="utf-8")
+    assert "README.txt" in booth_script and "NOTICE.txt" in booth_script
+    assert "README.md" not in booth_script and "NOTICE.md" not in booth_script
+    for customer_text in (booth_readme, booth_notice):
+        for language in ("日本語", "English", "繁體中文", "简体中文", "한국어"):
+            assert language in customer_text
+        assert "Blueprint ID" in customer_text
+        assert "UnyStylus v1.3" in customer_text
+    assert "original Git repository" in booth_readme
+    assert "docs/" not in booth_readme and "source project" not in booth_readme.lower()
+
     release_workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
     for required in (
         'tags:\n      - "v*"',
@@ -691,19 +704,20 @@ def validate_redistributable_package_and_debug_pickup() -> None:
     assert 'new GameObject("LocalSettingsBoard")' in settings_installer
     assert "board.SetActive(false);" in settings_installer
     assert "private const float BoardScale = 0.22f;" in settings_installer
-    # Visible grip rods down both sides, with grab boxes that start at the sheet edge and
-    # reach outward so they never sit over a control.
+    # Visible rods stay on both sides, but a single symmetric collider behind the controls
+    # avoids VRChat resolving the right rod through the first (left) collider.
     assert 'CreateCube("GripBarLeft", board.transform' in settings_installer
     assert 'CreateCube("GripBarRight", board.transform' in settings_installer
     assert "private const float GripBarX = 1.47f;" in settings_installer
-    assert "private const float GripColliderX = 1.58f;" in settings_installer
-    assert "Local settings board pickup grip is too small to aim at." in settings_installer
-    assert "Local settings board needs one pickup grip on each side." in settings_installer
+    assert "private const float GripColliderZ = 0.28f;" in settings_installer
+    assert "Local settings board needs one shared pickup grip collider." in settings_installer
+    assert "pickupReturn.secondPickupCollider = pickupCollider;" in settings_installer
     debug_panel_installer = (ROOT / "Assets/StargazingHill/Editor/WorldDebugPanelInstaller.cs").read_text(encoding="utf-8")
     assert 'CreateGripRod(parent, "GripBarLeft"' in debug_panel_installer
     assert 'CreateGripRod(parent, "GripBarRight"' in debug_panel_installer
-    assert "private const float GripColliderX = 1.34f;" in debug_panel_installer
-    # Both grips switch together while the panel flies home.
+    assert "private const float GripColliderZ = 0.27f;" in debug_panel_installer
+    assert "pickupReturn.secondPickupCollider = collider;" in debug_panel_installer
+    # The compatibility field aliases the one shared collider while the panel flies home.
     for pickup_source in ("WorldSettingsBoardPickup", "WorldDebugPanelPickup"):
         text = (ROOT / f"Assets/StargazingHill/Scripts/{pickup_source}.cs").read_text(encoding="utf-8")
         assert "public Collider secondPickupCollider;" in text, pickup_source

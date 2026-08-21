@@ -132,3 +132,11 @@
 - **3つのパネルのボタンを角丸にする。** `PanelButtonMeshes.EnsureRoundedPlate(width, height)` が、単位立方体と同じ -0.5〜0.5 の範囲を保ったまま4本の縦稜だけを丸めたメッシュを作る。範囲が同じなので、ボタンの `localScale` もラベル・ビーム面・Colliderのオフセットもそのまま使える。角の丸みは短辺の0.28倍とし、その半径を幅と高さで割ってから焼くことで、非等倍のスケールを掛けても円弧のまま出る。したがってメッシュはボタンの寸法ごとに1つずつ生成し、`Generated/Meshes/PanelButton_{幅}x{高さ}.asset` へ入る。
   - Colliderは矩形のまま。角を丸めても押しやすさは変わらない。
   - 設定ボード、デバッグパネル、説明パネルの3つとも同じ関数を通す。
+
+## 2026-08-20 追記8: 左右の見える取っ手を単一のGrab Colliderで扱う
+
+- 実機では左取っ手を正常に持てたが、右取っ手を狙うと左側へ吸われ、右側から持てなかった。ローカルSDKの `ClientSimPickupHelper.GetInteractTextPlacement` にも、PickupのツールチップはGameObject上の最初のColliderを使う既知挙動が明記されている。左右2つのColliderを同じ `VRCPickup` へ載せる構成をやめる。
+- 左右の見える棒は維持し、その両方を1つの左右対称なtrigger `BoxCollider`で覆う。Colliderは盤面より奥へ下げ、前面のボタン・Canvas Colliderが先にヒットするようにする。これにより右側が左Colliderへ解決される余地をなくし、確認済みのパネル操作も維持する。
+- Udon program assetの互換性を保つため、当面は `pickupCollider` と `secondPickupCollider` の両フィールドを同じ単一Colliderへ向ける。次回の意図的なprogram migrationまでフィールド削除は行わない。
+- `Confirmed`: 3パネルの操作と入退室トースト位置は実機で問題なし。単一Collider化後も左右どちらからもGrabでき、前面操作が退行していないことを2026-08-20のVRChat実機で確認した。
+- 根拠: [VRChat VRC Pickup](https://creators.vrchat.com/worlds/components/vrc_pickup/)（Colliderへのray impactとProximity規則、確認日 2026-08-20、Worlds SDK 3.10.4）、`Packages/com.vrchat.worlds/Integrations/ClientSim/Runtime/Helpers/ClientSimPickupHelper.cs`（最初のColliderを使うツールチップ位置、同SDK）。

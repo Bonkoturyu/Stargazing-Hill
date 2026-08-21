@@ -68,12 +68,14 @@ namespace StargazingHill.Editor
         private const float RowH = RowG - RowPitch;
         // A label's transform is its top edge, so this drop centres UpperLeft text on its row.
         private const float LabelRowOffset = 0.035f;
-        // The grips. The rods graze the sheet edge at 1.40; the grab boxes start there and reach
-        // outward, so they never sit over a control.
+        // The visible rods remain on both sides. VRChat anchors hover/tooltips to the first Collider
+        // on a pickup, so two sibling colliders made the right rod resolve to the left one. One
+        // symmetric collider covers both rods and sits behind the control faces; buttons win the
+        // front-facing ray while either rod reaches the same pickup volume.
         private const float GripBarX = 1.47f;
         private static readonly Vector3 GripBarSize = new Vector3(0.16f, 0.68f, 0.16f);
-        private const float GripColliderX = 1.58f;
-        private static readonly Vector3 GripColliderSize = new Vector3(0.36f, 1.20f, 0.50f);
+        private const float GripColliderZ = 0.28f;
+        private static readonly Vector3 GripColliderSize = new Vector3(3.52f, 1.20f, 0.44f);
         // The stepper buttons that flank each slider, and the bar left between them.
         private const float StepButtonWidth = 0.22f;
         private const float SliderBarWidth = WideButtonWidth - (StepButtonWidth + ColumnGap) * 2f;
@@ -181,13 +183,9 @@ namespace StargazingHill.Editor
             CreateCube("GripBarRight", board.transform, new Vector3(GripBarX, 0f, 0f),
                 GripBarSize, accentMaterial, false);
             BoxCollider pickupCollider = board.AddComponent<BoxCollider>();
-            pickupCollider.center = new Vector3(-GripColliderX, 0f, 0f);
+            pickupCollider.center = new Vector3(0f, 0f, GripColliderZ);
             pickupCollider.size = GripColliderSize;
             pickupCollider.isTrigger = true;
-            BoxCollider secondPickupCollider = board.AddComponent<BoxCollider>();
-            secondPickupCollider.center = new Vector3(GripColliderX, 0f, 0f);
-            secondPickupCollider.size = GripColliderSize;
-            secondPickupCollider.isTrigger = true;
             Rigidbody body = board.AddComponent<Rigidbody>();
             body.useGravity = false;
             body.drag = 8f;
@@ -202,7 +200,8 @@ namespace StargazingHill.Editor
             pickup.AutoHold = VRC_Pickup.AutoHoldMode.No;
             WorldSettingsBoardPickup pickupReturn = UdonSharpUndo.AddComponent<WorldSettingsBoardPickup>(board);
             pickupReturn.pickupCollider = pickupCollider;
-            pickupReturn.secondPickupCollider = secondPickupCollider;
+            // Keep the serialized compatibility field aliased until the next Udon program migration.
+            pickupReturn.secondPickupCollider = pickupCollider;
             pickupReturn.pickupRigidbody = body;
             UdonSharpEditorUtility.CopyProxyToUdon(pickupReturn);
             EditorUtility.SetDirty(pickupReturn);
@@ -482,31 +481,18 @@ namespace StargazingHill.Editor
                 Quaternion.Angle(board.transform.rotation, Quaternion.Euler(BoardEuler)) > 0.01f)
                 throw new InvalidOperationException("Local settings board size or facing validation failed.");
             ValidateTreeSettingsAccess(treeToggle, treeToggleButton, treeToggleCollider, treeGearIcon, board);
-            // Two grips, one per side. Each has to be big enough to aim at and has to stay off the
-            // board face, or it either cannot be grabbed or it swallows the ray meant for a button.
-            // A grab box in front of a button wins the ray outright: the raycaster resolves the
-            // nearest hit first, and this collider is nearer than the button's beam target.
+            // Both visible rods share one symmetric collider. Multiple colliders on the pickup made
+            // VRChat resolve the right rod through the first (left) collider. The shared box sits
+            // behind every button face so it cannot swallow the UI ray.
             BoxCollider[] boardGrips = board.GetComponents<BoxCollider>();
-            if (boardGrips.Length != 2)
+            if (boardGrips.Length != 1)
                 throw new InvalidOperationException(
-                    "Local settings board needs one pickup grip on each side.");
-            for (int index = 0; index < boardGrips.Length; index++)
-            {
-                BoxCollider grip = boardGrips[index];
-                if (grip.size.y < 0.90f || grip.size.z < 0.40f || grip.size.x < 0.30f)
-                    throw new InvalidOperationException(
-                        "Local settings board pickup grip is too small to aim at.");
-                float inner = Mathf.Abs(grip.center.x) - grip.size.x * 0.5f;
-                for (int other = 0; other < buttons.Length; other++)
-                {
-                    Transform button = buttons[other].transform;
-                    if (button.parent != board.transform) continue;
-                    if (Mathf.Abs(button.localPosition.x) + button.localScale.x * 0.5f > inner)
-                        throw new InvalidOperationException(
-                            "Local settings board pickup grip overlaps the control area at " +
-                            button.name + ".");
-                }
-            }
+                    "Local settings board needs one shared pickup grip collider.");
+            BoxCollider grip = boardGrips[0];
+            if (grip.size.x < 3.40f || grip.size.y < 0.90f || grip.size.z < 0.40f ||
+                Mathf.Abs(grip.center.x) > 0.001f || grip.center.z - grip.size.z * 0.5f < 0.04f)
+                throw new InvalidOperationException(
+                    "Local settings board shared pickup grip must cover both rods behind the controls.");
             string[] iconNames =
             {
                 "NightModeIcon", "NotifyIcon", "AlarmIcon", "RadioVolumeIcon",
